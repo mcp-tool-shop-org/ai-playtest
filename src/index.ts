@@ -1,0 +1,14 @@
+export { loadConfig, validateConfig, resolveEnv, ConfigError } from './config.js';
+export type { PlaytestConfig, GameConfig, Seat, Criterion } from './config.js';
+export { createOpenRouterClient, OpenRouterError } from './openrouter.js';
+export type { ChatClient, ChatMessage, ChatRequest } from './openrouter.js';
+export { spawnGame, stripAnsi } from './stdio-game.js';
+export type { GameProcess, Screen } from './stdio-game.js';
+export { chooseInput, sanitizeInput, buildPlayerMessages } from './player.js';
+export type { TurnRecord } from './player.js';
+export { critique, parseCritique, buildCriticPrompt, renderTranscript, CritiqueError } from './critic.js';
+export type { Critique, CriterionVerdict } from './critic.js';
+export { runSeat, runAll } from './run.js';
+export type { SeatResult, RunOptions } from './run.js';
+export { readRun, renderReport, writeReport } from './report.js';
+export type { SeatSummary } from './report.js';
