@@ -97,9 +97,12 @@ export async function critique(client: ChatClient, model: string, criteria: Crit
       model,
       messages: [
         { role: 'system', content: 'You are a careful, specific playtester. You answer only with the JSON object requested.' },
-        { role: 'user', content: attempt === 0 ? prompt : `${prompt}\n\nYour previous answer was not a valid JSON object. Answer with the JSON object only.` },
+        { role: 'user', content: attempt === 0 ? prompt : `${prompt}\n\nYour previous answer was not a valid JSON object (${lastErr?.message ?? 'parse error'}). Answer with the complete JSON object only, and keep every evidence string under 200 characters.` },
       ],
-      maxTokens: 1800,
+      // claude-rpg's fourth family playtest (2026-09-02): 19 criteria with
+      // evidence strings no longer fit in 1,800 tokens -- one seat's critique was
+      // cut mid-array and failed to parse twice. Sized for ~25 criteria.
+      maxTokens: 6000,
       temperature: 0,
       json: true,
     });
