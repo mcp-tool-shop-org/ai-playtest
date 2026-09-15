@@ -221,9 +221,14 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
   child.onExit(({ exitCode: c }: { exitCode: number }) => { exited = true; exitCode = c; });
 
   const gridLines = (): string[] => {
+    // Viewport only. getLine(y) is buffer-absolute (scrollback + screen);
+    // cursorY is viewport-relative, so lines[cursor.y] only matches if we
+    // dump from viewportY, not buffer.length. Alt-screen has viewportY 0
+    // and length === rows — equivalent to the previous dump.
     const b = term.buffer.active;
     const out: string[] = [];
-    for (let y = 0; y < b.length; y++) out.push(b.getLine(y)?.translateToString(true) ?? '');
+    const top = b.viewportY;
+    for (let y = 0; y < rows; y++) out.push(b.getLine(top + y)?.translateToString(true) ?? '');
     while (out.length > 0 && out[out.length - 1].trim() === '') out.pop();
     return out;
   };
@@ -262,7 +267,7 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
       if (bracketedPaste && quiet >= opts.promptQuietMs) return observe('ready-signal');
       if (quiet >= opts.promptQuietMs) {
         const b = term.buffer.active;
-        const cursorLine = b.getLine(b.cursorY)?.translateToString(true) ?? '';
+        const cursorLine = b.getLine(b.baseY + b.cursorY)?.translateToString(true) ?? '';
         if (patterns.some((re) => re.test(cursorLine))) return observe('prompt');
       }
       if (quiet >= opts.idleQuietMs) return observe('idle');
@@ -274,7 +279,11 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
     get diagnostics() { return diagnostics; },
     async start() { return waitForTurn(); },
     async step(action: Action) {
-      if (!exited) child.write(actionToLine(action) + '\r');
+      if (!exited) {
+        const payload = actionToLine(action);
+        // kind:key is a TUI keypress (ratatui/ncurses); a trailing CR is Enter.
+        child.write(action.kind === 'key' ? payload : `${payload}\r`);
+      }
       return waitForTurn();
     },
     async stop() {

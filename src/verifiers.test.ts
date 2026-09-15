@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   tarjanScc, detectAbsorbing, classifyIgnored, classifyParser, detectTerminal,
   detectNoProgress, entityAppearanceGrid, runVerifiers, renderAbsorbingLine,
-  DEFAULT_VERIFIERS,
+  detectStateInvariants, DEFAULT_VERIFIERS,
 } from './verifiers.js';
 import type { TurnRecord } from './player.js';
 
@@ -179,5 +179,31 @@ describe('runVerifiers', () => {
     const r = runVerifiers(h);
     expect(r.ignoredInputs).toHaveLength(1);
     expect(r.parser.turns).toHaveLength(1);
+  });
+
+  it('exposes stateInvariants as not-applied when no turn carries state', () => {
+    const r = runVerifiers([t(1, 'Nave', 'look')]);
+    expect(r.stateInvariants.applied).toBe(false);
+    expect(r.stateInvariants.hpNegative).toEqual([]);
+  });
+});
+
+describe('detectStateInvariants', () => {
+  it('does not infer hp or inventory from screen prose', () => {
+    const hit = detectStateInvariants([t(1, 'HP -3\nYou dropped the lamp', 'look')]);
+    expect(hit.applied).toBe(false);
+    expect(hit.hpNegative).toEqual([]);
+    expect(hit.inventoryDropped).toEqual([]);
+  });
+
+  it('flags negative hp and a shrinking inventory only from structured state', () => {
+    const h: TurnRecord[] = [
+      { ...t(1, 'Nave', 'look'), state: { hp: 10, inventory: ['lamp', 'key'] } },
+      { ...t(2, 'Nave', 'wait'), state: { hp: -1, inventory: ['key'] } },
+    ];
+    const hit = detectStateInvariants(h);
+    expect(hit.applied).toBe(true);
+    expect(hit.hpNegative).toEqual([{ turn: 2, value: -1 }]);
+    expect(hit.inventoryDropped).toEqual([{ turn: 2, lost: ['lamp'] }]);
   });
 });

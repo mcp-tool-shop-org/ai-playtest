@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { actionToLine, describeActions, type Action, type ActionSpace } from './driver.js';
+import { actionToLine, actionFromInput, validateAction, ActionError, describeActions, type Action, type ActionSpace } from './driver.js';
 
 describe('actionToLine', () => {
   it.each([
@@ -31,5 +31,43 @@ describe('describeActions', () => {
     ],
   ] as Array<[ActionSpace, string]>)('describes %j', (space, text) => {
     expect(describeActions(space)).toBe(text);
+  });
+});
+
+describe('actionFromInput', () => {
+  const choice: ActionSpace = { kind: 'choice', options: [{ id: 'attack', label: 'Attack' }, { id: 'flee', label: 'Flee' }] };
+  const keys: ActionSpace = { kind: 'keys', keys: ['w', 'a', 's', 'd'] };
+
+  it('maps a choice id or label onto choose, and a miss onto line', () => {
+    expect(actionFromInput('attack', choice)).toEqual({ kind: 'choose', id: 'attack' });
+    expect(actionFromInput('Flee', choice)).toEqual({ kind: 'choose', id: 'flee' });
+    expect(actionFromInput('nope', choice)).toEqual({ kind: 'line', line: 'nope' });
+  });
+
+  it('maps a listed key onto key, anything else onto line', () => {
+    expect(actionFromInput('w', keys)).toEqual({ kind: 'key', key: 'w' });
+    expect(actionFromInput('look', keys)).toEqual({ kind: 'line', line: 'look' });
+    expect(actionFromInput('go north', undefined)).toEqual({ kind: 'line', line: 'go north' });
+    expect(actionFromInput('go north', { kind: 'free-text' })).toEqual({ kind: 'line', line: 'go north' });
+  });
+});
+
+describe('validateAction', () => {
+  const choice: ActionSpace = { kind: 'choice', options: [{ id: 'attack', label: 'Attack' }] };
+  const keys: ActionSpace = { kind: 'keys', keys: ['w', 'a'] };
+
+  it('passes free-text and a missing space', () => {
+    expect(() => validateAction(undefined, { kind: 'line', line: 'look' })).not.toThrow();
+    expect(() => validateAction({ kind: 'free-text' }, { kind: 'line', line: 'look' })).not.toThrow();
+  });
+
+  it('throws E_ACTION on a closed-set miss', () => {
+    expect(() => validateAction(choice, { kind: 'choose', id: 'flee' })).toThrow(ActionError);
+    expect(() => validateAction(keys, { kind: 'key', key: 'x' })).toThrow(ActionError);
+    try {
+      validateAction(choice, { kind: 'line', line: 'attack' });
+    } catch (err) {
+      expect(err).toMatchObject({ code: 'E_ACTION' });
+    }
   });
 });

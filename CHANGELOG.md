@@ -7,12 +7,33 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm #2, 2026-09-14. 84 -> 165 tests. First live run against claude-rpg
-(`proof-01`, 8 turns, mistral). Stage B: 24 HIGH. Stage C: remaining MED/LOW
-(humanization — errors that name the cause, CLI help, report honesty).
+Dogfood swarm #2, 2026-09-14. 84 -> 182 tests, then the Law 8 execute set.
+First live run against claude-rpg (`proof-01`, 8 turns, mistral). Stage B: 24
+HIGH. Stage C: remaining MED/LOW (humanization — errors that name the cause,
+CLI help, report honesty). Feature execute: consume `Observation.actions`,
+serial RPC `reset()`, viewport-only PTY grid, report legends, `schemaVersion`
+on leaving artefacts, single-run `REPORT.json`.
 
 ### Added
 
+- **Typed actions from `Observation.actions`.** Player replies map onto
+  `choose` / `key` / `line`. A closed-set miss is a harness event
+  (`illegal-action`); the runner does not step. `describeActions()` is appended
+  to the player prompt.
+- **Serial RPC reuses one driver.** `--serial` on `driver.kind === "rpc"`
+  starts once, calls `reset()` between seats, and stops once. A missing or
+  throwing `reset` fails that next seat with `E_RESET` (no silent second
+  client). Parallel RPC stays one process per seat.
+- **PTY viewport grid.** `grid.lines` is `viewportY .. viewportY+rows-1`, not
+  the scrollback buffer. Prompt matching uses `baseY+cursorY`. `kind:key`
+  writes without a trailing CR.
+- **Single-run `REPORT.json`** sidecar (`kind: "single-run-report"`) next to
+  `REPORT.md`. Markdown legends teach `!`, `repeat`, `loop`, and `H(a)` in
+  bits. `schemaVersion` + `reportFormat` + `VERSION` are stamped on the
+  markdown generator line, both JSON reports, and seat `meta.json`.
+- **State-gated invariants.** HP never negative and inventory non-decreasing,
+  only when a turn carries a structured `state` object — never inferred from
+  prose.
 - **README lockup** from `mcp-tool-shop-org/brand` (`logos/ai-playtest/readme.png`).
 - **Deterministic transcript verifiers** (`src/verifiers.ts`). Six checks, all
   transcript-only: absorbing-SCC (Tarjan over the observed screen digraph,
@@ -27,11 +48,14 @@ Dogfood swarm #2, 2026-09-14. 84 -> 165 tests. First live run against claude-rpg
 - **Jury `n_eff`** on the report: `k / (1+(k−1)·φ̄)`, warn when `n_eff/k < 0.5`.
 
 - **RPC `hello {protocol:1}` is a hard handshake.** A bridge that only
-  speaks `observe` / `act` / `quit` now fails closed on connect. `reset()`
-  exists on the driver; `runAll` still does not send it between seats.
+  speaks `observe` / `act` / `quit` now fails closed on connect. Serial
+  `runAll` now calls `reset()` between RPC seats.
 
 ### Changed
 
+- **The runner consumes `actions` / `state`.** Illegal-action rejection and
+  hp/room hashing are wired; `docs/engine-bridge.md` no longer says they are
+  protocol-only.
 - **`panelSize` default 1**, not 3. Kohli 2026 (Kish n_eff 2.18, panel 72.0% vs
   best single 71.8%, cross-family φ 0.389 vs same-family 0.437) undercuts
   *family diversity buys independence*. Author-off-jury stays (Panickssery /

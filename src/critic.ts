@@ -28,14 +28,28 @@ export class CritiqueError extends Error {
   }
 }
 
+function clipState(state: unknown): string {
+  try {
+    const s = JSON.stringify(state);
+    return s.length <= 400 ? s : `${s.slice(0, 400)}…`;
+  } catch {
+    return '[unserializable]';
+  }
+}
+
 export function renderTranscript(history: TurnRecord[], maxChars: number): string {
   const parts = history.map((t) => {
     const head = t.fallback
       ? `=== turn ${t.turn} (runner fallback; model reply discarded) ===`
-      : t.input
-        ? `=== turn ${t.turn} ===`
-        : `=== turn ${t.turn} (${t.reason}; no further input) ===`;
-    return t.input ? `${head}\n${t.screen.trim()}\n> ${t.input}` : `${head}\n${t.screen.trim()}`;
+      : t.reason === 'illegal-action'
+        ? `=== turn ${t.turn} (illegal-action; runner did not step) ===`
+        : t.input
+          ? `=== turn ${t.turn} ===`
+          : `=== turn ${t.turn} (${t.reason}; no further input) ===`;
+    const stateLine = t.state !== undefined && t.state !== null
+      ? `\n[state] ${clipState(t.state)}`
+      : '';
+    return t.input ? `${head}\n${t.screen.trim()}${stateLine}\n> ${t.input}` : `${head}\n${t.screen.trim()}${stateLine}`;
   });
   const full = parts.join('\n\n');
   if (full.length <= maxChars) return full;

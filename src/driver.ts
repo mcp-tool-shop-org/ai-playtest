@@ -146,3 +146,53 @@ export function describeActions(space: ActionSpace | undefined): string {
     default: return '';
   }
 }
+
+/**
+ * Map a player-typed string onto a typed Action using the current space.
+ * Closed sets match an option id/label or a listed key; anything else stays a
+ * line so stdio free-text still has a wire form. The runner calls this and
+ * steps the Action; stdio/pty still flatten through actionToLine.
+ */
+export function actionFromInput(input: string, space?: ActionSpace): Action {
+  if (space?.kind === 'choice') {
+    const hit = space.options.find((o) => o.id === input || o.label === input);
+    if (hit) return { kind: 'choose', id: hit.id };
+  } else if (space?.kind === 'keys' && space.keys.includes(input)) {
+    return { kind: 'key', key: input };
+  }
+  return { kind: 'line', line: input };
+}
+
+/**
+ * Reject an action that is not in a closed set before a turn is spent.
+ * free-text and a missing space always pass; schema only requires kind:call
+ * (the game validates args). Setup/quit stay kind:line and must not go through
+ * this — the runner validates player turns only.
+ */
+export function validateAction(space: ActionSpace | undefined, action: Action): void {
+  if (!space || space.kind === 'free-text') return;
+  if (space.kind === 'keys') {
+    if (action.kind !== 'key' || !space.keys.includes(action.key)) {
+      throw new ActionError(
+        `illegal key ${JSON.stringify(action.kind === 'key' ? action.key : actionToLine(action))}`,
+        `legal keys: ${space.keys.join(' ')}`,
+      );
+    }
+    return;
+  }
+  if (space.kind === 'choice') {
+    if (action.kind !== 'choose' || !space.options.some((o) => o.id === action.id)) {
+      throw new ActionError(
+        `illegal choice ${JSON.stringify(action.kind === 'choose' ? action.id : actionToLine(action))}`,
+        `legal ids: ${space.options.map((o) => o.id).join(', ')}`,
+      );
+    }
+    return;
+  }
+  if (space.kind === 'schema' && action.kind !== 'call') {
+    throw new ActionError(
+      `schema space requires a call, got ${action.kind}`,
+      'reply with one call from the schema',
+    );
+  }
+}

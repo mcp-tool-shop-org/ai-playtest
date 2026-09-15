@@ -91,6 +91,11 @@ describe('buildPlayerMessages', () => {
     expect(msgs[1].content).toBe('screen 10');
     expect(msgs[msgs.length - 1].content).toBe('current screen');
   });
+
+  it('appends an action hint to the current screen when one is supplied', () => {
+    const msgs = buildPlayerMessages('p', [], 'Choose.', 0, 6000, 'Choose one:\n  1) Attack');
+    expect(msgs[msgs.length - 1].content).toBe('Choose.\n\nChoose one:\n  1) Attack');
+  });
   it('clips a long screen from the front and says so', () => {
     const msgs = buildPlayerMessages('p'.repeat(30), [], 'a'.repeat(100) + 'TAIL', 0, 50);
     const last = msgs[msgs.length - 1].content;

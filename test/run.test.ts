@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { validateConfig, validateDriver, loadConfig, resolveEnv, ConfigError, type GameConfig, type PlaytestConfig } from '../src/config.js';
-import { runAll, seatDir, createDriver, type RunOptions } from '../src/run.js';
+import { runAll, seatDir, createDriver, toAction, type RunOptions } from '../src/run.js';
 import { readRun, renderReport, writeReport, renderAggregateReport, ReportError } from '../src/report.js';
+import { SCHEMA_VERSION, VERSION } from '../src/config.js';
+import type { Action, Driver, Observation } from '../src/driver.js';
+import { ActionError } from '../src/driver.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
 import type { GameProcess, Screen } from '../src/stdio-game.js';
@@ -100,6 +103,13 @@ describe('runAll over the echo game', () => {
     expect(md).toContain('[alpha] fake/alpha found nothing dead');
     const path = await writeReport('echo', join(runsDir, 'lbl'), 'lbl');
     expect(await readFile(path, 'utf8')).toContain('# echo — AI playtest report (lbl)');
+    const sidecar = JSON.parse(await readFile(join(runsDir, 'lbl', 'REPORT.json'), 'utf8'));
+    expect(sidecar.kind).toBe('single-run-report');
+    expect(sidecar.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(sidecar.generator).toMatchObject({ name: '@mcptoolshop/ai-playtest', schemaVersion: SCHEMA_VERSION });
+    const meta = JSON.parse(await readFile(join(results[0].dir, 'meta.json'), 'utf8'));
+    expect(meta.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(meta.toolVersion).toBe(VERSION);
   });
 
   it('records a seat whose game exits early as ended by exit and still critiques the turns it played', async () => {
@@ -111,6 +121,115 @@ describe('runAll over the echo game', () => {
     // name prompt was scripted setup, not a turn).
     expect(results[0].turnsPlayed).toBe(2);
     expect(results[0].critique).not.toBeNull();
+  });
+
+  it('does not step an illegal closed-set input; records it as a harness event', async () => {
+    const steps: Action[] = [];
+    const obs: Observation = {
+      text: 'Choose one.',
+      reason: 'sentinel',
+      done: false,
+      exitCode: null,
+      actions: { kind: 'choice', options: [{ id: 'look', label: 'Look' }] },
+    };
+    const fake: Driver = {
+      modality: 'stdio',
+      diagnostics: '',
+      async start() { return obs; },
+      async step(a) { steps.push(a); return { ...obs, text: 'after', reason: 'exit', done: true, exitCode: 0 }; },
+      async stop() {},
+    };
+    const [r] = await play(config(2), {
+      label: 'illegal',
+      seats: ['a'],
+      client: fakeClient(['nope', 'look']),
+      makeDriver: async () => fake,
+    });
+    expect(r.history.some((h) => h.reason === 'illegal-action' && h.input === 'nope')).toBe(true);
+    expect(steps).toEqual([{ kind: 'choose', id: 'look' }]);
+    expect(r.turnsPlayed).toBe(1);
+  });
+
+  it('serial rpc reuses one driver, reset() between seats, stop once', async () => {
+    let created = 0, starts = 0, resets = 0, stops = 0;
+    const obs: Observation = {
+      text: 'ready', reason: 'sentinel', done: false, exitCode: null,
+      actions: { kind: 'free-text' },
+    };
+    const fake: Driver = {
+      modality: 'rpc',
+      diagnostics: '',
+      async start() { starts++; return obs; },
+      async step() { return { ...obs, text: 'bye', reason: 'exit', done: true, exitCode: 0 }; },
+      async reset() { resets++; return obs; },
+      async stop() { stops++; },
+    };
+    const cfg = validateConfig({
+      name: 'rpc-reuse',
+      driver: { kind: 'rpc', port: 9, requestTimeoutMs: 1000 },
+      seats: [
+        { id: 'a', family: 'alpha', model: 'fake/alpha' },
+        { id: 'b', family: 'beta', model: 'fake/beta' },
+      ],
+      turns: 1,
+      persona: 'You are a scout who wants to see how the world answers.',
+      criteria: [{ id: 'x', check: 'the world changed' }],
+      runsDir,
+    }, runsDir);
+    const results = await play(cfg, {
+      label: 'rpc-serial',
+      client: fakeClient(['look']),
+      parallel: false,
+      makeDriver: async () => { created++; return fake; },
+    });
+    expect(created).toBe(1);
+    expect(starts).toBe(1);
+    expect(resets).toBe(1);
+    expect(stops).toBe(1);
+    expect(results).toHaveLength(2);
+  });
+
+  it('serial rpc fails the next seat with E_RESET when reset is missing', async () => {
+    const obs: Observation = {
+      text: 'ready', reason: 'sentinel', done: false, exitCode: null,
+      actions: { kind: 'free-text' },
+    };
+    const fake: Driver = {
+      modality: 'rpc',
+      diagnostics: '',
+      async start() { return obs; },
+      async step() { return { ...obs, text: 'bye', reason: 'exit', done: true, exitCode: 0 }; },
+      async stop() {},
+    };
+    const cfg = validateConfig({
+      name: 'rpc-no-reset',
+      driver: { kind: 'rpc', port: 9, requestTimeoutMs: 1000 },
+      seats: [
+        { id: 'a', family: 'alpha', model: 'fake/alpha' },
+        { id: 'b', family: 'beta', model: 'fake/beta' },
+      ],
+      turns: 1,
+      persona: 'You are a scout who wants to see how the world answers.',
+      criteria: [{ id: 'x', check: 'the world changed' }],
+      runsDir,
+    }, runsDir);
+    const results = await play(cfg, {
+      label: 'rpc-no-reset',
+      client: fakeClient(['look']),
+      parallel: false,
+      makeDriver: async () => fake,
+    });
+    expect(results[0].error).toBeUndefined();
+    expect(results[1].error).toMatch(/E_RESET/);
+  });
+
+  describe('toAction', () => {
+    it('throws ActionError on a closed-set miss', () => {
+      expect(() => toAction('nope', { kind: 'choice', options: [{ id: 'look', label: 'Look' }] })).toThrow(ActionError);
+      expect(toAction('Look', { kind: 'choice', options: [{ id: 'look', label: 'Look' }] })).toEqual({ kind: 'choose', id: 'look' });
+      expect(toAction('w', { kind: 'keys', keys: ['w'] })).toEqual({ kind: 'key', key: 'w' });
+      expect(toAction('look', { kind: 'free-text' })).toEqual({ kind: 'line', line: 'look' });
+    });
   });
 
   function scriptedSpawn(screens: Screen[]): (cfg: GameConfig, env: Record<string, string>) => GameProcess {
@@ -525,6 +644,67 @@ describe('report honesty', () => {
     }]);
     expect(md).toMatch(/sample-size limit/);
     expect(md).not.toMatch(/explored thinly/);
+  });
+
+  it('coverage section names H(a) or bits so action entropy is not a bare number', () => {
+    const md = renderReport('g', 'lbl', [{
+      ...seat('alpha', crit(true, true)),
+      coverage: {
+        turns: 8, novelStates: 8, turnOfLastNovelState: 8, noveltyHalfLife: 4,
+        repeatRate: 0.14, loopRate: 0, selfLoopRate: 0, actionEntropy: 2.75, distinctActions: 7,
+        confidence: 'thin', notes: ['only 8 player turns - too few to characterise a game'],
+      },
+    }]);
+    const start = md.indexOf('## How much each seat actually saw');
+    expect(start).toBeGreaterThan(-1);
+    const rest = md.slice(start);
+    const next = rest.indexOf('\n## ', 1);
+    const section = next === -1 ? rest : rest.slice(0, next);
+    expect(section).toMatch(/bits|H\(a\)/);
+    expect(section).toMatch(/H\(a\)` = action entropy in bits/);
+  });
+
+  it('writeReport produces REPORT.json beside REPORT.md', async () => {
+    const runDir = join(runsDir, 'single-json');
+    const dir = join(runDir, 'a');
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, 'meta.json'), JSON.stringify({
+      seat: { id: 'a', family: 'alpha', model: 'fake/alpha' },
+      turnsPlayed: 4,
+      endedBy: 'turns',
+      error: null,
+      critiqueError: null,
+    }) + '\n', 'utf8');
+    await writeReport('echo', runDir, 'single-json');
+    const payload = JSON.parse(await readFile(join(runDir, 'REPORT.json'), 'utf8'));
+    expect(payload.kind).toBe('single-run-report');
+    expect(payload.kind).not.toBe('multi-run-aggregate');
+    expect(payload.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(payload.generator.schemaVersion).toBe(SCHEMA_VERSION);
+  });
+
+  it('legends ! and does not print unanimous when seats agree but jurors split', () => {
+    const splitRow = {
+      id: 'ambush', met: true, evidence: 'e', turn: 3,
+      split: true, metCount: 1, answeredCount: 2,
+    };
+    const panel = {
+      jurors: [{ id: 'j', family: 'other', model: 'fake/j' }],
+      critiques: [],
+      criteria: [splitRow],
+      alive: true, aliveCount: 1, wouldPlayAgainCount: 1,
+      dispersion: 0, meanPhi: 0, nEff: 1,
+    };
+    const md = renderReport('g', 'lbl', [
+      { ...seat('alpha', crit(true, true)), panel },
+      { ...seat('beta', crit(true, true)), panel },
+    ]);
+    expect(md).toMatch(/`!` = that seat's jurors split/);
+    const row = md.split('\n').find((l) => l.includes('| ambush |'));
+    expect(row).toBeDefined();
+    expect(row).toMatch(/!/);
+    expect(row).toMatch(/seats agree \(jurors split\)/);
+    expect(row).not.toMatch(/\| unanimous \|/);
   });
 
   it('prints the n=3 copy on an aggregate, shrinking 3/3 away from 100%', () => {

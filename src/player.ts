@@ -22,6 +22,11 @@ export type TurnRecord = {
   fallback?: boolean;
   /** Short raw model reply when `fallback` fired. */
   rawSnippet?: string;
+  /**
+   * Structured observation state, when the driver supplied it. Preferred over
+   * `screen` for coverage hashing and critic citations (hp/room, not prose).
+   */
+  state?: unknown;
 };
 
 export type PlayerChoice = {
@@ -61,13 +66,15 @@ export function nextFallback(history: TurnRecord[]): string {
   return PLAYER_FALLBACKS[n % PLAYER_FALLBACKS.length];
 }
 
-export function buildPlayerMessages(persona: string, history: TurnRecord[], screen: string, memoryTurns: number, screenChars: number): ChatMessage[] {
+export function buildPlayerMessages(persona: string, history: TurnRecord[], screen: string, memoryTurns: number, screenChars: number, actionHint?: string): ChatMessage[] {
   const messages: ChatMessage[] = [{ role: 'system', content: `${PLAYER_SYSTEM_PREFIX}\n\nWho you are and what you want:\n${persona}` }];
   for (const t of history.slice(-memoryTurns)) {
     messages.push({ role: 'user', content: clip(t.screen, screenChars) });
     messages.push({ role: 'assistant', content: t.input });
   }
-  messages.push({ role: 'user', content: clip(screen, screenChars) });
+  let last = clip(screen, screenChars);
+  if (actionHint && actionHint.length > 0) last = `${last}\n\n${actionHint}`;
+  messages.push({ role: 'user', content: last });
   return messages;
 }
 
@@ -76,10 +83,10 @@ function clip(s: string, max: number): string {
   return t.length <= max ? t : `[...${t.length - max} earlier characters trimmed...]\n${t.slice(-max)}`;
 }
 
-export async function chooseInput(client: ChatClient, model: string, persona: string, history: TurnRecord[], screen: string, opts: { memoryTurns: number; screenChars: number; temperature: number }): Promise<PlayerChoice> {
+export async function chooseInput(client: ChatClient, model: string, persona: string, history: TurnRecord[], screen: string, opts: { memoryTurns: number; screenChars: number; temperature: number; actionHint?: string }): Promise<PlayerChoice> {
   const raw = await client({
     model,
-    messages: buildPlayerMessages(persona, history, screen, opts.memoryTurns, opts.screenChars),
+    messages: buildPlayerMessages(persona, history, screen, opts.memoryTurns, opts.screenChars, opts.actionHint),
     maxTokens: 60,
     temperature: opts.temperature,
   });

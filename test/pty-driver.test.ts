@@ -87,6 +87,12 @@ describe.skipIf(!available)('pty driver', () => {
     expect(obs.grid).toBeDefined();
     expect(obs.grid!.altScreen).toBe(true);
     expect(obs.grid!.lines.length).toBeGreaterThan(0);
+    // Viewport, not scrollback: grid.lines must fit rows. This fixture is
+    // alt-screen (baseY 0, buffer length already === rows) so <= rows holds
+    // even if gridLines() still walks term.buffer.active.length; a scrolling
+    // non-alt dump (default scrollback 1000) is the revert that this cannot
+    // catch.
+    expect(obs.grid!.lines.length).toBeLessThanOrEqual(obs.grid!.rows);
     expect(obs.grid!.cursor.y).toBeGreaterThan(0);
     // The grid is already rendered text: no escape bytes survive into it.
     expect(obs.text).not.toContain('');

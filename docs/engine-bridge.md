@@ -17,22 +17,24 @@ and everything else has a socket. Request/response, one message per line.
 
 > **What the driver speaks today (required):** `hello {protocol:1}` on connect
 > (fail-closed if missing or not protocol 1), then `observe` on start,
-> `act` with `{kind:"line", line}` on every turn (setup and quit included),
-> and `quit` on stop. `done: true` maps to observation `reason: "exit"` so
-> the seat loop stops; `win` / `lose` / `stuck` land on `endCause`, not
+> `act` with a typed action (`choose` / `key` / `line` / `call`) on player
+> turns, `act` with `{kind:"line", line}` for scripted setup and quit, and
+> `quit` on stop. `done: true` maps to observation `reason: "exit"` so the
+> seat loop stops; `win` / `lose` / `stuck` land on `endCause`, not
 > `ReadyReason`.
 >
-> **On the driver, not yet spoken by `runAll`:** `reset()` exists on the rpc
-> driver but the runner never calls it between seats — N RPC seats still
-> contend on one TCP game unless you pass `--serial` or launch one process
-> per seat.
+> **Serial RPC reuse:** `--serial` starts one client, calls `reset()` between
+> seats, and stops once. If `reset` is missing or throws, that next seat
+> fails with `E_RESET` — it does not silently open a second TCP client.
+> Parallel RPC stays one process per seat (the paste-and-go bridge is
+> single-client).
 >
-> **Protocol v1, not yet consumed:** `actions` / `state` and `act` kinds
-> other than `line`. Illegal-action rejection and hp/room citations in the
-> report are not wired; `run.ts` never reads `Observation.actions` or
-> `Observation.state`. The listing below is what to implement toward.
+> **Consumed from each observation:** `actions` (the player prompt lists
+> them; a closed-set miss is recorded as `illegal-action` and is not
+> stepped) and `state` (coverage and absorbing-SCC hash it when it is an
+> object; the critic transcript cites a clipped `[state]` line).
 
-The harness *will* send (protocol v1; runner catching up on `choose`/`reset`):
+The harness sends:
 
 ```json
 {"id":0,"method":"hello","params":{"protocol":1}}

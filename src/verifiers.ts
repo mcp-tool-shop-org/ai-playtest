@@ -15,8 +15,7 @@
 //      dialogue scores below the majority baseline. Contradiction stays with
 //      the jury. The entity-appearance grid is packaged as leads, not a verdict.
 
-import { createHash } from 'node:crypto';
-import { normalizeScreen, analysisTurns } from './coverage.js';
+import { normalizeScreen, analysisTurns, hashTurn } from './coverage.js';
 import type { TurnRecord } from './player.js';
 
 export type VerifierConfig = {
@@ -101,6 +100,20 @@ export type EntityLead = {
   note: string;
 };
 
+export type HpNegativeHit = { turn: number; value: number };
+export type InventoryDropHit = { turn: number; lost: string[] };
+
+/**
+ * Invariants that only fire when a turn carries a structured `state` object.
+ * Never inferred from screen prose (research-2: do not fake hp/inventory from text).
+ */
+export type StateInvariants = {
+  /** True when at least one analysis turn had an object `state`. */
+  applied: boolean;
+  hpNegative: HpNegativeHit[];
+  inventoryDropped: InventoryDropHit[];
+};
+
 export type VerifierReport = {
   absorbing: AbsorbingHit | null;
   ignoredInputs: IgnoredInput[];
@@ -108,9 +121,8 @@ export type VerifierReport = {
   terminal: TerminalHit;
   noProgress: NoProgressWindow[];
   entityLeads: EntityLead[];
+  stateInvariants: StateInvariants;
 };
-
-const hash = (s: string): string => createHash('sha1').update(s).digest('hex').slice(0, 12);
 
 function compile(sources: string[]): RegExp[] {
   return sources.map((s) => new RegExp(s, 'im'));
@@ -187,7 +199,7 @@ export function detectAbsorbing(
   minTurns: number,
 ): AbsorbingHit | null {
   if (turns.length === 0) return null;
-  const hashes = turns.map((t) => hash(normalizeScreen(t.screen)));
+  const hashes = turns.map((t) => hashTurn(t));
   const nodes = Array.from(new Set(hashes));
   const edges: Array<[string, string]> = [];
   for (let i = 1; i < hashes.length; i++) edges.push([hashes[i - 1], hashes[i]]);
@@ -232,7 +244,7 @@ export function classifyIgnored(turns: TurnRecord[]): IgnoredInput[] {
       return { turn: t.turn, input: t.input, kind: 'changed' as const };
     }
     const prev = turns[i - 1];
-    const same = hash(normalizeScreen(t.screen)) === hash(normalizeScreen(prev.screen));
+    const same = hashTurn(t) === hashTurn(prev);
     const empty = t.screen.trim().length === 0;
     const kind: IgnoredInput['kind'] = empty ? 'no-output' : same ? 'identical-screen' : 'changed';
     return { turn: t.turn, input: t.input, kind };
@@ -273,7 +285,7 @@ export function detectTerminal(turns: TurnRecord[], cfg: VerifierConfig, absorbi
 
 export function detectNoProgress(turns: TurnRecord[], window: number, noOpVerbs: string[]): NoProgressWindow[] {
   if (turns.length < window || window < 2) return [];
-  const hashes = turns.map((t) => hash(normalizeScreen(t.screen)));
+  const hashes = turns.map((t) => hashTurn(t));
   const verbs = new Set(noOpVerbs.map((v) => v.toLowerCase()));
   const out: NoProgressWindow[] = [];
   for (let i = 0; i + window <= turns.length; i++) {
@@ -384,6 +396,52 @@ export function entityAppearanceGrid(
   return leads.slice(0, 12);
 }
 
+function readHp(state: Record<string, unknown>): number | undefined {
+  for (const k of ['hp', 'HP', 'health', 'hitPoints', 'hitpoints']) {
+    const v = state[k];
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (v && typeof v === 'object' && typeof (v as { current?: unknown }).current === 'number') {
+      return (v as { current: number }).current;
+    }
+  }
+  return undefined;
+}
+
+function readInventory(state: Record<string, unknown>): string[] | undefined {
+  for (const k of ['inventory', 'items', 'bag']) {
+    const v = state[k];
+    if (!Array.isArray(v)) continue;
+    return v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x)));
+  }
+  return undefined;
+}
+
+/**
+ * HP never negative; inventory is non-decreasing. Gated on `state` being an
+ * object — absent state is not a pass, it is not-applied.
+ */
+export function detectStateInvariants(turns: TurnRecord[]): StateInvariants {
+  const hpNegative: HpNegativeHit[] = [];
+  const inventoryDropped: InventoryDropHit[] = [];
+  let applied = false;
+  let prevInv: string[] | undefined;
+  for (const t of turns) {
+    if (t.state === undefined || t.state === null || typeof t.state !== 'object' || Array.isArray(t.state)) continue;
+    applied = true;
+    const s = t.state as Record<string, unknown>;
+    const hp = readHp(s);
+    if (hp !== undefined && hp < 0) hpNegative.push({ turn: t.turn, value: hp });
+    const inv = readInventory(s);
+    if (inv && prevInv) {
+      const have = new Set(inv);
+      const lost = prevInv.filter((item) => !have.has(item));
+      if (lost.length > 0) inventoryDropped.push({ turn: t.turn, lost });
+    }
+    if (inv) prevInv = inv;
+  }
+  return { applied, hpNegative, inventoryDropped };
+}
+
 export function runVerifiers(history: TurnRecord[], cfg: VerifierConfig = DEFAULT_VERIFIERS): VerifierReport {
   const turns = analysisTurns(history);
   const absorbing = detectAbsorbing(turns, cfg.absorbingMinTurns);
@@ -394,6 +452,7 @@ export function runVerifiers(history: TurnRecord[], cfg: VerifierConfig = DEFAUL
     terminal: detectTerminal(turns, cfg, absorbing),
     noProgress: detectNoProgress(turns, cfg.noProgressWindow, cfg.noOpVerbs),
     entityLeads: entityAppearanceGrid(turns, cfg),
+    stateInvariants: detectStateInvariants(turns),
   };
 }
 
