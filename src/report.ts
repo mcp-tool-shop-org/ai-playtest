@@ -148,18 +148,36 @@ function jurorAnswered(p: PanelVerdict): number {
   return critiques.filter((c) => c.critique).length;
 }
 
+/**
+ * A panel with `degraded` set and no juror answers is not a fail-closed
+ * verdict. `alive: false` there is a hole, not a dead seat.
+ */
+export function isEmptyDegradedPanel(panel: unknown): boolean {
+  if (!panel || typeof panel !== 'object') return false;
+  const p = panel as { degraded?: unknown; critiques?: unknown };
+  if (typeof p.degraded !== 'string' || p.degraded.length === 0) return false;
+  const critiques = Array.isArray(p.critiques) ? p.critiques : [];
+  return critiques.filter((c) => c && typeof c === 'object' && (c as { critique?: unknown }).critique).length === 0;
+}
+
+function scoringPanel(s: { panel?: PanelVerdict | null }): PanelVerdict | undefined {
+  if (!s.panel || isEmptyDegradedPanel(s.panel)) return undefined;
+  return s.panel;
+}
+
 function wouldPlayAgainOf(s: SeatSummary): boolean {
-  if (s.panel) {
-    const answered = jurorAnswered(s.panel);
+  const p = scoringPanel(s);
+  if (p) {
+    const answered = jurorAnswered(p);
     if (answered === 0) return false;
-    return s.panel.wouldPlayAgainCount * 2 > answered;
+    return p.wouldPlayAgainCount * 2 > answered;
   }
   return s.critique?.wouldPlayAgain === true;
 }
 
 export function renderReport(name: string, label: string, seats: SeatSummary[], expectedCriteria?: string[], skipped: SkippedSeatDir[] = []): string {
   const answeredIds = Array.from(new Set(seats.flatMap((s) =>
-    (s.panel?.criteria ?? s.critique?.criteria ?? []).map((c) => c.id))));
+    (scoringPanel(s)?.criteria ?? s.critique?.criteria ?? []).map((c) => c.id))));
   // Rows used to come only from what the critics happened to return, so a
   // criterion every critic skipped vanished from the report with no sign that
   // anything was missing. When the caller supplies the config's criteria, the
@@ -176,12 +194,18 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   lines.push(generatorStamp());
   lines.push('');
   // The headline is the JURY's reading where there was one. A seat's own
-  // critique of its own transcript is testimony, not a score.
-  const juried = seats.filter((s) => s.panel);
-  const judged = seats.filter((s) => s.critique || s.panel);
-  const unjudged = seats.filter((s) => !s.critique && !s.panel);
-  const verdictOf = (s: SeatSummary): boolean | null =>
-    s.panel ? s.panel.alive : s.critique ? s.critique.alive : null;
+  // critique of its own transcript is testimony, not a score. An empty
+  // degraded panel is neither: alive:false there is not a fail-closed dead seat.
+  const juried = seats.filter((s) => scoringPanel(s));
+  const judged = seats.filter((s) => s.critique || scoringPanel(s));
+  const unjudged = seats.filter((s) => !s.critique && !scoringPanel(s));
+  const emptyDegraded = seats.filter((s) => isEmptyDegradedPanel(s.panel));
+  const verdictOf = (s: SeatSummary): boolean | null => {
+    const p = scoringPanel(s);
+    if (p) return p.alive;
+    if (s.critique) return s.critique.alive;
+    return null;
+  };
   const alive = seats.filter((s) => verdictOf(s) === true).length;
   // Counting verdicts against `judged` alone made a run where half the seats
   // died read as unanimous -- "Alive verdicts: 1 of 1" for a two-seat run with
@@ -193,7 +217,15 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   lines.push('');
   if (unjudged.length > 0) {
     lines.push(`> **${unjudged.length} of ${asked} seats produced no verdict** — the counts above are out of ${asked}, not out of ${judged.length}. ` +
-      unjudged.map((s) => `\`${s.seat.family}\` (ended by ${s.endedBy}${s.critiqueError ? `; ${s.critiqueError}` : ''})`).join(', ') + '.');
+      unjudged.map((s) => {
+        const extra = [s.critiqueError, isEmptyDegradedPanel(s.panel) ? s.panel?.degraded : undefined].filter(Boolean);
+        return `\`${s.seat.family}\` (ended by ${s.endedBy}${extra.length ? `; ${extra.join('; ')}` : ''})`;
+      }).join(', ') + '.');
+    lines.push('');
+  }
+  if (emptyDegraded.length > 0) {
+    lines.push(`> **${emptyDegraded.length} of ${asked} seats had a degraded panel, not a fail-closed jury verdict:** ` +
+      emptyDegraded.map((s) => `\`${s.seat.family}\` (${s.panel!.degraded})`).join(', ') + '.');
     lines.push('');
   }
   if (skipped.length > 0) {
@@ -206,7 +238,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
     lines.push('');
   }
   if (juried.length > 0) {
-    const sizes = Array.from(new Set(juried.map((s) => s.panel!.jurors.length)));
+    const sizes = Array.from(new Set(juried.map((s) => s.panel!.jurors.length).filter((n) => n > 0)));
     lines.push(`Each transcript was judged by ${sizes.join('/')} juror${sizes.some((n) => n > 1) ? 's' : ''} from families that did not produce it. A seat never scores its own play; its own reading is kept below as testimony.`);
     lines.push('');
     for (const s of juried) {
@@ -234,7 +266,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   lines.push(`|---|${columnNames.map(() => '---').join('|')}|---|---|`);
   for (const id of criteriaIds) {
     const rowOf = (s: SeatSummary) =>
-      s.panel?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id);
+      scoringPanel(s)?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id);
     const cells = [
       ...seats.map((s) => {
         const v = rowOf(s);
@@ -259,7 +291,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
     // A 1-seat run still has a jury. Agreement used to be em-dash whenever
     // fewer than 2 *seats* answered, which hid juror splits behind `no!` and
     // a blank agreement column (proof-01).
-    const panelRow = seats.length === 1 ? seats[0].panel?.criteria.find((c) => c.id === id) : undefined;
+    const panelRow = seats.length === 1 ? scoringPanel(seats[0])?.criteria.find((c) => c.id === id) : undefined;
     const agreement = panelRow
       ? (panelRow.answeredCount < 2 ? '—' : panelRow.split ? `**split** ${panelRow.metCount}/${panelRow.answeredCount}` : 'unanimous')
       : (answered < 2 ? '—' : split ? '**split**' : 'unanimous');
@@ -273,7 +305,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
     lines.push(`> **${missingIds.length} criterion/criteria went unanswered by every judge:** ${missingIds.map((i) => `\`${i}\``).join(', ')}. An unanswered criterion is not a failed one — it usually means the check was phrased in a way no judge could evaluate from a transcript.`);
   } else if (criteriaIds.some((id) => {
     const rowOf = (s: SeatSummary) =>
-      s.panel?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id);
+      scoringPanel(s)?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id);
     return seats.some((s) => !rowOf(s)) || skipped.length > 0;
   })) {
     lines.push('');
@@ -349,11 +381,14 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
       // independently unreadable; saying "no turns played" there is simply
       // false for a seat that completed its run.
       lines.push(`No critique: ${s.critiqueError ?? (s.turnsPlayed > 0 ? `the critique for this seat could not be read back (it played ${s.turnsPlayed} turns)` : 'no turns played')}.`);
+      if (isEmptyDegradedPanel(s.panel) && s.panel?.degraded) {
+        lines.push(`Panel degraded, not a jury verdict: ${mdSafe(s.panel.degraded)}.`);
+      }
       lines.push('');
       continue;
     }
-    if (s.panel) {
-      const p = s.panel;
+    const p = scoringPanel(s);
+    if (p) {
       const answered = jurorAnswered(p);
       const failed = (p.critiques ?? []).filter((c) => c.error && !c.critique);
       const denom = answered === p.jurors.length
@@ -370,12 +405,15 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
       lines.push(`*${cell(s.seat.family)}'s own reading of its own play — testimony, not a score:* alive ${s.critique.alive ? 'yes' : 'no'}, would play again ${s.critique.wouldPlayAgain ? 'yes' : 'no'}.`);
     } else {
       lines.push(`**Alive:** ${s.critique.alive ? 'yes' : 'no'}. **Would play again:** ${s.critique.wouldPlayAgain ? 'yes' : 'no'}. *(self-judged — no other family was seated)*`);
+      if (isEmptyDegradedPanel(s.panel) && s.panel?.degraded) {
+        lines.push(`Panel degraded, not a jury verdict: ${mdSafe(s.panel.degraded)}.`);
+      }
     }
     lines.push('');
     lines.push(mdSafe(s.critique.summary));
     lines.push('');
-    for (const c of (s.panel?.criteria ?? s.critique.criteria ?? [])) {
-      const panelRow = s.panel?.criteria.find((x) => x.id === c.id);
+    for (const c of (p?.criteria ?? s.critique.criteria ?? [])) {
+      const panelRow = p?.criteria.find((x) => x.id === c.id);
       const split = panelRow?.split ? ` — **jurors split ${panelRow.metCount}/${panelRow.answeredCount}**` : '';
       lines.push(`- ${c.met ? '✔' : '✘'} **${cell(c.id)}**${c.turn !== null ? ` (turn ${c.turn})` : ''}: ${cell(c.evidence ?? '')}${split}`);
     }
@@ -463,11 +501,12 @@ export async function listRunSiblings(runsDir: string, label: string): Promise<s
 }
 
 export function criterionMetBySeats(
-  results: Array<{ panel?: { criteria: Array<{ id: string; met: boolean }> } | null; critique?: { criteria: Array<{ id: string; met: boolean }> } | null }>,
+  results: Array<{ panel?: { criteria: Array<{ id: string; met: boolean }>; degraded?: string; critiques?: Array<{ critique?: unknown }> } | null; critique?: { criteria: Array<{ id: string; met: boolean }> } | null }>,
   id: string,
 ): boolean {
   const votes = results.map((r) => {
-    const row = r.panel?.criteria.find((c) => c.id === id) ?? r.critique?.criteria.find((c) => c.id === id);
+    const panel = isEmptyDegradedPanel(r.panel) ? undefined : r.panel;
+    const row = panel?.criteria.find((c) => c.id === id) ?? r.critique?.criteria.find((c) => c.id === id);
     return row?.met ?? false;
   });
   return votes.filter(Boolean).length * 2 > votes.length;
@@ -521,7 +560,7 @@ export async function writeAggregateFromRuns(
   for (const runLabel of runLabels) {
     const seats = await readRun(join(runsDir, runLabel));
     for (const id of criterionIds) if (criterionMetBySeats(seats, id)) successes[id]++;
-    const alive = seats.filter((s) => (s.panel ? s.panel.alive : s.critique?.alive) === true).length;
+    const alive = seats.filter((s) => (scoringPanel(s)?.alive ?? s.critique?.alive) === true).length;
     worstOfN.push({ run: runLabel, alive, of: seats.length + seats.skipped.length });
   }
   return writeAggregateReport(

@@ -11,7 +11,7 @@ export { critique, parseCritique, buildCriticPrompt, renderTranscript, CritiqueE
 export type { Critique, CriterionVerdict } from './critic.js';
 export { runSeat, runAll } from './run.js';
 export type { SeatResult, RunOptions } from './run.js';
-export { readRun, renderReport, writeReport, renderAggregateReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, criterionMetBySeats, REPORT_FORMAT } from './report.js';
+export { readRun, renderReport, writeReport, renderAggregateReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, criterionMetBySeats, isEmptyDegradedPanel, REPORT_FORMAT } from './report.js';
 export type { SeatSummary, SkippedSeatDir, RunContents, AggregatePayload } from './report.js';
 export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, DEFAULT_VERIFIERS } from './verifiers.js';
 export type { VerifierReport, VerifierConfig, AbsorbingHit } from './verifiers.js';

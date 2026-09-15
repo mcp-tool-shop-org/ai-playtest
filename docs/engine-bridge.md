@@ -15,17 +15,24 @@ Newline-delimited JSON over TCP. No dependency on either side: Godot has
 `StreamPeerTCP` and `JSON` in core, Unreal has `FSocket` and `FJsonSerializer`,
 and everything else has a socket. Request/response, one message per line.
 
-> **What `src/rpc-driver.ts` actually speaks today:** `observe` on start,
-> `act` with `{kind:"line", line}` on every turn (including setup and quit),
-> and `quit` on stop. It does **not** yet send `hello` or `reset`, and it does
-> not consume `actions` / `state` or typed `done` reasons (`win`/`lose`/`quit`/
-> `stuck`). The listing below is the protocol to implement toward, not a
-> description of the current driver. Illegal-action rejection and hp/room
-> citations in the report are likewise not wired; `run.ts` never reads
-> `Observation.actions` or `Observation.state`. Closing that gap is the next
-> engine-wiring slice.
+> **What the driver speaks today (required):** `hello {protocol:1}` on connect
+> (fail-closed if missing or not protocol 1), then `observe` on start,
+> `act` with `{kind:"line", line}` on every turn (setup and quit included),
+> and `quit` on stop. `done: true` maps to observation `reason: "exit"` so
+> the seat loop stops; `win` / `lose` / `stuck` land on `endCause`, not
+> `ReadyReason`.
+>
+> **On the driver, not yet spoken by `runAll`:** `reset()` exists on the rpc
+> driver but the runner never calls it between seats — N RPC seats still
+> contend on one TCP game unless you pass `--serial` or launch one process
+> per seat.
+>
+> **Protocol v1, not yet consumed:** `actions` / `state` and `act` kinds
+> other than `line`. Illegal-action rejection and hp/room citations in the
+> report are not wired; `run.ts` never reads `Observation.actions` or
+> `Observation.state`. The listing below is what to implement toward.
 
-The harness *will* send (protocol v1; driver is catching up):
+The harness *will* send (protocol v1; runner catching up on `choose`/`reset`):
 
 ```json
 {"id":0,"method":"hello","params":{"protocol":1}}
@@ -114,10 +121,11 @@ Add this as an autoload, then fill in the four stubs marked yours
 (`_observation`, `_apply`, `is_ready_for_input`, `_reset`). Guard it behind a
 flag so it never ships to players.
 
-The sample keeps **one** `_peer`. It is a single-client paste. `ai-playtest`
-does send `reset` as of swarm #2, but `runAll` still defaults to **parallel
-seats** — N RPC seats against one TCP game will contend. Use `--serial`, or
-launch one game process per seat, until you multiplex.
+The sample keeps **one** `_peer`. It is a single-client paste. The rpc driver
+*implements* `reset()`, but `runAll` does not send it between seats, and it
+defaults to **parallel seats** — N RPC seats against one TCP game will
+contend. Use `--serial`, or launch one game process per seat, until you
+multiplex.
 
 > **Read the four notes under the listing before you paste it.** Three of them
 > are the difference between a bridge that works and one that silently never

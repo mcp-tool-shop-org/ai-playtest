@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeInput, buildPlayerMessages, PLAYER_SYSTEM_PREFIX } from './player.js';
+import { sanitizeInput, buildPlayerMessages, PLAYER_SYSTEM_PREFIX, chooseInput, nextFallback, PLAYER_FALLBACKS } from './player.js';
+import type { ChatClient } from './openrouter.js';
+import type { TurnRecord } from './player.js';
+
+const fallbackTurn = (turn: number, input: string): TurnRecord => ({
+  turn,
+  screen: 's',
+  input,
+  reason: 'prompt',
+  ms: 1,
+  fallback: true,
+});
 
 describe('sanitizeInput', () => {
   it('keeps a plain line', () => expect(sanitizeInput('attack the stalker')).toBe('attack the stalker'));
@@ -23,8 +34,48 @@ describe('sanitizeInput', () => {
     expect(sanitizeInput('\n\nlook\nI think this is wise.')).toBe('look');
   });
   it('falls back to look on an empty answer and caps length', () => {
+    // Pin: sanitizeInput still maps blank to 'look'. Product empty path is chooseInput + nextFallback.
+    expect(sanitizeInput(' ')).toBe('look');
     expect(sanitizeInput('   ')).toBe('look');
     expect(sanitizeInput('x'.repeat(500)).length).toBe(200);
+  });
+});
+
+describe('nextFallback', () => {
+  it('rotates look → wait → help → look across consecutive fallbacks', () => {
+    expect(PLAYER_FALLBACKS).toEqual(['look', 'wait', 'help']);
+    expect(nextFallback([])).toBe('look');
+    expect(nextFallback([fallbackTurn(1, 'look')])).toBe('wait');
+    expect(nextFallback([fallbackTurn(1, 'look'), fallbackTurn(2, 'wait')])).toBe('help');
+    expect(nextFallback([fallbackTurn(1, 'look'), fallbackTurn(2, 'wait'), fallbackTurn(3, 'help')])).toBe('look');
+  });
+});
+
+describe('chooseInput', () => {
+  const opts = { memoryTurns: 3, screenChars: 6000, temperature: 0.2 };
+
+  it('flags fallback and rotates when the model returns blank or an empty fence', async () => {
+    const replies = ['   ', '```\n```'];
+    let i = 0;
+    const client: ChatClient = async () => replies[i++] ?? '   ';
+
+    const first = await chooseInput(client, 'fake/model', 'wanderer', [], 'You are in a dark room.', opts);
+    expect(first.input).toBe('look');
+    expect(first.fallback).toBe(true);
+    expect(first.rawSnippet).toBeDefined();
+
+    const history: TurnRecord[] = [{
+      turn: 1,
+      screen: 'You are in a dark room.',
+      input: first.input,
+      reason: 'prompt',
+      ms: 1,
+      fallback: first.fallback,
+      rawSnippet: first.rawSnippet,
+    }];
+    const second = await chooseInput(client, 'fake/model', 'wanderer', history, 'Still dark.', opts);
+    expect(second.input).toBe('wait');
+    expect(second.fallback).toBe(true);
   });
 });
 
