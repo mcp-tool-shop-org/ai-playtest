@@ -92,6 +92,14 @@ export type PlaytestConfig = {
   runsDir: string;
   /** Sampling temperature for the player; the critic always runs at 0. */
   playerTemperature: number;
+  /**
+   * How many cross-family jurors judge each transcript. A panel of cheaper
+   * heterogeneous judges has been measured beating one strong judge (kappa
+   * 0.763 vs 0.627) at 7-8x lower cost, and multiple evaluators is the standard
+   * remedy for the evaluator effect. Capped by how many other families are
+   * seated.
+   */
+  panelSize: number;
 };
 
 export class ConfigError extends Error {
@@ -107,6 +115,7 @@ const DEFAULTS = {
   playerMemoryTurns: 8,
   runsDir: 'runs',
   playerTemperature: 0.7,
+  panelSize: 3,
   game: { promptQuietMs: 800, idleQuietMs: 6000, screenTimeoutMs: 180_000, quitInputs: ['quit'] },
 };
 
@@ -209,6 +218,7 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     playerMemoryTurns: (c.playerMemoryTurns as number) ?? DEFAULTS.playerMemoryTurns,
     runsDir: resolve(baseDir, (c.runsDir as string) ?? DEFAULTS.runsDir),
     playerTemperature: (c.playerTemperature as number) ?? DEFAULTS.playerTemperature,
+    panelSize: typeof c.panelSize === 'number' && c.panelSize >= 0 ? c.panelSize : DEFAULTS.panelSize,
   };
 }
 

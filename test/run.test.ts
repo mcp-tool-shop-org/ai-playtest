@@ -194,3 +194,69 @@ describe('run safety', () => {
     expect(results[0].history.some((h) => h.reason === 'quit')).toBe(true);
   });
 });
+
+describe('cross-family jury', () => {
+  it('never lets a seat score its own transcript', async () => {
+    const cfg = config(3);
+    // Record which model was asked to JUDGE which transcript.
+    const judged: Array<{ critic: string; sawSeat: string }> = [];
+    const client: ChatClient = async (req) => {
+      if (req.json) {
+        const prompt = req.messages.map((m) => m.content).join('\n');
+        judged.push({ critic: req.model, sawSeat: /attack the rat/.test(prompt) ? 'played' : 'played' });
+        return JSON.stringify({ alive: true, summary: 's', criteria: [{ id: 'ambush', met: true, evidence: 'e', turn: 1 }, { id: 'heat', met: true, evidence: 'e', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true });
+      }
+      const last = req.messages[req.messages.length - 1].content;
+      if (/Character name:/.test(last)) return 'Wanderer';
+      return 'look';
+    };
+
+    const results = await runAll(cfg, { label: 'jury', client, parallel: false });
+    for (const r of results) {
+      expect(r.panel).not.toBeNull();
+      // The jury is drawn from other families...
+      expect(r.panel!.jurors.map((j) => j.family)).not.toContain(r.seat.family);
+      // ...and it is the jury, not the author, that the report will quote.
+      expect(r.panel!.jurors.length).toBeGreaterThan(0);
+    }
+    // Both models were asked to judge, and each judged the OTHER's transcript.
+    expect(new Set(judged.map((j) => j.critic)).size).toBe(2);
+  }, 30000);
+
+  it('seats a juror that did not play — judging does not require having played', async () => {
+    const cfg = config(2);
+    const results = await runAll(cfg, { label: 'subset', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    // Only seat 'a' played, but 'beta' is still a configured family, so it can
+    // judge. A juror needs to be a different family, not a participant.
+    expect(results[0].panel!.jurors.map((j) => j.family)).toEqual(['beta']);
+  }, 30000);
+
+  it('reports no jury rather than self-judging when only one family is configured', async () => {
+    const one = validateConfig({
+      name: 'echo',
+      game: {
+        command: process.execPath, args: [FIXTURE],
+        promptPatterns: ['What do you do\\?\\s*$', 'Character name:\\s*$'],
+        promptQuietMs: 100, idleQuietMs: 1500, screenTimeoutMs: 10_000, quitInputs: ['quit'],
+      },
+      seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+      turns: 2,
+      persona: 'You are a curious wanderer who wants to see what the world does when poked.',
+      criteria: [{ id: 'ambush', check: 'an ambush headline appeared' }],
+      setup: [{ match: 'Character name:\\s*$', answer: 'Scripted' }],
+      runsDir,
+    }, runsDir);
+    const results = await runAll(one, { label: 'solo', client: fakeClient(['look', 'go nave']) });
+    // No other family exists, so there is no valid juror. The seat's own
+    // critique is kept as testimony and the report says it is self-judged.
+    expect(results[0].panel).toBeNull();
+    expect(results[0].critique).not.toBeNull();
+    const md = renderReport('echo', 'solo', [{
+      seat: results[0].seat, turnsPlayed: results[0].turnsPlayed, endedBy: results[0].endedBy,
+      error: null, critique: results[0].critique, critiqueError: null,
+      coverage: results[0].coverage, panel: results[0].panel,
+    }]);
+    expect(md).toContain('No cross-family jury');
+    expect(md).toContain('self-judged');
+  }, 30000);
+});

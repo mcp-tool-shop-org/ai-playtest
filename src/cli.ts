@@ -74,7 +74,7 @@ async function main(): Promise<void> {
     if (!flag(args, '--label')) fail(1, 'report needs --label', 'name the run to rebuild, e.g. --label phase9');
     const runDir = join(cfg.runsDir, label);
     if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label, or run the playtest first');
-    const path = await writeReport(cfg.name, runDir, label);
+    const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
     process.stdout.write(`wrote ${path}\n`);
     return;
   }
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
       onTurn: (seat, t) => process.stdout.write(`  [${seat.id}] t${t.turn} (${t.reason}, ${t.ms}ms) > ${t.input}\n`),
       onSeatDone: (r) => process.stdout.write(`  [${r.seat.id}] done: ${r.turnsPlayed} turns, ended by ${r.endedBy}${r.error ? ` (${r.error})` : ''}, critique ${r.critique ? (r.critique.alive ? 'ALIVE' : 'not alive') : `failed (${r.critiqueError})`}\n`),
     });
-    const path = await writeReport(cfg.name, join(cfg.runsDir, label), label);
+    const path = await writeReport(cfg.name, join(cfg.runsDir, label), label, cfg.criteria.map((c) => c.id));
     const failed = results.filter((r) => r.endedBy === 'error');
     process.stdout.write(`report: ${path}\n`);
     if (failed.length === results.length) fail(4, 'every seat failed', failed[0]?.error);

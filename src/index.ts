@@ -25,3 +25,7 @@ export type { StdioDriverOptions } from './stdio-driver.js';
 export { createDriver } from './run.js';
 export { validateDriver } from './config.js';
 export type { DriverConfig } from './config.js';
+export type { SetupStep } from './config.js';
+export { pickJurors, aggregatePanel } from './panel.js';
+export type { PanelVerdict } from './panel.js';
+export { ReportError } from './report.js';

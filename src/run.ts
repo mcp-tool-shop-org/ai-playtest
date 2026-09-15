@@ -12,6 +12,7 @@ import { createStdioDriver } from './stdio-driver.js';
 import { chooseInput, type TurnRecord } from './player.js';
 import { critique, type Critique } from './critic.js';
 import { computeCoverage, type Coverage } from './coverage.js';
+import { pickJurors, aggregatePanel, type PanelVerdict } from './panel.js';
 
 export type SeatResult = {
   seat: Seat;
@@ -24,6 +25,12 @@ export type SeatResult = {
   critiqueError?: string;
   /** How much of the game this session actually saw. Computed from the turn records. */
   coverage: Coverage;
+  /**
+   * The cross-family jury's reading of this transcript. Null when no other
+   * family was seated, in which case `critique` (the author's own reading) is
+   * all there is and the report says so.
+   */
+  panel: PanelVerdict | null;
   durationMs: number;
   dir: string;
 };
@@ -197,13 +204,27 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   // of the last input, the save recap, the crash output. Dropping every record
   // with no input made endings, stalls and crashes invisible to the verdict.
   const evidence = history.filter((h) => h.reason !== 'setup' && h.reason !== 'quit');
+  let panel: PanelVerdict | null = null;
   if (playerTurns.length > 0) {
+    const outcome = { endedBy, turnsPlayed: playerTurns.length, error };
+    // The author's own reading is kept, but as TESTIMONY -- a first-person
+    // account of where it was confused and what it tried. It is not the score.
     try {
-      crit = await critique(opts.client, seat.model, cfg.criteria, evidence, {
-        outcome: { endedBy, turnsPlayed: playerTurns.length, error },
-      });
+      crit = await critique(opts.client, seat.model, cfg.criteria, evidence, { outcome });
     } catch (err) {
       critiqueError = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    }
+    // The score comes from families that did not write this transcript.
+    const jurors = pickJurors(cfg.seats, seat, cfg.panelSize);
+    if (jurors.length > 0) {
+      const critiques = await Promise.all(jurors.map(async (juror) => {
+        try {
+          return { seat: juror, critique: await critique(opts.client, juror.model, cfg.criteria, evidence, { outcome }) };
+        } catch (err) {
+          return { seat: juror, critique: null, error: err instanceof Error ? `${err.name}: ${err.message}` : String(err) };
+        }
+      }));
+      panel = aggregatePanel(jurors, critiques, cfg.criteria);
     }
   } else {
     // A session where the player never moved used to produce a full, confident
@@ -216,6 +237,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   const result: SeatResult = {
     seat, label: opts.label, turnsPlayed: playerTurns.length, endedBy, error, history, critique: crit, critiqueError,
     coverage: computeCoverage(history),
+    panel,
     durationMs: Date.now() - started, dir,
   };
   await writeArtifacts(cfg, result, driver.diagnostics);
@@ -239,7 +261,7 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   await writeFile(join(r.dir, 'critique.json'), JSON.stringify(r.critique ?? { error: r.critiqueError ?? 'no turns played' }, null, 2) + '\n', 'utf8');
   await writeFile(join(r.dir, 'meta.json'), JSON.stringify({
     name: cfg.name, label: r.label, seat: r.seat, turns: cfg.turns, turnsPlayed: r.turnsPlayed, endedBy: r.endedBy,
-    error: r.error ?? null, critiqueError: r.critiqueError ?? null, coverage: r.coverage,
+    error: r.error ?? null, critiqueError: r.critiqueError ?? null, coverage: r.coverage, panel: r.panel,
     durationMs: r.durationMs, finishedAt: new Date().toISOString(),
   }, null, 2) + '\n', 'utf8');
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
@@ -265,6 +287,7 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
       error: r.reason instanceof Error ? `${r.reason.name}: ${r.reason.message}` : String(r.reason),
       history: [], critique: null, critiqueError: 'the seat threw before producing a critique',
       coverage: computeCoverage([]),
+      panel: null,
       durationMs: 0, dir: join(cfg.runsDir, opts.label, seat.id),
     });
   });
