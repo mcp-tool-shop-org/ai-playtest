@@ -13,9 +13,10 @@ playing the same forty turns tell you what the world does.
 ## Who judges
 
 The first thing to know, because it is the thing most such tools get wrong: **a
-seat never scores its own play.** Each transcript is judged by up to three seats
-from families that did not produce it, and the playing seat's own reading is kept
-as *testimony* — where it was confused, what it tried — never as the score.
+seat never scores its own play.** Each transcript is judged by one author-off
+seat by default (`panelSize`, raise it to flag disagreement — not to average a
+stronger score), and the playing seat's own reading is kept as *testimony* —
+where it was confused, what it tried — never as the score.
 
 That distinction is load-bearing. Most measured self-preference in LLM judges
 turns out to be competence rather than narcissism (only ~10.4% exceeds a
@@ -39,7 +40,8 @@ single judge (71.8%); cross-family φ was 0.389 vs same-family 0.437. At
 it (≤11% of the Condorcet gap). [Kim et al. 2025](https://arxiv.org/abs/2506.07962)
 found pairs agree ~60% of the time when both are wrong. So extra jurors are a
 disagreement flag, not a stronger score. **Budget moved from judges to runs.**
-`--runs 3` is the descriptive default; n=3 can never reach p<0.05 (floor
+`--runs 3` is descriptive, not a significance test; the CLI still defaults to
+one run so a smoke stays one shot. n=3 can never reach p<0.05 (floor
 `2/2^n` = 0.25). See `docs/research-2.md` §A and `docs/research-3.md`.
 
 That does **not** undo taking the author off its own jury, which rests on
@@ -254,6 +256,6 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-84 tests. `tsconfig.test.json` exists because the build config excludes test
+109 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
