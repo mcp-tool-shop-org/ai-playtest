@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { resolve } from 'node:path';
 import { createPtyDriver, type PtyDriverOptions } from '../src/pty-driver.js';
 import { stripAnsi } from '../src/stdio-game.js';
@@ -8,6 +8,8 @@ const TUI = resolve(__dirname, 'fixtures', 'tui-game.mjs');
 // node-pty is an optional dependency and ships no Linux prebuild, so on a
 // machine that could not build it these are skipped rather than failed -- the
 // pty driver is an optional capability and the suite should say so plainly.
+// A skip because node-pty is missing must still print why, so a Linux CI
+// without a prebuild is not a silent 0-test pty suite.
 let available = true;
 try {
   await import('node-pty');
@@ -15,8 +17,36 @@ try {
 } catch {
   available = false;
 }
+if (!available) {
+  console.info('pty driver tests skipped: node-pty or @xterm/headless failed to import (optional capability; install both to run ConPTY tests)');
+}
+
+// node-pty's conpty_console_list_agent.js prints `Error: AttachConsole failed`
+// (and a getConsoleProcessList stack) to the parent stderr. The suite is green;
+// grepping the vitest stream for /failed/i is not. process.stderr.write only
+// sees JS writes; ConPTY still inherits fd 2. CI greps must also filter:
+//   npm test 2>&1 | findstr /V /I AttachConsole
+const ATTACH_NOISE = /AttachConsole|conpty_console_list_agent|getConsoleProcessList/i;
+const origStderrWrite = process.stderr.write.bind(process.stderr);
 
 describe.skipIf(!available)('pty driver', () => {
+  beforeAll(() => {
+    process.stderr.write = ((chunk: unknown, encoding?: unknown, cb?: unknown) => {
+      const text = typeof chunk === 'string' ? chunk
+        : Buffer.isBuffer(chunk) ? chunk.toString('utf8')
+        : String(chunk);
+      if (ATTACH_NOISE.test(text)) {
+        if (typeof encoding === 'function') encoding();
+        else if (typeof cb === 'function') cb();
+        return true;
+      }
+      return origStderrWrite(chunk as never, encoding as never, cb as never);
+    }) as typeof process.stderr.write;
+  });
+  afterAll(() => {
+    process.stderr.write = origStderrWrite;
+  });
+
   async function drive() {
     return createPtyDriver({
       command: process.execPath,

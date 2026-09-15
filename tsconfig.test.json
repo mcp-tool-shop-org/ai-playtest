@@ -12,7 +12,9 @@
     // The base config sets rootDir to src/ for the build; nothing is emitted
     // here, so widen it to cover test/ as well.
     "rootDir": ".",
-    "types": ["node", "vitest/globals"]
+    // Tests import describe/it/expect from 'vitest'; vitest.config.ts does
+    // not set globals: true. Do not add vitest/globals unless both flip together.
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": []

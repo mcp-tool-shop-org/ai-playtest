@@ -2,9 +2,29 @@
 // how the player and critic are briefed, and how the runner tells "the game is
 // waiting for input" from "the game is still printing".
 
+import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
+
+/** Current playtest config schema. Unknown versions fail closed with a migration hint. */
+export const SCHEMA_VERSION = 1;
+
+function readOwnVersion(): string {
+  try {
+    const req = createRequire(import.meta.url);
+    const pkg = req('../package.json') as { name?: string; version?: string };
+    if (pkg.name === '@mcptoolshop/ai-playtest' && typeof pkg.version === 'string' && pkg.version.length > 0) {
+      return pkg.version;
+    }
+  } catch {
+    // dist/ vs src/, or a test running without the package.json sibling.
+  }
+  return '0.1.0';
+}
+
+/** Package version, stamped on reports and printed by --version. */
+export const VERSION = readOwnVersion();
 
 export type Seat = {
   /** Short id, used for the run directory (e.g. "mistral"). */
@@ -73,6 +93,8 @@ export type SetupStep = { match: string; answer: string };
 
 export type PlaytestConfig = {
   name: string;
+  /** Config schema this object was validated against. Omitted input is treated as current. */
+  schemaVersion: number;
   game: GameConfig;
   /** Which observation channel to use. Defaults to stdio, so existing configs are unaffected. */
   driver: DriverConfig;
@@ -137,6 +159,54 @@ function asNonEmptyString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function rejectUnknown(obj: Record<string, unknown>, allowed: readonly string[], where: string): void {
+  const unknown = Object.keys(obj).filter((k) => !allowed.includes(k));
+  if (unknown.length === 0) return;
+  throw new ConfigError(
+    `unknown ${where} key${unknown.length === 1 ? '' : 's'}: ${unknown.join(', ')}`,
+    `allowed: ${allowed.join(', ')}`,
+  );
+}
+
+function asPositiveInt(value: unknown, name: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    throw new ConfigError(`${name} must be a positive integer`, `got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+function asNonNegInt(value: unknown, name: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new ConfigError(`${name} must be an integer >= 0`, `got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+function asFiniteNumber(value: unknown, name: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new ConfigError(`${name} must be a finite number`, `got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+function asStringArray(value: unknown, name: string): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((s) => typeof s !== 'string')) {
+    throw new ConfigError(`${name} must be an array of strings`, `got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+function asRecord(value: unknown, name: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ConfigError(`${name} must be an object`, `got ${JSON.stringify(value)}`);
+  }
+  return value as Record<string, unknown>;
+}
+
 export function resolveEnv(env: Record<string, string> | undefined, source: NodeJS.ProcessEnv): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(env ?? {})) {
@@ -152,39 +222,93 @@ export function resolveEnv(env: Record<string, string> | undefined, source: Node
   return out;
 }
 
+const DRIVER_STDIO_KEYS = ['kind'] as const;
+const DRIVER_PTY_KEYS = ['kind', 'cols', 'rows', 'readySentinel'] as const;
+const DRIVER_RPC_KEYS = ['kind', 'host', 'port', 'connectTimeoutMs', 'requestTimeoutMs'] as const;
+
 export function validateDriver(raw: unknown): DriverConfig {
   if (raw === undefined || raw === null) return { kind: 'stdio' };
-  if (typeof raw !== 'object') throw new ConfigError('driver must be an object', 'e.g. { "kind": "pty" } or { "kind": "rpc", "port": 7777 }');
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new ConfigError('driver must be an object', 'e.g. { "kind": "pty" } or { "kind": "rpc", "port": 7777 }');
+  }
   const d = raw as Record<string, unknown>;
   const kind = d.kind;
-  if (kind === 'stdio' || kind === undefined) return { kind: 'stdio' };
+  if (kind === undefined) {
+    if ('port' in d) {
+      throw new ConfigError(
+        'driver has port but no kind',
+        'this looks like rpc — set { "kind": "rpc", "port": ... } rather than defaulting to stdio',
+      );
+    }
+    rejectUnknown(d, DRIVER_STDIO_KEYS, 'driver');
+    return { kind: 'stdio' };
+  }
+  if (kind === 'stdio') {
+    rejectUnknown(d, DRIVER_STDIO_KEYS, 'driver');
+    return { kind: 'stdio' };
+  }
   if (kind === 'pty') {
+    rejectUnknown(d, DRIVER_PTY_KEYS, 'driver');
+    const cols = asPositiveInt(d.cols, 'driver.cols');
+    const rows = asPositiveInt(d.rows, 'driver.rows');
+    if (d.readySentinel !== undefined && typeof d.readySentinel !== 'string') {
+      throw new ConfigError('driver.readySentinel must be a string', `got ${JSON.stringify(d.readySentinel)}`);
+    }
     return {
       kind: 'pty',
-      cols: typeof d.cols === 'number' ? d.cols : undefined,
-      rows: typeof d.rows === 'number' ? d.rows : undefined,
+      cols,
+      rows,
       readySentinel: typeof d.readySentinel === 'string' ? d.readySentinel : undefined,
     };
   }
   if (kind === 'rpc') {
+    rejectUnknown(d, DRIVER_RPC_KEYS, 'driver');
     if (typeof d.port !== 'number' || !Number.isInteger(d.port) || d.port <= 0 || d.port > 65535) {
       throw new ConfigError('driver.port must be a TCP port number', 'e.g. { "kind": "rpc", "port": 7777 } -- see docs/engine-bridge.md');
+    }
+    if (d.host !== undefined && (typeof d.host !== 'string' || d.host.trim().length === 0)) {
+      throw new ConfigError('driver.host must be a non-empty string', `got ${JSON.stringify(d.host)}`);
     }
     return {
       kind: 'rpc',
       host: typeof d.host === 'string' ? d.host : undefined,
       port: d.port,
-      connectTimeoutMs: typeof d.connectTimeoutMs === 'number' ? d.connectTimeoutMs : undefined,
-      requestTimeoutMs: typeof d.requestTimeoutMs === 'number' ? d.requestTimeoutMs : undefined,
+      connectTimeoutMs: asPositiveInt(d.connectTimeoutMs, 'driver.connectTimeoutMs'),
+      requestTimeoutMs: asPositiveInt(d.requestTimeoutMs, 'driver.requestTimeoutMs'),
     };
   }
   throw new ConfigError(`unknown driver kind "${String(kind)}"`, 'driver.kind must be one of: stdio, pty, rpc');
 }
 
+const CONFIG_KEYS = [
+  'name', 'schemaVersion', '$schema', 'game', 'driver', 'seats', 'turns', 'setup',
+  'persona', 'criteria', 'screenChars', 'playerMemoryTurns', 'runsDir',
+  'playerTemperature', 'panelSize', 'verifiers',
+] as const;
+const GAME_KEYS = [
+  'command', 'args', 'cwd', 'env', 'inheritEnv', 'promptPatterns',
+  'promptQuietMs', 'idleQuietMs', 'screenTimeoutMs', 'quitInputs',
+] as const;
+
+function readSchemaVersion(c: Record<string, unknown>): number {
+  if (c.schemaVersion === undefined) return SCHEMA_VERSION;
+  if (c.schemaVersion === SCHEMA_VERSION) return SCHEMA_VERSION;
+  throw new ConfigError(
+    `unsupported schemaVersion ${JSON.stringify(c.schemaVersion)}`,
+    `this tool reads schemaVersion ${SCHEMA_VERSION}; migrate the config (panelSize default is 1, not 3)`,
+  );
+}
+
 export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   if (!raw || typeof raw !== 'object') throw new ConfigError('config is not an object', 'the file must hold one JSON object');
-  const c = raw as Record<string, unknown>;
-  const game = c.game as Record<string, unknown> | undefined;
+  const c = asRecord(raw, 'config');
+  rejectUnknown(c, CONFIG_KEYS, 'config');
+  const schemaVersion = readSchemaVersion(c);
+  if (c.$schema !== undefined && typeof c.$schema !== 'string') {
+    throw new ConfigError('$schema must be a string URL when set', `got ${JSON.stringify(c.$schema)}`);
+  }
+  const game = c.game === undefined ? undefined : asRecord(c.game, 'game');
+  if (game) rejectUnknown(game, GAME_KEYS, 'game');
   if (!c.name || typeof c.name !== 'string') throw new ConfigError('name missing', 'give the playtest a name');
   const driver = validateDriver(c.driver);
   // The rpc driver attaches to an already-running game, so it needs no command
@@ -192,8 +316,17 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   // ready. Every other driver needs both.
   const spawnsGame = driver.kind !== 'rpc';
   if (spawnsGame) {
-    if (!game || typeof game.command !== 'string' || !Array.isArray(game.args)) throw new ConfigError('game.command / game.args missing', 'game.command is the executable, game.args its arguments');
-    if (!Array.isArray(game.promptPatterns) || game.promptPatterns.length === 0) throw new ConfigError('game.promptPatterns missing', 'list at least one regex that matches the game\'s input prompt');
+    const command = asNonEmptyString(game?.command);
+    const args = asStringArray(game?.args, 'game.args');
+    if (!command || !args) throw new ConfigError('game.command / game.args missing', 'game.command is the executable, game.args its arguments');
+    const patterns = asStringArray(game?.promptPatterns, 'game.promptPatterns');
+    if (!patterns || patterns.length === 0) throw new ConfigError('game.promptPatterns missing', 'list at least one regex that matches the game\'s input prompt');
+  } else if (game) {
+    if (game.args !== undefined) asStringArray(game.args, 'game.args');
+    if (game.promptPatterns !== undefined) asStringArray(game.promptPatterns, 'game.promptPatterns');
+    if (game.command !== undefined && typeof game.command !== 'string') {
+      throw new ConfigError('game.command must be a string', `got ${JSON.stringify(game.command)}`);
+    }
   }
   if (!Array.isArray(c.seats) || c.seats.length === 0) throw new ConfigError('seats missing', 'list at least one { id, family, model }');
   const families = new Set<string>();
@@ -245,61 +378,98 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   for (const p of ((game?.promptPatterns as string[]) ?? [])) {
     try { new RegExp(p); } catch { throw new ConfigError(`promptPattern ${p} is not a valid regex`, 'fix the pattern'); }
   }
+  if (c.setup !== undefined && !Array.isArray(c.setup)) {
+    throw new ConfigError('setup must be an array of { match, answer }', `got ${JSON.stringify(c.setup)}`);
+  }
   const setup = Array.isArray(c.setup) ? (c.setup as SetupStep[]) : [];
   for (const st of setup) {
     if (typeof st.match !== 'string' || typeof st.answer !== 'string') throw new ConfigError(`setup step ${JSON.stringify(st)} incomplete`, 'each setup step needs { match, answer }');
     try { new RegExp(st.match); } catch { throw new ConfigError(`setup match ${st.match} is not a valid regex`, 'fix the pattern'); }
   }
+  if (game?.cwd !== undefined && typeof game.cwd !== 'string') {
+    throw new ConfigError('game.cwd must be a string', `got ${JSON.stringify(game.cwd)}`);
+  }
+  if (game?.inheritEnv !== undefined && typeof game.inheritEnv !== 'boolean') {
+    throw new ConfigError('game.inheritEnv must be a boolean', `got ${JSON.stringify(game.inheritEnv)}`);
+  }
+  let env: Record<string, string> = {};
+  if (game?.env !== undefined) {
+    const rawEnv = asRecord(game.env, 'game.env');
+    for (const [k, v] of Object.entries(rawEnv)) {
+      if (typeof v !== 'string') throw new ConfigError(`game.env.${k} must be a string`, `got ${JSON.stringify(v)}`);
+      env[k] = v;
+    }
+  }
+  if (c.runsDir !== undefined && (typeof c.runsDir !== 'string' || c.runsDir.trim().length === 0)) {
+    throw new ConfigError('runsDir must be a non-empty string', `got ${JSON.stringify(c.runsDir)}`);
+  }
+  const quitInputs = asStringArray(game?.quitInputs, 'game.quitInputs') ?? DEFAULTS.game.quitInputs;
+  const promptPatterns = asStringArray(game?.promptPatterns, 'game.promptPatterns') ?? [];
+  const args = asStringArray(game?.args, 'game.args') ?? [];
   return {
-    name: c.name,
+    name: c.name as string,
+    schemaVersion,
     driver,
     game: {
-      command: (game?.command as string) ?? '',
-      args: (game?.args as string[]) ?? [],
-      cwd: typeof game?.cwd === 'string' ? resolve(baseDir, game.cwd as string) : baseDir,
-      env: (game?.env as Record<string, string>) ?? {},
+      command: asNonEmptyString(game?.command) ?? (typeof game?.command === 'string' ? game.command : ''),
+      args,
+      cwd: typeof game?.cwd === 'string' ? resolve(baseDir, game.cwd) : baseDir,
+      env,
       inheritEnv: game?.inheritEnv === true,
-      promptPatterns: (game?.promptPatterns as string[]) ?? [],
-      promptQuietMs: (game?.promptQuietMs as number) ?? DEFAULTS.game.promptQuietMs,
-      idleQuietMs: (game?.idleQuietMs as number) ?? DEFAULTS.game.idleQuietMs,
-      screenTimeoutMs: (game?.screenTimeoutMs as number) ?? DEFAULTS.game.screenTimeoutMs,
-      quitInputs: (game?.quitInputs as string[]) ?? DEFAULTS.game.quitInputs,
+      promptPatterns,
+      promptQuietMs: asPositiveInt(game?.promptQuietMs, 'game.promptQuietMs') ?? DEFAULTS.game.promptQuietMs,
+      idleQuietMs: asPositiveInt(game?.idleQuietMs, 'game.idleQuietMs') ?? DEFAULTS.game.idleQuietMs,
+      screenTimeoutMs: asPositiveInt(game?.screenTimeoutMs, 'game.screenTimeoutMs') ?? DEFAULTS.game.screenTimeoutMs,
+      quitInputs,
     },
     seats,
     setup,
-    turns: (c.turns as number) ?? DEFAULTS.turns,
-    persona: c.persona,
+    turns: asPositiveInt(c.turns, 'turns') ?? DEFAULTS.turns,
+    persona: c.persona as string,
     criteria,
-    screenChars: (c.screenChars as number) ?? DEFAULTS.screenChars,
-    playerMemoryTurns: (c.playerMemoryTurns as number) ?? DEFAULTS.playerMemoryTurns,
-    runsDir: resolve(baseDir, (c.runsDir as string) ?? DEFAULTS.runsDir),
-    playerTemperature: (c.playerTemperature as number) ?? DEFAULTS.playerTemperature,
-    panelSize: typeof c.panelSize === 'number' && c.panelSize >= 0 ? c.panelSize : DEFAULTS.panelSize,
+    screenChars: asPositiveInt(c.screenChars, 'screenChars') ?? DEFAULTS.screenChars,
+    playerMemoryTurns: asPositiveInt(c.playerMemoryTurns, 'playerMemoryTurns') ?? DEFAULTS.playerMemoryTurns,
+    runsDir: resolve(baseDir, (typeof c.runsDir === 'string' ? c.runsDir : DEFAULTS.runsDir)),
+    playerTemperature: asFiniteNumber(c.playerTemperature, 'playerTemperature') ?? DEFAULTS.playerTemperature,
+    panelSize: asNonNegInt(c.panelSize, 'panelSize') ?? DEFAULTS.panelSize,
     verifiers: validateVerifiers(c.verifiers),
   };
 }
 
-function strList(x: unknown): string[] {
-  return Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : [];
+function strList(x: unknown, name: string): string[] {
+  if (x === undefined) return [];
+  const arr = asStringArray(x, name);
+  return arr ?? [];
 }
+
+const VERIFIER_KEYS = [
+  'absorbingMinTurns', 'noProgressWindow', 'noOpVerbs',
+  'unparsed', 'refused', 'victory', 'death',
+  'entityNames', 'entitySkip',
+] as const;
 
 export function validateVerifiers(raw: unknown): VerifierConfig {
   if (raw === undefined || raw === null) return { ...DEFAULT_VERIFIERS };
-  if (typeof raw !== 'object') throw new ConfigError('verifiers must be an object', 'omit it to use empty regex lists and the occupancy defaults');
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new ConfigError('verifiers must be an object', 'omit it to use empty regex lists and the occupancy defaults');
+  }
   const v = raw as Record<string, unknown>;
+  rejectUnknown(v, VERIFIER_KEYS, 'verifiers');
   for (const key of ['unparsed', 'refused', 'victory', 'death'] as const) {
-    for (const src of strList(v[key])) {
+    for (const src of strList(v[key], `verifiers.${key}`)) {
       try { new RegExp(src); } catch { throw new ConfigError(`verifiers.${key} entry ${src} is not a valid regex`, 'fix the pattern'); }
     }
   }
   return {
-    absorbingMinTurns: typeof v.absorbingMinTurns === 'number' && v.absorbingMinTurns > 0 ? v.absorbingMinTurns : DEFAULT_VERIFIERS.absorbingMinTurns,
-    noProgressWindow: typeof v.noProgressWindow === 'number' && v.noProgressWindow > 1 ? v.noProgressWindow : DEFAULT_VERIFIERS.noProgressWindow,
-    noOpVerbs: strList(v.noOpVerbs),
-    unparsed: strList(v.unparsed),
-    refused: strList(v.refused),
-    victory: strList(v.victory),
-    death: strList(v.death),
+    absorbingMinTurns: asPositiveInt(v.absorbingMinTurns, 'verifiers.absorbingMinTurns') ?? DEFAULT_VERIFIERS.absorbingMinTurns,
+    noProgressWindow: asPositiveInt(v.noProgressWindow, 'verifiers.noProgressWindow') ?? DEFAULT_VERIFIERS.noProgressWindow,
+    noOpVerbs: strList(v.noOpVerbs, 'verifiers.noOpVerbs'),
+    unparsed: strList(v.unparsed, 'verifiers.unparsed'),
+    refused: strList(v.refused, 'verifiers.refused'),
+    victory: strList(v.victory, 'verifiers.victory'),
+    death: strList(v.death, 'verifiers.death'),
+    entityNames: strList(v.entityNames, 'verifiers.entityNames'),
+    entitySkip: strList(v.entitySkip, 'verifiers.entitySkip'),
   };
 }
 

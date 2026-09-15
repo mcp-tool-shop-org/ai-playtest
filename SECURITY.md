@@ -3,9 +3,9 @@
 ## Reporting a vulnerability
 
 Open a private security advisory on the repository
-(<https://github.com/mcp-tool-shop-org/ai-playtest/security/advisories/new>), or
-email the maintainer listed in `package.json`. Please do not open a public issue
-for an unpatched vulnerability. Expect an acknowledgement within a week.
+(<https://github.com/mcp-tool-shop-org/ai-playtest/security/advisories/new>).
+Please do not open a public issue for an unpatched vulnerability. Expect an
+acknowledgement within a week.
 
 ## Threat model
 

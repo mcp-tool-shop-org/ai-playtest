@@ -100,9 +100,37 @@ function entropy(items: string[]): number {
   return h;
 }
 
-/** Player turns only: scripted setup answers and the quit sequence are the runner's. */
+/** Player-chosen inputs only: scripted setup, the quit sequence, and empty consequence rows are the runner's. */
 export function playerTurns(history: TurnRecord[]): TurnRecord[] {
-  return history.filter((t) => t.input.length > 0 && t.reason !== 'setup' && t.reason !== 'quit');
+  return history.filter((t) => t.input.length > 0 && t.reason !== 'setup' && t.reason !== 'quit' && t.reason !== 'retry');
+}
+
+/**
+ * The empty-input row runSeat records after the last player command — the
+ * screen that command produced. playerTurns omits it (no chosen input) so
+ * turnsPlayed stays honest; novelty, self-loops, absorbing SCC and terminals
+ * still need that final state.
+ */
+export function lastConsequence(history: TurnRecord[]): TurnRecord | undefined {
+  let lastPlayer = -1;
+  for (let i = 0; i < history.length; i++) {
+    const t = history[i];
+    if (t.input.length > 0 && t.reason !== 'setup' && t.reason !== 'quit' && t.reason !== 'retry') lastPlayer = i;
+  }
+  if (lastPlayer < 0) return undefined;
+  for (let i = lastPlayer + 1; i < history.length; i++) {
+    const t = history[i];
+    if (t.reason === 'setup' || t.reason === 'quit' || t.reason === 'retry') continue;
+    if (t.input.length === 0) return t;
+  }
+  return undefined;
+}
+
+/** Player turns plus the trailing empty-input consequence, when there is one. */
+export function analysisTurns(history: TurnRecord[]): TurnRecord[] {
+  const turns = playerTurns(history);
+  const cons = lastConsequence(history);
+  return cons ? [...turns, cons] : turns;
 }
 
 export function computeCoverage(history: TurnRecord[]): Coverage {
@@ -116,14 +144,17 @@ export function computeCoverage(history: TurnRecord[]): Coverage {
     };
   }
 
-  const hashes = turns.map((t) => hash(normalizeScreen(t.screen)));
+  // Hash the pre-action screens AND the last command's result screen. Action
+  // metrics (repeat/loop/entropy) stay over chosen inputs only.
+  const states = analysisTurns(history);
+  const hashes = states.map((t) => hash(normalizeScreen(t.screen)));
   const seen = new Set<string>();
   let turnOfLastNovelState = 0;
   const novelByTurn: number[] = [];
   hashes.forEach((h, i) => {
     if (!seen.has(h)) {
       seen.add(h);
-      turnOfLastNovelState = i + 1;
+      turnOfLastNovelState = i < n ? i + 1 : n;
     }
     novelByTurn.push(seen.size);
   });
@@ -138,13 +169,14 @@ export function computeCoverage(history: TurnRecord[]): Coverage {
     if (inputs[i] === inputs[i - 2] && inputs[i - 1] === inputs[i - 3]) loops++;
   }
   // The screen did not change after this input: the game ignored it, or the
-  // action was a no-op. Distinct from repeating an action.
+  // action was a no-op. Distinct from repeating an action. The extra hash is
+  // the last command's result, so the final action is not invisible.
   let selfLoops = 0;
-  for (let i = 1; i < n; i++) if (hashes[i] === hashes[i - 1]) selfLoops++;
+  for (let i = 1; i < hashes.length; i++) if (hashes[i] === hashes[i - 1]) selfLoops++;
 
   const repeatRate = repeats / Math.max(1, n - 1);
   const loopRate = loops / n;
-  const selfLoopRate = selfLoops / Math.max(1, n - 1);
+  const selfLoopRate = selfLoops / Math.max(1, hashes.length - 1);
   const actionEntropy = entropy(inputs);
   const distinctActions = new Set(inputs).size;
 

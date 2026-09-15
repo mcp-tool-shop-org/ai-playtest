@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { validateConfig, resolveEnv, ConfigError, type GameConfig } from '../src/config.js';
-import { runAll, seatDir } from '../src/run.js';
-import { readRun, renderReport, writeReport, renderAggregateReport } from '../src/report.js';
+import { validateConfig, validateDriver, loadConfig, resolveEnv, ConfigError, type GameConfig, type PlaytestConfig } from '../src/config.js';
+import { runAll, seatDir, createDriver, type RunOptions } from '../src/run.js';
+import { readRun, renderReport, writeReport, renderAggregateReport, ReportError } from '../src/report.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
 import type { GameProcess, Screen } from '../src/stdio-game.js';
+import { createStdioDriver } from '../src/stdio-driver.js';
+import { PtyUnavailableError } from '../src/pty-driver.js';
 
 const FIXTURE = resolve(__dirname, 'fixtures', 'echo-game.mjs');
 let runsDir: string;
@@ -57,13 +59,18 @@ function fakeClient(script: string[]): ChatClient {
   };
 }
 
+/** Default 30s retry sleep would expire the 30s testTimeout on the first throw. */
+function play(cfg: PlaytestConfig, opts: RunOptions & { seats?: string[]; parallel?: boolean }) {
+  return runAll(cfg, { turnRetrySleepMs: 1, ...opts });
+}
+
 describe('runAll over the echo game', () => {
   it('plays N turns per seat in parallel, quits cleanly, critiques, and writes the artifacts + report', async () => {
     const cfg = config(4);
     // The name prompt is answered by the setup script (no turn spent); then
     // look / attack / ambush-me / go nave; the quit sequence ('quit') records
     // one more turn.
-    const results = await runAll(cfg, { label: 'lbl', client: fakeClient(['look', 'attack the rat', 'ambush-me', 'go nave']) });
+    const results = await play(cfg, { label: 'lbl', client: fakeClient(['look', 'attack the rat', 'ambush-me', 'go nave']) });
     expect(results).toHaveLength(2);
     for (const r of results) {
       expect(r.endedBy).toBe('turns');
@@ -97,7 +104,7 @@ describe('runAll over the echo game', () => {
 
   it('records a seat whose game exits early as ended by exit and still critiques the turns it played', async () => {
     const cfg = config(6);
-    const results = await runAll(cfg, { label: 'early', client: fakeClient(['look', 'quit']), seats: ['a'] });
+    const results = await play(cfg, { label: 'early', client: fakeClient(['look', 'quit']), seats: ['a'] });
     expect(results).toHaveLength(1);
     expect(results[0].endedBy).toBe('exit');
     // look, quit -- the second input ends the game before the budget (the
@@ -144,7 +151,7 @@ describe('runAll over the echo game', () => {
       criteria: [{ id: 'ambush', check: 'an ambush headline appeared' }],
       runsDir,
     }, runsDir);
-    const results = await runAll(cfg, { label: 'stallout', client: fakeClient(['look']), seats: ['a'] });
+    const results = await play(cfg, { label: 'stallout', client: fakeClient(['look']), seats: ['a'] });
     expect(results[0].endedBy).toBe('timeout');
     expect(results[0].history.some((h) => h.reason === 'timeout')).toBe(true);
     const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
@@ -176,18 +183,291 @@ describe('runAll over the echo game', () => {
       { text: 'Still the chapel.\n', reason: 'idle', exitCode: null },
       { text: 'Saved.\n', reason: 'exit', exitCode: 0 },
     ]);
-    const results = await runAll(cfg, { label: 'idlepath', client: fakeClient(['look', 'go nave']), seats: ['a'], spawn });
+    const results = await play(cfg, { label: 'idlepath', client: fakeClient(['look', 'go nave']), seats: ['a'], spawn });
     const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
     expect(transcript).toContain('(idle');
     expect(results[0].history.some((h) => h.reason === 'idle')).toBe(true);
   });
+
+  const promptThen = (then: Screen): Screen[] => [
+    { text: 'What do you do?\n', reason: 'prompt', exitCode: null },
+    then,
+  ];
+
+  it('ends by exit when an injected GameProcess reports exit, without spawning node', async () => {
+    const cfg = config(3);
+    const spawn = scriptedSpawn(promptThen({ text: 'Saved. Goodbye.\n', reason: 'exit', exitCode: 0 }));
+    const results = await play(cfg, { label: 'fake-exit', client: fakeClient(['look']), seats: ['a'], spawn });
+    expect(results[0].endedBy).toBe('exit');
+    expect(results[0].history.some((h) => h.reason === 'exit')).toBe(true);
+  });
+
+  it('ends by timeout when an injected GameProcess reports timeout, and still critiques', async () => {
+    // Gate: deleting `if (screen.reason === 'timeout') { endedBy = 'timeout'; ... break; }`
+    // makes this RED — the stall would be treated as a playable screen.
+    const cfg = config(3);
+    const spawn = scriptedSpawn([
+      { text: 'What do you do?\n', reason: 'prompt', exitCode: null },
+      { text: 'one line then silence\n', reason: 'timeout', exitCode: null },
+    ]);
+    const results = await play(cfg, { label: 'fake-timeout', client: fakeClient(['look']), seats: ['a'], spawn });
+    expect(results[0].endedBy).toBe('timeout');
+    const stalled = results[0].history.find((h) => h.reason === 'timeout');
+    expect(stalled).toBeDefined();
+    expect(stalled!.input).toBe('');
+    expect(results[0].critique).not.toBeNull();
+    const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
+    expect(transcript).toMatch(/screen \(timeout/);
+  });
+
+  it('ends by error when makeDriver throws, and still writes artifacts', async () => {
+    const cfg = config(2);
+    const results = await play(cfg, {
+      label: 'fake-error',
+      client: fakeClient(['look']),
+      seats: ['a'],
+      makeDriver: async () => { throw new Error('driver exploded'); },
+    });
+    expect(results[0].endedBy).toBe('error');
+    expect(results[0].error).toMatch(/driver exploded/);
+    const meta = JSON.parse(await readFile(join(results[0].dir, 'meta.json'), 'utf8'));
+    expect(meta.endedBy).toBe('error');
+  });
+
+  it('retries a throwing player client using the default turnRetries, then succeeds', async () => {
+    // Gate: changing `opts.turnRetries ?? 3` to `?? 0` makes this RED.
+    const cfg = config(2);
+    let n = 0;
+    const client: ChatClient = async (req) => {
+      if (req.json) {
+        return JSON.stringify({ alive: true, summary: 's', criteria: [{ id: 'ambush', met: true, evidence: 'e', turn: 1 }, { id: 'heat', met: true, evidence: 'e', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true });
+      }
+      n++;
+      if (n === 1) throw new Error('transient outage');
+      return 'look';
+    };
+    const spawn = scriptedSpawn([
+      { text: 'What do you do?\n', reason: 'prompt', exitCode: null },
+      { text: 'You look.\nWhat do you do?\n', reason: 'prompt', exitCode: null },
+      { text: 'Saved.\n', reason: 'exit', exitCode: 0 },
+    ]);
+    const results = await play(cfg, { label: 'retry-ok', client, seats: ['a'], spawn });
+    expect(results[0].endedBy).not.toBe('error');
+    expect(results[0].turnsPlayed).toBeGreaterThan(0);
+    expect(n).toBeGreaterThan(1);
+  });
+
+  it('retries a configured number of throws then succeeds', async () => {
+    const cfg = config(2);
+    let n = 0;
+    const client: ChatClient = async (req) => {
+      if (req.json) {
+        return JSON.stringify({ alive: true, summary: 's', criteria: [{ id: 'ambush', met: true, evidence: 'e', turn: 1 }, { id: 'heat', met: true, evidence: 'e', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true });
+      }
+      n++;
+      if (n <= 2) throw new Error(`transient ${n}`);
+      return 'look';
+    };
+    const spawn = scriptedSpawn([
+      { text: 'What do you do?\n', reason: 'prompt', exitCode: null },
+      { text: 'You look.\nWhat do you do?\n', reason: 'prompt', exitCode: null },
+      { text: 'Saved.\n', reason: 'exit', exitCode: 0 },
+    ]);
+    const results = await play(cfg, { label: 'retry-2', client, seats: ['a'], spawn, turnRetries: 2 });
+    expect(results[0].endedBy).not.toBe('error');
+    expect(n).toBeGreaterThan(2);
+  });
+
+  it('ends by error when the player client always throws, with critiqueError and artifacts', async () => {
+    const cfg = config(2);
+    const client: ChatClient = async () => { throw new Error('provider down'); };
+    const spawn = scriptedSpawn([{ text: 'What do you do?\n', reason: 'prompt', exitCode: null }]);
+    const results = await play(cfg, { label: 'always-throw', client, seats: ['a'], spawn, turnRetries: 1 });
+    expect(results[0].endedBy).toBe('error');
+    expect(results[0].critique).toBeNull();
+    expect(results[0].critiqueError).toMatch(/no player turns|provider down/);
+    const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
+    const meta = JSON.parse(await readFile(join(results[0].dir, 'meta.json'), 'utf8'));
+    expect(meta.endedBy).toBe('error');
+    expect(transcript).toContain('# ai-playtest transcript');
+  });
 });
+
+function rawConfig(over: Record<string, unknown> = {}): Record<string, unknown> {
+  const { game: gameOverRaw, ...rest } = over;
+  const gameOver = gameOverRaw && typeof gameOverRaw === 'object' && !Array.isArray(gameOverRaw)
+    ? (gameOverRaw as Record<string, unknown>)
+    : {};
+  return {
+    name: 't',
+    seats: [{ id: 'a', family: 'alpha', model: 'fake/m' }],
+    persona: 'You are a curious wanderer who looks around.',
+    criteria: [{ id: 'c', check: 'something happened' }],
+    ...rest,
+    game: { command: 'node', args: ['-e', ''], promptPatterns: ['>'], ...gameOver },
+  };
+}
 
 describe('config', () => {
   it('rejects two seats of one family and resolves $ENV values', () => {
     expect(() => validateConfig({ name: 'x', game: { command: 'node', args: [], promptPatterns: ['>'] }, seats: [{ id: 'a', family: 'f', model: 'm' }, { id: 'b', family: 'f', model: 'm2' }], persona: 'p'.repeat(30), criteria: [{ id: 'c', check: 'x' }] }, '/tmp')).toThrow(ConfigError);
     expect(resolveEnv({ KEY: '$MY_SECRET', PLAIN: 'v' }, { MY_SECRET: 's3' })).toEqual({ KEY: 's3', PLAIN: 'v' });
     expect(() => resolveEnv({ KEY: '$MISSING' }, {})).toThrow(ConfigError);
+  });
+
+  it.each([
+    [{ name: '' }, /name missing/],
+    [{ seats: [] }, /seats missing/],
+    [{ persona: 'short' }, /persona missing/],
+    [{ criteria: [] }, /criteria missing/],
+    [{ game: { promptPatterns: ['('] } }, /not a valid regex/],
+    [{ seats: [{ id: 'a', family: 'f', model: 'm' }, { id: 'b', family: 'f', model: 'm2' }] }, /family f seated twice/],
+  ] as Array<[Record<string, unknown>, RegExp]>)('rejects %j with a specific ConfigError', (over, msg) => {
+    expect(() => validateConfig(rawConfig(over), '/tmp')).toThrow(ConfigError);
+    try {
+      validateConfig(rawConfig(over), '/tmp');
+      throw new Error('expected ConfigError');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ConfigError);
+      expect((err as ConfigError).message).toMatch(msg);
+      expect((err as ConfigError).hint.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('wraps a missing file as ConfigError', async () => {
+    // Gate: deleting the loadConfig ENOENT catch (letting the raw error out)
+    // makes this RED — callers would see ENOENT instead of E_CONFIG.
+    await expect(loadConfig(join(runsDir, 'no-such-config.json'))).rejects.toMatchObject({
+      code: 'E_CONFIG',
+      message: expect.stringMatching(/cannot read/),
+    });
+  });
+
+  it('wraps malformed JSON as ConfigError', async () => {
+    const p = join(runsDir, 'bad.json');
+    await writeFile(p, '{not json', 'utf8');
+    await expect(loadConfig(p)).rejects.toMatchObject({
+      code: 'E_CONFIG',
+      message: expect.stringMatching(/not valid JSON/),
+    });
+  });
+
+  it('throws ReportError for a missing run directory', async () => {
+    await expect(readRun(join(runsDir, 'not-a-dir'))).rejects.toBeInstanceOf(ReportError);
+    await expect(readRun(join(runsDir, 'not-a-dir'))).rejects.toMatchObject({
+      code: 'E_REPORT',
+      message: expect.stringMatching(/no run directory/),
+    });
+  });
+});
+
+describe('validateDriver', () => {
+  it('defaults undefined to stdio and pty without size fields', () => {
+    expect(validateDriver(undefined)).toEqual({ kind: 'stdio' });
+    expect(validateDriver({ kind: 'pty' })).toEqual({ kind: 'pty', cols: undefined, rows: undefined, readySentinel: undefined });
+  });
+
+  it.each([
+    [{ kind: 'nope' }, /unknown driver kind/],
+    [{ kind: 'rpc', port: 0 }, /port/],
+    [{ kind: 'rpc', port: 70_000 }, /port/],
+    [{ kind: 'rpc', port: '7777' }, /port/],
+  ] as Array<[Record<string, unknown>, RegExp]>)('rejects %j', (raw, msg) => {
+    expect(() => validateDriver(raw)).toThrow(ConfigError);
+    expect(() => validateDriver(raw)).toThrow(msg);
+  });
+});
+
+describe('createDriver / createStdioDriver inject', () => {
+  it('createDriver builds a stdio driver by default', async () => {
+    const cfg = validateConfig(rawConfig({
+      game: { command: process.execPath, args: ['-e', 'process.exit(0)'], promptPatterns: ['>'] },
+    }), runsDir);
+    const d = await createDriver(cfg, {});
+    expect(d.modality).toBe('stdio');
+    await d.stop();
+  });
+
+  it('createDriver builds a pty driver or throws PtyUnavailableError', async () => {
+    const cfg = validateConfig(rawConfig({
+      driver: { kind: 'pty' },
+      game: { command: process.execPath, args: ['-e', 'process.exit(0)'], promptPatterns: ['>'] },
+    }), runsDir);
+    const origWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: unknown, encoding?: unknown, cb?: unknown) => {
+      const text = typeof chunk === 'string' ? chunk : Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+      if (/AttachConsole|conpty_console_list_agent|getConsoleProcessList/i.test(text)) {
+        if (typeof encoding === 'function') encoding();
+        else if (typeof cb === 'function') cb();
+        return true;
+      }
+      return origWrite(chunk as never, encoding as never, cb as never);
+    }) as typeof process.stderr.write;
+    try {
+      const d = await createDriver(cfg, {});
+      expect(d.modality).toBe('pty');
+      await d.stop();
+    } catch (err) {
+      expect(err).toBeInstanceOf(PtyUnavailableError);
+      expect((err as PtyUnavailableError).code).toBe('E_PTY_UNAVAILABLE');
+    } finally {
+      process.stderr.write = origWrite;
+    }
+  });
+
+  it('createStdioDriver forwards a choose action as the option id, not the label', async () => {
+    const sent: string[] = [];
+    const spawn = (): GameProcess => ({
+      send(line: string) { sent.push(line); },
+      async nextScreen() { return { text: 'menu', reason: 'prompt', exitCode: null }; },
+      kill() { /* scripted */ },
+      get exited() { return false; },
+      get exitCode() { return null; },
+      get stderr() { return ''; },
+      get spawnError() { return null; },
+    });
+    const d = createStdioDriver({
+      game: {
+        command: 'x', args: [], promptPatterns: ['>'],
+        promptQuietMs: 1, idleQuietMs: 2, screenTimeoutMs: 3, quitInputs: ['quit'],
+      },
+      env: {},
+      spawn,
+    });
+    await d.start();
+    await d.step({ kind: 'choose', id: '1' });
+    expect(sent).toEqual(['1']);
+    await d.stop();
+  });
+
+  it('createStdioDriver spawn inject covers exit, timeout, and idle without a child', async () => {
+    const screens: Screen[] = [
+      { text: 'go', reason: 'idle', exitCode: null },
+      { text: 'stall', reason: 'timeout', exitCode: null },
+      { text: 'bye', reason: 'exit', exitCode: 0 },
+    ];
+    let i = 0;
+    const spawn = (): GameProcess => ({
+      send() { /* scripted */ },
+      async nextScreen() { return screens[Math.min(i++, screens.length - 1)]; },
+      kill() { /* scripted */ },
+      get exited() { return i >= screens.length; },
+      get exitCode() { return 0; },
+      get stderr() { return ''; },
+      get spawnError() { return null; },
+    });
+    const d = createStdioDriver({
+      game: {
+        command: 'x', args: [], promptPatterns: ['>'],
+        promptQuietMs: 1, idleQuietMs: 2, screenTimeoutMs: 3, quitInputs: ['quit'],
+      },
+      env: {},
+      spawn,
+    });
+    expect((await d.start()).reason).toBe('idle');
+    expect((await d.step({ kind: 'line', line: 'look' })).reason).toBe('timeout');
+    expect((await d.step({ kind: 'line', line: 'look' })).reason).toBe('exit');
+    await d.stop();
   });
 });
 
@@ -283,19 +563,30 @@ describe('run safety', () => {
   });
 
   it('does not report a confident verdict for a run where the player never moved', async () => {
-    const cfg = config(0);
-    const results = await runAll(cfg, { label: 'zeroturn', client: fakeClient(['look']), seats: ['a'] });
+    const cfg = config(1);
+    const results = await play(cfg, {
+      label: 'zeroturn',
+      client: fakeClient(['look']),
+      seats: ['a'],
+      makeDriver: async () => ({
+        modality: 'stdio',
+        async start() { return { text: '', reason: 'exit' as const, done: true, exitCode: 0 }; },
+        async step() { return { text: '', reason: 'exit' as const, done: true, exitCode: 0 }; },
+        async stop() { /* noop */ },
+        diagnostics: '',
+      }),
+    });
     // Previously: zero iterations, endedBy stayed 'turns' (a success status),
     // and the critic judged a transcript containing only the quit input.
     expect(results[0].turnsPlayed).toBe(0);
-    expect(results[0].endedBy).toBe('error');
+    expect(results[0].endedBy).toBe('exit');
     expect(results[0].critique).toBeNull();
     expect(results[0].critiqueError).toMatch(/no player turns/);
   });
 
   it('keeps the runner\'s own quit input out of the player\'s turn count', async () => {
     const cfg = config(2);
-    const results = await runAll(cfg, { label: 'quitcount', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    const results = await play(cfg, { label: 'quitcount', client: fakeClient(['look', 'go nave']), seats: ['a'] });
     expect(results[0].turnsPlayed).toBe(2);
     expect(results[0].history.some((h) => h.reason === 'quit')).toBe(true);
   });
@@ -317,7 +608,7 @@ describe('cross-family jury', () => {
       return 'look';
     };
 
-    const results = await runAll(cfg, { label: 'jury', client, parallel: false });
+    const results = await play(cfg, { label: 'jury', client, parallel: false });
     for (const r of results) {
       expect(r.panel).not.toBeNull();
       // The jury is drawn from other families...
@@ -331,7 +622,7 @@ describe('cross-family jury', () => {
 
   it('seats a juror that did not play — judging does not require having played', async () => {
     const cfg = config(2);
-    const results = await runAll(cfg, { label: 'subset', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    const results = await play(cfg, { label: 'subset', client: fakeClient(['look', 'go nave']), seats: ['a'] });
     // Only seat 'a' played, but 'beta' is still a configured family, so it can
     // judge. A juror needs to be a different family, not a participant.
     expect(results[0].panel!.jurors.map((j) => j.family)).toEqual(['beta']);
@@ -352,7 +643,7 @@ describe('cross-family jury', () => {
       setup: [{ match: 'Character name:\\s*$', answer: 'Scripted' }],
       runsDir,
     }, runsDir);
-    const results = await runAll(one, { label: 'solo', client: fakeClient(['look', 'go nave']) });
+    const results = await play(one, { label: 'solo', client: fakeClient(['look', 'go nave']) });
     // No other family exists, so there is no valid juror. The seat's own
     // critique is kept as testimony and the report says it is self-judged.
     expect(results[0].panel).toBeNull();

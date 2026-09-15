@@ -16,7 +16,7 @@
 //      the jury. The entity-appearance grid is packaged as leads, not a verdict.
 
 import { createHash } from 'node:crypto';
-import { normalizeScreen, playerTurns } from './coverage.js';
+import { normalizeScreen, analysisTurns } from './coverage.js';
 import type { TurnRecord } from './player.js';
 
 export type VerifierConfig = {
@@ -34,6 +34,14 @@ export type VerifierConfig = {
   victory: string[];
   /** Regex sources: a death / game-over screen. Empty = unused. */
   death: string[];
+  /**
+   * Operator-taught entity lexicon (regex sources). Non-English names and
+   * titled NPCs live here; the capitalized-token scan is the last-resort
+   * fallback and stays high-FP.
+   */
+  entityNames?: string[];
+  /** Extra tokens to skip in the capitalized-token fallback (merged with the defaults). */
+  entitySkip?: string[];
 };
 
 export const DEFAULT_VERIFIERS: VerifierConfig = {
@@ -44,6 +52,8 @@ export const DEFAULT_VERIFIERS: VerifierConfig = {
   refused: [],
   victory: [],
   death: [],
+  entityNames: [],
+  entitySkip: [],
 };
 
 export type AbsorbingHit = {
@@ -299,34 +309,63 @@ export function detectNoProgress(turns: TurnRecord[], window: number, noOpVerbs:
   return collapsed;
 }
 
+const DEFAULT_ENTITY_SKIP = ['The', 'You', 'What', 'HP', 'Turn', 'Exits', 'Hostiles', 'Location', 'Saved', 'Character'];
+
+function recordToken(map: Map<string, number[]>, token: string, turn: number, seen: Set<string>): void {
+  if (!token || seen.has(token)) return;
+  seen.add(token);
+  const arr = map.get(token) ?? [];
+  if (arr[arr.length - 1] === turn) return;
+  arr.push(turn);
+  map.set(token, arr);
+}
+
 /**
  * Capitalized-token appearance grid. Ships as evidence, not a verdict.
  * FP rate is high with the capitalized-token fallback -- frame as leads.
+ * Operator-supplied entityNames are scanned first; the English capitalised
+ * fallback runs last and still skips entitySkip plus the built-in list.
  */
-export function entityAppearanceGrid(turns: TurnRecord[]): EntityLead[] {
+export function entityAppearanceGrid(
+  turns: TurnRecord[],
+  cfg: Pick<VerifierConfig, 'entityNames' | 'entitySkip'> = {},
+): EntityLead[] {
   const tokenTurns = new Map<string, number[]>();
-  const skip = new Set(['The', 'You', 'What', 'HP', 'Turn', 'Exits', 'Hostiles', 'Location', 'Saved', 'Character']);
+  const skip = new Set(DEFAULT_ENTITY_SKIP);
+  for (const s of cfg.entitySkip ?? []) if (s) skip.add(s);
+
+  const named = cfg.entityNames ?? [];
+  for (const src of named) {
+    let re: RegExp;
+    try { re = new RegExp(src, 'gu'); } catch { continue; }
+    for (const t of turns) {
+      const seen = new Set<string>();
+      const matches = t.screen.match(re) ?? [];
+      for (const raw of matches) recordToken(tokenTurns, raw, t.turn, seen);
+    }
+  }
+
   for (const t of turns) {
     const tokens = t.screen.match(/\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?\b/g) ?? [];
     const seen = new Set<string>();
     for (const raw of tokens) {
       if (skip.has(raw.split(/\s+/)[0] ?? '')) continue;
-      if (seen.has(raw)) continue;
-      seen.add(raw);
-      const arr = tokenTurns.get(raw) ?? [];
-      arr.push(t.turn);
-      tokenTurns.set(raw, arr);
+      recordToken(tokenTurns, raw, t.turn, seen);
     }
   }
   const leads: EntityLead[] = [];
   const maxTurn = turns[turns.length - 1]?.turn ?? 0;
   for (const [token, ts] of tokenTurns) {
+    const taught = named.length > 0 && named.some((src) => {
+      try { return new RegExp(src, 'u').test(token); } catch { return src === token; }
+    });
+    const source = taught ? 'operator lexicon' : 'capitalized-token fallback';
     if (ts.length === 1 && maxTurn - ts[0] >= 4) {
       leads.push({
         token,
         pattern: 'singleton',
         turns: ts,
-        note: `appeared once at t${ts[0]} and never again -- capitalized-token fallback, a lead for the jury, not a fact`,
+        note: `appeared once at t${ts[0]} and never again -- ${source}, a lead for the jury, not a fact`,
       });
       continue;
     }
@@ -346,7 +385,7 @@ export function entityAppearanceGrid(turns: TurnRecord[]): EntityLead[] {
 }
 
 export function runVerifiers(history: TurnRecord[], cfg: VerifierConfig = DEFAULT_VERIFIERS): VerifierReport {
-  const turns = playerTurns(history);
+  const turns = analysisTurns(history);
   const absorbing = detectAbsorbing(turns, cfg.absorbingMinTurns);
   return {
     absorbing,
@@ -354,7 +393,7 @@ export function runVerifiers(history: TurnRecord[], cfg: VerifierConfig = DEFAUL
     parser: classifyParser(turns, cfg),
     terminal: detectTerminal(turns, cfg, absorbing),
     noProgress: detectNoProgress(turns, cfg.noProgressWindow, cfg.noOpVerbs),
-    entityLeads: entityAppearanceGrid(turns),
+    entityLeads: entityAppearanceGrid(turns, cfg),
   };
 }
 

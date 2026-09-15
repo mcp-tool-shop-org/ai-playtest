@@ -160,9 +160,12 @@ export function summarizeRuns(
 ): RunStats {
   const minP = minSignFlipP(n);
   const descriptiveOnly = n < FIRST_INFERENTIAL_N;
+  const inferentialTail = `Still report Beta(s+1,n-s+1) mean (s+1)/(n+2) -- ${n}/${n} shrinks to ${(n + 1) / (n + 2)}, not 100%. Do not decide pass/fail from p alone.`;
   const warning = descriptiveOnly
     ? `n=${n} is DESCRIPTIVE, not a significance test. Exact two-sided sign-flip permutation p cannot fall below 2/2^n = ${minP}. n=${n} can never reach p<0.05 (first n that can is ${FIRST_INFERENTIAL_N}, where 2/2^${FIRST_INFERENTIAL_N}=${minSignFlipP(FIRST_INFERENTIAL_N)}). Do not bootstrap this n. ${n}/${n} is not 100%: Beta(s+1,n-s+1) mean (s+1)/(n+2). No p-value.`
-    : `n=${n} is the first n where a two-sided sign-flip permutation can reach p<0.05 (floor 2/2^n=${minP}). Still report Beta(s+1,n-s+1) mean (s+1)/(n+2) -- ${n}/${n} shrinks to ${(n + 1) / (n + 2)}, not 100%. Do not decide pass/fail from p alone.`;
+    : n === FIRST_INFERENTIAL_N
+      ? `n=${n} is the first n where a two-sided sign-flip permutation can reach p<0.05 (floor 2/2^n=${minP}). ${inferentialTail}`
+      : `n=${n} can reach p<0.05 (floor 2/2^n=${minP}). ${inferentialTail}`;
   return {
     n,
     minP,

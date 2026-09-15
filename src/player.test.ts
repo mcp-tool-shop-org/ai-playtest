@@ -8,6 +8,17 @@ describe('sanitizeInput', () => {
     expect(sanitizeInput('```\ngo north\n```')).toBe('go north');
     expect(sanitizeInput('> talk to the pilgrim')).toBe('talk to the pilgrim');
   });
+  // Gate: deleting `.replace(/^\[[A-Z]+\]\s*/, '')` makes '[ACTION] go north' RED.
+  // Gate: deleting the single-quote / backtick wrap clause makes those rows RED.
+  it.each([
+    ['[ACTION] go north', 'go north'],
+    ["'go north'", 'go north'],
+    ['`go north`', 'go north'],
+    ["'go north", "'go north"],
+    ['```javascript\ngo north\n```', 'go north'],
+  ] as const)('maps %j to %j so a clause cannot be deleted silently', (input, expected) => {
+    expect(sanitizeInput(input)).toBe(expected);
+  });
   it('takes the first non-empty line of a multi-line answer', () => {
     expect(sanitizeInput('\n\nlook\nI think this is wise.')).toBe('look');
   });

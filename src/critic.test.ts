@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseCritique, renderTranscript, critique, buildCriticPrompt, CritiqueError } from './critic.js';
-import type { ChatClient } from './openrouter.js';
+import type { ChatClient, ChatRequest } from './openrouter.js';
 
 const CRITERIA = [
   { id: 'ambush', check: 'an ambush headline appeared on a zone entry' },
@@ -35,16 +35,46 @@ describe('renderTranscript', () => {
 });
 
 describe('critique', () => {
+  const history = [{ turn: 1, screen: 's', input: 'look', reason: 'prompt', ms: 1 }];
+
   it('retries once when the first answer is not JSON', async () => {
     let calls = 0;
     const client: ChatClient = async () => {
       calls++;
       return calls === 1 ? 'I cannot answer in JSON.' : '{"alive": false, "summary": "flat", "criteria": [], "highlights": [], "deadSpots": ["t2 nothing happened"], "confusions": [], "wouldPlayAgain": false}';
     };
-    const c = await critique(client, 'fake/model', CRITERIA, [{ turn: 1, screen: 's', input: 'look', reason: 'prompt', ms: 1 }]);
+    const c = await critique(client, 'fake/model', CRITERIA, history);
     expect(calls).toBe(2);
     expect(c.alive).toBe(false);
     expect(c.deadSpots).toEqual(['t2 nothing happened']);
+  });
+
+  it('requests maxTokens >= 6000, temperature 0, json true, and retries with the parse error', async () => {
+    // Gate: changing maxTokens 6000 -> 1800 makes this RED (claude-rpg overflow budget).
+    const reqs: ChatRequest[] = [];
+    const client: ChatClient = async (req) => {
+      reqs.push(req);
+      return reqs.length === 1
+        ? 'I cannot answer in JSON.'
+        : '{"alive": false, "summary": "flat", "criteria": [], "highlights": [], "deadSpots": ["t2 nothing happened"], "confusions": [], "wouldPlayAgain": false}';
+    };
+    await critique(client, 'fake/model', CRITERIA, history);
+    expect(reqs).toHaveLength(2);
+    for (const req of reqs) {
+      expect(req.maxTokens).toBeGreaterThanOrEqual(6000);
+      expect(req.temperature).toBe(0);
+      expect(req.json).toBe(true);
+    }
+    expect(reqs[1].messages[1].content).toContain('no JSON object in critique');
+  });
+
+  it('throws the last CritiqueError when both attempts fail', async () => {
+    const client: ChatClient = async () => 'still not a JSON object';
+    await expect(critique(client, 'fake/model', CRITERIA, history)).rejects.toSatisfy((err: unknown) => {
+      expect(err).toBeInstanceOf(CritiqueError);
+      expect((err as CritiqueError).message).toMatch(/no JSON object in critique/);
+      return true;
+    });
   });
 });
 

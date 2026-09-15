@@ -110,8 +110,14 @@ below sets it first, for that reason.
 
 ## Godot 4 — the whole thing
 
-Add this as an autoload and you are done. Guard it behind a flag so it never
-ships to players.
+Add this as an autoload, then fill in the four stubs marked yours
+(`_observation`, `_apply`, `is_ready_for_input`, `_reset`). Guard it behind a
+flag so it never ships to players.
+
+The sample keeps **one** `_peer`. It is a single-client paste. `ai-playtest`
+does send `reset` as of swarm #2, but `runAll` still defaults to **parallel
+seats** — N RPC seats against one TCP game will contend. Use `--serial`, or
+launch one game process per seat, until you multiplex.
 
 > **Read the four notes under the listing before you paste it.** Three of them
 > are the difference between a bridge that works and one that silently never
@@ -254,11 +260,27 @@ func _apply(action: Dictionary) -> void:
     match action.get("kind", ""):
         "choose": Encounter.choose(action.get("id", ""))
         "line":   Parser.submit(action.get("line", ""))
-        "key":    Input.parse_input_event(_key_event(action.get("key", "")))
+        "key":
+            var ev := _key_event(action.get("key", ""))
+            if ev:
+                Input.parse_input_event(ev)
+
+func is_ready_for_input() -> bool:
+    return not Encounter.in_resolution()
+
+func _reset() -> void:
+    GameState.reload()
+
+func _key_event(key: String) -> InputEventKey:
+    var ev := InputEventKey.new()
+    ev.keycode = OS.find_keycode_from_string(key)
+    ev.pressed = true
+    return ev
 ```
 
-`_observation()`, `_apply()` and `is_ready_for_input()` are the only parts that
-are yours. Everything above them is boilerplate you can paste unchanged.
+`_observation()`, `_apply()`, `is_ready_for_input()` and `_reset()` are the
+parts that are yours. Everything above them is boilerplate you can paste
+unchanged. The sample is one client; see the warning above the listing.
 
 **Under `--headless` there is no display server**, so `get_viewport().get_texture()`
 returns nothing and the `image` field is unavailable. Text and state are
