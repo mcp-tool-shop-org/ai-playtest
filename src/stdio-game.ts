@@ -17,16 +17,21 @@ import type { GameConfig } from './config.js';
 //
 // Order matters: the string-terminated forms (OSC, DCS/SOS/PM/APC) are matched
 // before CSI so a long payload cannot be mis-lexed by a shorter alternative.
-const OSC = /\][^]*(?:|\\)?/g;
-const DCS = /[PX^_][^]*(?:\\)?/g;
-const CSI = /(?:\[|)[0-?]*[ -/]*[@-~]/g;
+//
+// These patterns MUST be written with \u escapes (or fromCharCode / a shared
+// ESC/BEL constant). Literal U+001B / U+0007 / C1 bytes are invisible in
+// editors and review UIs; a well-meaning cleanup of "garbled" regexes would
+// drop them and the OSC branch would truncate at the first ']'.
+const OSC = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
+const DCS = /\u001b[PX^_][^\u001b]*(?:\u001b\\)?/g;
+const CSI = /(?:\u001b\[|\u009b)[0-?]*[ -/]*[@-~]/g;
 // ESC + optional intermediates (0x20-0x2F) + a final byte (0x30-0x7E). This is
 // every remaining two-or-three-character escape once OSC, DCS and CSI have been
 // consumed above: ESC 7 / ESC 8 (DECSC/DECRC), ESC = / ESC >, ESC c, and
 // charset selections like ESC ( B. An earlier form only covered 0x40-0x5F, so
 // ESC 7 and ESC 8 kept their ESC byte and leaked it into the player's context.
-const ESC2 = /[ -/]*[0-~]/g;
-const C1 = /[]/g;
+const ESC2 = /\u001b[ -/]*[0-~]/g;
+const C1 = /[\u001b\u009b\u009c\u009d]/g;
 
 /**
  * Apply carriage returns within each line: `\r` returns to column 0 and later

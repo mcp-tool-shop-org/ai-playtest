@@ -15,7 +15,17 @@ Newline-delimited JSON over TCP. No dependency on either side: Godot has
 `StreamPeerTCP` and `JSON` in core, Unreal has `FSocket` and `FJsonSerializer`,
 and everything else has a socket. Request/response, one message per line.
 
-The harness sends:
+> **What `src/rpc-driver.ts` actually speaks today:** `observe` on start,
+> `act` with `{kind:"line", line}` on every turn (including setup and quit),
+> and `quit` on stop. It does **not** yet send `hello` or `reset`, and it does
+> not consume `actions` / `state` or typed `done` reasons (`win`/`lose`/`quit`/
+> `stuck`). The listing below is the protocol to implement toward, not a
+> description of the current driver. Illegal-action rejection and hp/room
+> citations in the report are likewise not wired; `run.ts` never reads
+> `Observation.actions` or `Observation.state`. Closing that gap is the next
+> engine-wiring slice.
+
+The harness *will* send (protocol v1; driver is catching up):
 
 ```json
 {"id":0,"method":"hello","params":{"protocol":1}}

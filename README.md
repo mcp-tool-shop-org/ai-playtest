@@ -13,9 +13,10 @@ playing the same forty turns tell you what the world does.
 ## Who judges
 
 The first thing to know, because it is the thing most such tools get wrong: **a
-seat never scores its own play.** Each transcript is judged by up to three seats
-from families that did not produce it, and the playing seat's own reading is kept
-as *testimony* — where it was confused, what it tried — never as the score.
+seat never scores its own play.** Each transcript is judged by one author-off
+seat by default (`panelSize`, raise it to flag disagreement — not to average a
+stronger score), and the playing seat's own reading is kept as *testimony* —
+where it was confused, what it tried — never as the score.
 
 That distinction is load-bearing. Most measured self-preference in LLM judges
 turns out to be competence rather than narcissism (only ~10.4% exceeds a
@@ -27,24 +28,24 @@ lowers accuracy where an external verifier raises it: Game-of-24 goes 5% → 3%
 self-critiqued and → 38% with a sound verifier ([Stechly et al.
 2024](https://arxiv.org/abs/2402.08115)).
 
-A panel rather than a single strong judge, because a panel of cheaper
-heterogeneous judges measures closer to humans and costs 7–8× less — κ 0.763 vs
-0.627 ([Verga et al. 2024](https://arxiv.org/abs/2404.18796)) — and because
-"use multiple evaluators" is the standing remedy for the evaluator effect, where
-only 20% of 93 problems were found by every evaluator and 46% by a single one
-(Hertzum & Jacobsen 2003).
+The default is **one author-off judge**, not a three-judge panel. [Verga et al.
+2024](https://arxiv.org/abs/2404.18796) (PoLL) showed a cheap heterogeneous
+panel beating GPT-4 on human agreement at 7–8× lower cost (κ 0.763 vs 0.627) —
+that is an argument against paying for one *large* judge, not an argument that
+three families yield three independent votes. [Kohli
+2026](https://arxiv.org/abs/2605.29800) measured nine judges across seven
+families at Kish **n_eff = 2.18**; the panel (72.0%) did *not* beat the best
+single judge (71.8%); cross-family φ was 0.389 vs same-family 0.437. At
+`panelSize: 3` that is **≈1.68 independent votes**. Dawid–Skene does not rescue
+it (≤11% of the Condorcet gap). [Kim et al. 2025](https://arxiv.org/abs/2506.07962)
+found pairs agree ~60% of the time when both are wrong. So extra jurors are a
+disagreement flag, not a stronger score. **Budget moved from judges to runs.**
+`--runs 3` is descriptive, not a significance test; the CLI still defaults to
+one run so a smoke stays one shot. n=3 can never reach p<0.05 (floor
+`2/2^n` = 0.25). See `docs/research-2.md` §A and `docs/research-3.md`.
 
-> **Contested, and worth knowing before you trust the panel size.** [Kohli
-> 2026](https://arxiv.org/abs/2605.29800) measured nine judges across seven
-> families at a Kish effective sample size of **2.18**, found the panel (72.0%)
-> did *not* beat the best single judge (71.8%), and — most relevant here —
-> found **cross-family diversity buys almost nothing**: mean pairwise φ of 0.389
-> across families vs 0.437 within one. A 3-judge cross-family panel is worth
-> roughly **1.68 independent votes**. That does not undo the case for taking the
-> author off its own jury, which rests on different evidence entirely. It does
-> undercut the idea that *family diversity* purchases independence, and it
-> suggests budget is better spent on more RUNS than more judges. Unresolved;
-> see `docs/research-2.md`.
+That does **not** undo taking the author off its own jury, which rests on
+Panickssery / Stechly / Huang.
 
 **Disagreement is reported, not averaged away.** A split verdict usually means
 the *criterion* is under-specified, not that the game is ambiguous, so splits are
@@ -53,8 +54,8 @@ marked with their count and each seat's dispersion is surfaced.
 Seat only one family and there is no valid juror. The tool does not quietly hand
 the transcript back to its author — it forms no jury, and the report says the
 verdict is self-judged and why that is weak. Config validation still refuses to
-seat two players from one family: family diversity is what makes a jury possible
-([Panickssery et al. 2024](https://arxiv.org/abs/2404.13076)).
+seat two players from one family: a second family is what makes an author-off
+jury possible ([Panickssery et al. 2024](https://arxiv.org/abs/2404.13076)).
 
 ## Drivers — how the game is observed
 
@@ -153,11 +154,16 @@ dead spots and confusions as leads to check, not as findings.
    `quit`). Those are the *runner's* inputs: they are excluded from the turn
    count and from the evidence, while the terminal screens they produce are kept
    — a crash or a save recap is evidence.
-5. **The jury** — seats from other families, temperature 0 — judge the transcript
-   against `criteria[]` and return per-criterion met / evidence / turn, an alive
-   verdict, highlights, dead spots, confusions.
-6. **The report** aggregates: criteria by family with agreement marked, coverage
-   per seat, and every dead spot and confusion named with the seat that found it.
+5. **The jury** — one author-off seat by default, temperature 0 — judges the
+   transcript against `criteria[]`. Extra jurors (if `panelSize` > 1) flag
+   disagreement; they are not averaged into a stronger score. The playing
+   seat's own reading is testimony.
+6. **Deterministic checks** run on the turn records: absorbing-SCC (Tarjan, never
+   labelled a trap), ignored-input attribution, optional parser/victory/death
+   regexes, no-progress windows, entity-appearance leads.
+7. **The report** aggregates: criteria by family with juror splits marked,
+   coverage as a sampling qualifier, the verifier block, and every dead spot
+   and confusion named — jury findings first, author testimony kept.
 
 Artifacts per seat under `<runsDir>/<label>/<seat>/`: `transcript.txt`,
 `critique.json`, `meta.json`, `stderr.txt` (when the game wrote any).
@@ -170,6 +176,7 @@ export OPENROUTER_API_KEY=...
 npm run build
 node dist/cli.js run path/to/game.playtest.json --label phase9
 node dist/cli.js run path/to/game.playtest.json --label smoke --seats mistral --turns 8
+node dist/cli.js run path/to/game.playtest.json --label compare --runs 3   # descriptive; cannot reach p<0.05
 node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md from disk
 ```
 
@@ -190,7 +197,8 @@ Errors print `error:` and `hint:`.
 | `game.promptQuietMs` / `idleQuietMs` / `screenTimeoutMs` | the waiting rule |
 | `game.quitInputs` | lines sent after the last turn |
 | `seats[]` | `{ id, family, model }` — OpenRouter slugs; one seat per family |
-| `panelSize` | cross-family jurors per transcript (default 3) |
+| `panelSize` | author-off jurors per transcript (default **1**; raise to flag disagreement, not to average a stronger score) |
+| `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`) and occupancy knobs for the deterministic transcript checks. Empty lists mean "do not guess" |
 | `setup[]` | `{ match, answer }` scripted answers for setup prompts |
 | `turns` | play inputs per seat (setup answers and quit inputs do not count) |
 | `persona` | the player brief |
@@ -248,6 +256,6 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-84 tests. `tsconfig.test.json` exists because the build config excludes test
+117 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.

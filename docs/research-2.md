@@ -31,8 +31,8 @@ opposite where it matters most for this design:**
 | most-correlated pair of all | **Claude × Gemini, φ = 0.603** |
 | gap closed by Dawid-Skene / weighted / Markowitz aggregation, *with oracle labels* | **≤ 11%** |
 
-At this repo's `panelSize: 3` with cross-family φ ≈ 0.39, the jury is worth
-**≈1.68 independent votes**.
+At this repo's then-`panelSize: 3` with cross-family φ ≈ 0.39, the jury is worth
+**≈1.68 independent votes**. Swarm #2 changed the default to 1; see `research-3.md`.
 
 **What this does and does not overturn.** It does *not* undo taking the author
 off its own jury — that rests on Panickssery/Stechly/Huang, which Kohli does not

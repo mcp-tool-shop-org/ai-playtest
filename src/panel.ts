@@ -29,6 +29,7 @@
 
 import type { Criterion, Seat } from './config.js';
 import type { Critique, CriterionVerdict } from './critic.js';
+import { juryNEff, meanPairwisePhi } from './stats.js';
 
 export type PanelVerdict = {
   /** Which seats judged this transcript. */
@@ -37,7 +38,11 @@ export type PanelVerdict = {
   critiques: Array<{ seat: Seat; critique: Critique | null; error?: string }>;
   /** Majority verdict per criterion, with the split recorded. */
   criteria: Array<CriterionVerdict & { metCount: number; answeredCount: number; split: boolean }>;
-  /** Majority on the alive question. */
+  /**
+   * Majority on the alive question. False is a score only when at least one
+   * juror answered; when `degraded` is set and every critique is missing, this
+   * is not a fail-closed verdict — read `degraded` and `answeredCount` first.
+   */
   alive: boolean;
   aliveCount: number;
   wouldPlayAgainCount: number;
@@ -48,7 +53,15 @@ export type PanelVerdict = {
    * predicts and which averaging would hide.
    */
   dispersion: number;
-  /** Set when no cross-family juror was available and the panel fell back. */
+  /** Mean pairwise |phi| over per-criterion met vectors. */
+  meanPhi: number;
+  /** Kish n_eff = k / (1+(k-1)*meanPhi). Warn in the report when n_eff/k < 0.5. */
+  nEff: number;
+  /**
+   * Set when the panel is incomplete: panelSize is 0, fewer jurors sat than
+   * requested, or every seated juror failed. A degraded panel is not a
+   * fail-closed majority over an empty set.
+   */
   degraded?: string;
 };
 
@@ -66,19 +79,65 @@ export function pickJurors(seats: Seat[], author: Seat, size = 3): Seat[] {
 }
 
 function majority(values: boolean[]): boolean {
-  if (values.length === 0) return false;
+  // Empty is not a vote. Callers must not treat this as a panel score.
+  if (values.length === 0) {
+    throw new Error('majority() over an empty set is not a score');
+  }
   const yes = values.filter(Boolean).length;
   // A tie resolves to false: "the jury did not agree that it was met" is the
   // honest reading of a split, and a verdict should not round up.
   return yes * 2 > values.length;
 }
 
+function unansweredCriteria(criteria: Criterion[]): PanelVerdict['criteria'] {
+  return criteria.map((c) => ({
+    id: c.id,
+    met: false,
+    evidence: 'no juror addressed this criterion',
+    turn: null,
+    metCount: 0,
+    answeredCount: 0,
+    split: false,
+  }));
+}
+
+function degradedReason(jurors: Seat[], goodCount: number, requested?: number): string | undefined {
+  const parts: string[] = [];
+  if (requested === 0) parts.push('panelSize is 0; no jurors were requested');
+  else if (requested !== undefined && jurors.length < requested) {
+    parts.push(`only ${jurors.length} of ${requested} requested cross-family jurors were available`);
+  }
+  if (goodCount === 0 && requested !== 0) {
+    parts.push(jurors.length === 0
+      ? 'no jurors sat; majority over an empty set is not a score'
+      : 'every juror failed; majority over an empty set is not a score');
+  }
+  return parts.length > 0 ? parts.join('; ') : undefined;
+}
+
 export function aggregatePanel(
   jurors: Seat[],
   critiques: Array<{ seat: Seat; critique: Critique | null; error?: string }>,
   criteria: Criterion[],
+  opts?: { requested?: number },
 ): PanelVerdict {
   const good = critiques.filter((c) => c.critique) as Array<{ seat: Seat; critique: Critique }>;
+  const degraded = degradedReason(jurors, good.length, opts?.requested);
+
+  if (good.length === 0) {
+    return {
+      jurors,
+      critiques,
+      criteria: unansweredCriteria(criteria),
+      alive: false,
+      aliveCount: 0,
+      wouldPlayAgainCount: 0,
+      dispersion: 0,
+      meanPhi: 0,
+      nEff: 0,
+      degraded,
+    };
+  }
 
   const criteriaOut = criteria.map((c) => {
     const verdicts = good
@@ -86,10 +145,12 @@ export function aggregatePanel(
       .filter((v): v is CriterionVerdict => Boolean(v));
     const metCount = verdicts.filter((v) => v.met).length;
     const answeredCount = verdicts.length;
-    const met = majority(verdicts.map((v) => v.met));
+    const votes = verdicts.map((v) => v.met);
+    // Unanswered is not a majority; do not score an empty vote list.
+    const met = votes.length === 0 ? false : majority(votes);
     // Cite a juror who actually reached the majority answer, so the evidence
     // line matches the verdict rather than contradicting it.
-    const witness = verdicts.find((v) => v.met === met);
+    const witness = votes.length === 0 ? undefined : verdicts.find((v) => v.met === met);
     return {
       id: c.id,
       met,
@@ -102,6 +163,10 @@ export function aggregatePanel(
   });
 
   const splits = criteriaOut.filter((c) => c.split).length;
+  const vectors = good.map((g) =>
+    criteria.map((c) => g.critique.criteria.find((x) => x.id === c.id)?.met ?? false));
+  const meanPhi = meanPairwisePhi(vectors);
+  const nEff = juryNEff(meanPhi, good.length);
   return {
     jurors,
     critiques,
@@ -110,5 +175,8 @@ export function aggregatePanel(
     aliveCount: good.filter((g) => g.critique.alive).length,
     wouldPlayAgainCount: good.filter((g) => g.critique.wouldPlayAgain).length,
     dispersion: criteriaOut.length === 0 ? 0 : splits / criteriaOut.length,
+    meanPhi,
+    nEff,
+    degraded,
   };
 }

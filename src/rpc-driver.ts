@@ -58,8 +58,21 @@ type RpcResult = {
   image?: { mime: string; base64: string };
   done?: boolean;
   exitCode?: number | null;
-  reason?: ReadyReason;
+  /** Protocol end-causes (`win`/`lose`/`quit`/`stuck`) or a ReadyReason. */
+  reason?: string;
+  protocol?: number;
 };
+
+const READY_REASONS: ReadonlySet<string> = new Set([
+  'sentinel', 'ready-signal', 'prompt', 'idle', 'exit', 'timeout',
+]);
+
+function asReadyReason(value: unknown): ReadyReason | undefined {
+  return typeof value === 'string' && READY_REASONS.has(value) ? value as ReadyReason : undefined;
+}
+
+/** Teardown must not inherit requestTimeoutMs (default 120s) — a missing quit handler is silence, not a fast close. */
+const QUIT_TIMEOUT_MS = 1_500;
 
 export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
   const host = opts.host ?? '127.0.0.1';
@@ -138,7 +151,7 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
   });
   socket.on('error', (err) => { diagnostics += `[rpc] socket error: ${err.message}\n`; });
 
-  function call(method: string, params?: unknown): Promise<RpcResult> {
+  function call(method: string, params?: unknown, timeoutMs: number = requestTimeoutMs): Promise<RpcResult> {
     if (closed) {
       return Promise.reject(new RpcDriverError('the game connection is closed', 'the game exited; nothing more can be observed'));
     }
@@ -147,10 +160,10 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
       const timer = setTimeout(() => {
         pending.delete(id);
         reject(new RpcDriverError(
-          `the game did not answer ${method} within ${requestTimeoutMs}ms`,
+          `the game did not answer ${method} within ${timeoutMs}ms`,
           'the game may be waiting on something, or its bridge handler never replied',
         ));
-      }, requestTimeoutMs);
+      }, timeoutMs);
       pending.set(id, { resolve, reject, timer });
       socket.write(JSON.stringify({ id, method, ...(params === undefined ? {} : { params }) }) + '\n');
     });
@@ -166,15 +179,46 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
       : r.state !== undefined
         ? JSON.stringify(r.state, null, 2)
         : '';
+    const rawReason = typeof r.reason === 'string' ? r.reason : undefined;
+    const done = r.done === true;
+    // The seat loop stops only on reason === 'exit' | 'timeout'. Protocol
+    // end-causes (win/lose/quit/stuck) stay on endCause so a finished game
+    // is not kept alive as if it were still waiting.
+    let reason: ReadyReason;
+    if (done) {
+      reason = rawReason === 'timeout' ? 'timeout' : 'exit';
+    } else {
+      reason = asReadyReason(rawReason) ?? 'sentinel';
+    }
     return {
       text,
       state: r.state,
       image: r.image,
       actions: r.actions,
-      reason: r.reason ?? (r.done ? 'exit' : 'sentinel'),
-      done: r.done === true,
+      reason,
+      endCause: done ? rawReason : undefined,
+      done,
       exitCode: r.exitCode ?? null,
     };
+  }
+
+  const helloTimeoutMs = Math.min(requestTimeoutMs, connectTimeoutMs);
+  try {
+    const hello = await call('hello', { protocol: 1 }, helloTimeoutMs);
+    if (hello.protocol !== 1) {
+      throw new RpcDriverError(
+        `engine bridge protocol mismatch: expected 1, got ${String(hello.protocol ?? 'none')}`,
+        'answer hello with {"protocol":1}; a missing or unknown protocol cannot be driven',
+      );
+    }
+  } catch (err) {
+    closed = true;
+    socket.destroy();
+    if (err instanceof RpcDriverError) throw err;
+    throw new RpcDriverError(
+      `hello handshake failed: ${(err as Error).message}`,
+      'the game must answer hello {protocol:1} before observe',
+    );
   }
 
   return {
@@ -182,9 +226,10 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
     get diagnostics() { return diagnostics; },
     async start() { return toObservation(await call('observe')); },
     async step(action: Action) { return toObservation(await call('act', action)); },
+    async reset() { return toObservation(await call('reset')); },
     async stop() {
       if (!closed) {
-        try { await call('quit'); } catch { /* the game may simply close on quit */ }
+        try { await call('quit', undefined, QUIT_TIMEOUT_MS); } catch { /* the game may simply close on quit */ }
         socket.destroy();
         closed = true;
       }

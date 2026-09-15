@@ -5,6 +5,24 @@
 import { createInterface } from 'node:readline';
 
 const ESC = '';
+const mode = process.argv[2];
+
+// Modes that pin waitForTurn's non-prompt exits. Each keeps the event loop
+// alive without matching "What do you do?" so the named ReadyReason is unique.
+if (mode === 'timeout') {
+  setInterval(() => {}, 1e9);
+} else if (mode === 'idle') {
+  process.stdout.write('You stand in a ruined chapel. Exits: nave.\n');
+  setInterval(() => {}, 1e9);
+} else if (mode === 'sentinel') {
+  process.stdout.write('READY_SENTINEL_9f3e\nChapel Nave\n');
+  setInterval(() => {}, 1e9);
+} else if (mode === 'ready-signal') {
+  process.stdout.write(`${ESC}[?2004h`);
+  process.stdout.write('Chapel Nave (no prompt)\n');
+  setInterval(() => {}, 1e9);
+} else {
+
 let hp = 40;
 let turn = 0;
 let last = '-';
@@ -36,3 +54,5 @@ rl.on('line', (line) => {
   else { last = `looked (${s})`; }
   draw();
 });
+
+}

@@ -4,7 +4,17 @@
 
 import type { ChatClient, ChatMessage } from './openrouter.js';
 
-export type TurnRecord = { turn: number; screen: string; input: string; reason: string; ms: number };
+export type TurnRecord = {
+  turn: number;
+  screen: string;
+  input: string;
+  reason: string;
+  ms: number;
+  /** Player-call attempts for this turn, including the first. */
+  attempts?: number;
+  /** Last error from a failed extra attempt, if the turn retried. */
+  lastError?: string;
+};
 
 export const PLAYER_SYSTEM_PREFIX = `You are playing a text game through its terminal. Each message shows what the game printed since your last input. Reply with exactly ONE line: the next thing you type into the game. No quotes, no commentary, no markdown, no thinking, no explanation -- only the input line. When the game shows a numbered menu, answer with the number alone. When it asks for a number, give a bare number. When it asks a yes/no question, answer y or n. Otherwise type what a player would type: a short command or a sentence. If it lists commands, you may use them. Never repeat the same input more than twice in a row.`;
 

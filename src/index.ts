@@ -1,5 +1,6 @@
-export { loadConfig, validateConfig, resolveEnv, ConfigError } from './config.js';
+export { loadConfig, validateConfig, resolveEnv, ConfigError, isSafeSegment } from './config.js';
 export type { PlaytestConfig, GameConfig, Seat, Criterion } from './config.js';
+export { validateVerifiers } from './config.js';
 export { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 export type { ChatClient, ChatMessage, ChatRequest } from './openrouter.js';
 export { spawnGame, stripAnsi } from './stdio-game.js';
@@ -10,8 +11,12 @@ export { critique, parseCritique, buildCriticPrompt, renderTranscript, CritiqueE
 export type { Critique, CriterionVerdict } from './critic.js';
 export { runSeat, runAll } from './run.js';
 export type { SeatResult, RunOptions } from './run.js';
-export { readRun, renderReport, writeReport } from './report.js';
-export type { SeatSummary } from './report.js';
+export { readRun, renderReport, writeReport, renderAggregateReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, criterionMetBySeats } from './report.js';
+export type { SeatSummary, SkippedSeatDir, RunContents } from './report.js';
+export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, DEFAULT_VERIFIERS } from './verifiers.js';
+export type { VerifierReport, VerifierConfig, AbsorbingHit } from './verifiers.js';
+export { summarizeRuns, minSignFlipP, betaMean, juryNEff, FIRST_INFERENTIAL_N } from './stats.js';
+export type { RunStats, CriterionPosterior } from './stats.js';
 export { actionToLine, describeActions } from './driver.js';
 export type { Driver, Observation, Action, ActionSpace, ReadyReason } from './driver.js';
 export { createPtyDriver, PtyUnavailableError } from './pty-driver.js';

@@ -38,7 +38,12 @@ const server = createServer((socket) => {
       buf = buf.slice(nl + 1);
       if (!line) continue;
       const msg = JSON.parse(line);
-      if (msg.method === 'observe') {
+      if (msg.method === 'hello') {
+        socket.write(JSON.stringify({ id: msg.id, result: { protocol: 1, game: 'echo-chapel', capabilities: ['observe', 'act', 'reset', 'quit'] } }) + '\n');
+      } else if (msg.method === 'reset') {
+        hp = 40; turn = 0; room = 'Chapel Nave'; done = false;
+        socket.write(JSON.stringify({ id: msg.id, result: observation() }) + '\n');
+      } else if (msg.method === 'observe') {
         socket.write(JSON.stringify({ id: msg.id, result: observation() }) + '\n');
       } else if (msg.method === 'act') {
         const id = msg.params?.id ?? msg.params?.name ?? msg.params?.line ?? '';

@@ -25,12 +25,23 @@
 
 import type { Driver, Observation, Action, ActionSpace, ReadyReason } from './driver.js';
 import { actionToLine } from './driver.js';
+import { buildChildEnv } from './stdio-game.js';
 
 export type PtyDriverOptions = {
   command: string;
   args: string[];
   cwd?: string;
+  /**
+   * Extra environment overlaid on the allowlisted spawn env. This is NOT the
+   * entire child environment — PATH/SystemRoot and the rest of the allowlist
+   * still come from the runner unless inheritEnv is set.
+   */
   env?: NodeJS.ProcessEnv;
+  /**
+   * Pass the runner's entire environment to the TUI child. Off by default:
+   * a game under test is arbitrary code and must not receive OPENROUTER_API_KEY.
+   */
+  inheritEnv?: boolean;
   cols?: number;
   rows?: number;
   /** Regexes tested against the RENDERED cursor line, not a raw byte tail. */
@@ -83,6 +94,7 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
   let exited = false;
   let exitCode: number | null = null;
   let sawSentinel = false;
+  let sawByte = false;
   let bracketedPaste = false;
   let altScreen = false;
 
@@ -101,16 +113,24 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
     return false;
   });
 
+  const overlay: Record<string, string> = {};
+  if (opts.env) {
+    for (const [k, v] of Object.entries(opts.env)) {
+      if (typeof v === 'string') overlay[k] = v;
+    }
+  }
+
   const child = pty.spawn(opts.command, opts.args, {
     name: 'xterm-256color',
     cols,
     rows,
     cwd: opts.cwd ?? process.cwd(),
-    env: (opts.env ?? process.env) as Record<string, string>,
+    env: buildChildEnv(overlay, process.env, opts.inheritEnv === true) as Record<string, string>,
   });
 
   child.onData((d: string) => {
     lastByteAt = Date.now();
+    if (d.length > 0) sawByte = true;
     if (opts.readySentinel && d.includes(opts.readySentinel)) sawSentinel = true;
     term.write(d);
   });
@@ -148,6 +168,10 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
       // and the observation records which one fired so a reader can tell a
       // known-ready turn from a guess.
       if (sawSentinel) { sawSentinel = false; return observe('sentinel'); }
+      // Mirror the stdio empty-buffer guard: idle/prompt/ready-signal on a
+      // still-empty grid makes a slow TUI look dead rather than not-up-yet.
+      // Timeout remains the path for a game that never prints.
+      if (!sawByte) continue;
       if (bracketedPaste && quiet >= opts.promptQuietMs) return observe('ready-signal');
       if (quiet >= opts.promptQuietMs) {
         const b = term.buffer.active;
