@@ -22,8 +22,8 @@ import type { GameConfig } from './config.js';
 // ESC/BEL constant). Literal U+001B / U+0007 / C1 bytes are invisible in
 // editors and review UIs; a well-meaning cleanup of "garbled" regexes would
 // drop them and the OSC branch would truncate at the first ']'.
-const OSC = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
-const DCS = /\u001b[PX^_][^\u001b]*(?:\u001b\\)?/g;
+const OSC = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/g;
+const DCS = /\u001b[PX^_][^\u001b]*(?:\u001b\\)/g;
 const CSI = /(?:\u001b\[|\u009b)[0-?]*[ -/]*[@-~]/g;
 // ESC + optional intermediates (0x20-0x2F) + a final byte (0x30-0x7E). This is
 // every remaining two-or-three-character escape once OSC, DCS and CSI have been

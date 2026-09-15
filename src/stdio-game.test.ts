@@ -21,6 +21,20 @@ describe('stripAnsi', () => {
     expect(out).toContain('The door opens.');
   });
 
+  it('does not swallow narration after an unterminated OSC', () => {
+    // The terminator used to be optional (`?`), so ESC]... with no BEL/ST ate
+    // every following non-ESC byte — the whole screen vanished and the prompt
+    // matcher never fired. Require BEL or ST; let ESC2 nibble the introducer.
+    const out = stripAnsi(`${ESC}]0;C:\\node.exe You enter the cave.`);
+    expect(out).toContain('You enter the cave.');
+    expect(out).not.toBe('');
+  });
+
+  it('does not swallow narration after an unterminated DCS', () => {
+    const out = stripAnsi(`${ESC}Ppayload You enter the cave.`);
+    expect(out).toContain('You enter the cave.');
+  });
+
   it('strips a BEL-terminated OSC title without touching the narration after it', () => {
     // ConPTY injects exactly this into every Windows session.
     expect(stripAnsi(`${ESC}]0;C:\\node.exe${BEL}You stand in a ruined chapel.`))
