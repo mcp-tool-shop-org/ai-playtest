@@ -3,7 +3,7 @@ import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { validateConfig, resolveEnv, ConfigError } from '../src/config.js';
-import { runAll } from '../src/run.js';
+import { runAll, seatDir } from '../src/run.js';
 import { readRun, renderReport, writeReport } from '../src/report.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
@@ -66,7 +66,10 @@ describe('runAll over the echo game', () => {
     expect(results).toHaveLength(2);
     for (const r of results) {
       expect(r.endedBy).toBe('turns');
-      expect(r.turnsPlayed).toBe(4 + 1);
+      // Four PLAYER turns. The scripted setup answer and the runner's own
+      // 'quit' are the runner's inputs, not the player's; counting quit here
+      // is what previously made this 5.
+      expect(r.turnsPlayed).toBe(4);
       expect(r.critique?.alive).toBe(true);
       const transcript = await readFile(join(r.dir, 'transcript.txt'), 'utf8');
       expect(transcript).toContain('═══ setup ── screen');
@@ -79,8 +82,8 @@ describe('runAll over the echo game', () => {
     const seats = await readRun(join(runsDir, 'lbl'));
     expect(seats.map((s) => s.seat.family)).toEqual(['alpha', 'beta']);
     const md = renderReport('echo', 'lbl', seats);
-    expect(md).toContain('**Alive verdicts:** 2 of 2');
-    expect(md).toContain('| ambush | yes (t3) | yes (t3) | 2/2 |');
+    expect(md).toContain('**Alive:** 2 of 2 seats');
+    expect(md).toContain('| ambush | yes (t3) | yes (t3) | 2/2 | unanimous |');
     expect(md).toContain('[alpha] fake/alpha found nothing dead');
     const path = await writeReport('echo', join(runsDir, 'lbl'), 'lbl');
     expect(await readFile(path, 'utf8')).toContain('# echo — AI playtest report (lbl)');
@@ -118,4 +121,142 @@ describe('openrouter client', () => {
     const unauth = createOpenRouterClient({ apiKey: 'k', retries: 2, sleep: async () => {}, fetchImpl: async () => ({ ok: false, status: 401, text: async () => 'nope' }) });
     await expect(unauth({ model: 'm', messages: [], maxTokens: 5, temperature: 0 })).rejects.toMatchObject({ code: 'E_OPENROUTER', status: 401 });
   });
+});
+
+describe('report honesty', () => {
+  const seat = (family: string, critique: unknown, endedBy = 'turns'): any => ({
+    seat: { id: family, family, model: `fake/${family}` },
+    turnsPlayed: 10, endedBy, error: null, critique, critiqueError: critique ? null : 'no JSON object in critique',
+  });
+  const crit = (alive: boolean, met: boolean) => ({
+    alive, summary: 's', wouldPlayAgain: alive, highlights: [], deadSpots: [], confusions: [],
+    criteria: [{ id: 'ambush', met, evidence: 'e', turn: 3 }],
+  });
+
+  it('does not report a half-dead run as unanimous', () => {
+    // "Alive verdicts: 1 of 1" for a two-seat run with one dead seat read as a
+    // clean sweep. Verdicts are now counted against the seats that were ASKED.
+    const md = renderReport('g', 'lbl', [seat('alpha', crit(true, true)), seat('beta', null, 'error')]);
+    expect(md).toContain('**Alive:** 1 of 2 seats');
+    expect(md).not.toContain('1 of 1');
+    expect(md).toContain('1 of 2 seats produced no verdict');
+    expect(md).toContain('`beta`');
+  });
+
+  it('marks a split verdict as split rather than averaging it away', () => {
+    const md = renderReport('g', 'lbl', [seat('alpha', crit(true, true)), seat('beta', crit(false, false))]);
+    expect(md).toContain('**split**');
+  });
+
+  it('warns that a single judged seat is a sample of one', () => {
+    expect(renderReport('g', 'lbl', [seat('alpha', crit(true, true))])).toContain('sample of one');
+  });
+
+  it('escapes pipes and newlines so model text cannot break the table', () => {
+    const weird = seat('alpha', {
+      ...crit(true, true),
+      criteria: [{ id: 'a|b\nc', met: true, evidence: 'e', turn: 1 }],
+    });
+    const row = renderReport('g', 'lbl', [weird]).split('\n').find((l) => l.includes('a\\|b'));
+    expect(row).toBeDefined();
+    // The newline is gone and the pipe inside the cell is escaped, so only the
+    // real column delimiters (unescaped pipes) remain: 5 for a 4-cell row.
+    expect(row).toContain('a\\|b c');
+    expect(row!.match(/(?<!\\)\|/g)!.length).toBe(5);
+  });
+});
+
+describe('run safety', () => {
+  it('refuses a label or seat id that would escape runsDir', () => {
+    const cfg = config(2);
+    const seat = { id: 'a', family: 'alpha', model: 'fake/alpha' };
+    // --label ../../etc used to be joined straight into a filesystem path.
+    expect(() => seatDir(cfg, '../../etc', seat)).toThrow(ConfigError);
+    expect(() => seatDir(cfg, 'ok', { ...seat, id: '../escape' })).toThrow(ConfigError);
+    expect(() => seatDir(cfg, 'ok-label_1.2', seat)).not.toThrow();
+  });
+
+  it('does not report a confident verdict for a run where the player never moved', async () => {
+    const cfg = config(0);
+    const results = await runAll(cfg, { label: 'zeroturn', client: fakeClient(['look']), seats: ['a'] });
+    // Previously: zero iterations, endedBy stayed 'turns' (a success status),
+    // and the critic judged a transcript containing only the quit input.
+    expect(results[0].turnsPlayed).toBe(0);
+    expect(results[0].endedBy).toBe('error');
+    expect(results[0].critique).toBeNull();
+    expect(results[0].critiqueError).toMatch(/no player turns/);
+  });
+
+  it('keeps the runner\'s own quit input out of the player\'s turn count', async () => {
+    const cfg = config(2);
+    const results = await runAll(cfg, { label: 'quitcount', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    expect(results[0].turnsPlayed).toBe(2);
+    expect(results[0].history.some((h) => h.reason === 'quit')).toBe(true);
+  });
+});
+
+describe('cross-family jury', () => {
+  it('never lets a seat score its own transcript', async () => {
+    const cfg = config(3);
+    // Record which model was asked to JUDGE which transcript.
+    const judged: Array<{ critic: string; sawSeat: string }> = [];
+    const client: ChatClient = async (req) => {
+      if (req.json) {
+        const prompt = req.messages.map((m) => m.content).join('\n');
+        judged.push({ critic: req.model, sawSeat: /attack the rat/.test(prompt) ? 'played' : 'played' });
+        return JSON.stringify({ alive: true, summary: 's', criteria: [{ id: 'ambush', met: true, evidence: 'e', turn: 1 }, { id: 'heat', met: true, evidence: 'e', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true });
+      }
+      const last = req.messages[req.messages.length - 1].content;
+      if (/Character name:/.test(last)) return 'Wanderer';
+      return 'look';
+    };
+
+    const results = await runAll(cfg, { label: 'jury', client, parallel: false });
+    for (const r of results) {
+      expect(r.panel).not.toBeNull();
+      // The jury is drawn from other families...
+      expect(r.panel!.jurors.map((j) => j.family)).not.toContain(r.seat.family);
+      // ...and it is the jury, not the author, that the report will quote.
+      expect(r.panel!.jurors.length).toBeGreaterThan(0);
+    }
+    // Both models were asked to judge, and each judged the OTHER's transcript.
+    expect(new Set(judged.map((j) => j.critic)).size).toBe(2);
+  }, 30000);
+
+  it('seats a juror that did not play — judging does not require having played', async () => {
+    const cfg = config(2);
+    const results = await runAll(cfg, { label: 'subset', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    // Only seat 'a' played, but 'beta' is still a configured family, so it can
+    // judge. A juror needs to be a different family, not a participant.
+    expect(results[0].panel!.jurors.map((j) => j.family)).toEqual(['beta']);
+  }, 30000);
+
+  it('reports no jury rather than self-judging when only one family is configured', async () => {
+    const one = validateConfig({
+      name: 'echo',
+      game: {
+        command: process.execPath, args: [FIXTURE],
+        promptPatterns: ['What do you do\\?\\s*$', 'Character name:\\s*$'],
+        promptQuietMs: 100, idleQuietMs: 1500, screenTimeoutMs: 10_000, quitInputs: ['quit'],
+      },
+      seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+      turns: 2,
+      persona: 'You are a curious wanderer who wants to see what the world does when poked.',
+      criteria: [{ id: 'ambush', check: 'an ambush headline appeared' }],
+      setup: [{ match: 'Character name:\\s*$', answer: 'Scripted' }],
+      runsDir,
+    }, runsDir);
+    const results = await runAll(one, { label: 'solo', client: fakeClient(['look', 'go nave']) });
+    // No other family exists, so there is no valid juror. The seat's own
+    // critique is kept as testimony and the report says it is self-judged.
+    expect(results[0].panel).toBeNull();
+    expect(results[0].critique).not.toBeNull();
+    const md = renderReport('echo', 'solo', [{
+      seat: results[0].seat, turnsPlayed: results[0].turnsPlayed, endedBy: results[0].endedBy,
+      error: null, critique: results[0].critique, critiqueError: null,
+      coverage: results[0].coverage, panel: results[0].panel,
+    }]);
+    expect(md).toContain('No cross-family jury');
+    expect(md).toContain('self-judged');
+  }, 30000);
 });

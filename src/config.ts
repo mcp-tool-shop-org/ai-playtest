@@ -23,6 +23,13 @@ export type GameConfig = {
   /** Extra environment for the game process; values starting with "$" read the runner's env. */
   env?: Record<string, string>;
   /**
+   * Pass the runner's ENTIRE environment to the game, rather than a minimal
+   * allowlist plus `env`. Off by default: the game under test is arbitrary code
+   * and inheriting everything hands it `OPENROUTER_API_KEY`. Turn it on only for
+   * a game you trust as much as the runner itself.
+   */
+  inheritEnv?: boolean;
+  /**
    * Regexes (source strings) that, when the stripped stdout tail matches one,
    * mean the game is waiting for a line. Checked after `promptQuietMs` of
    * silence; without a match the runner waits `idleQuietMs` instead.
@@ -38,6 +45,21 @@ export type GameConfig = {
   quitInputs: string[];
 };
 
+/**
+ * Which observation channel to drive the game through.
+ *
+ * `stdio` is the original: spawn it, read lines, guess when it is waiting.
+ * `pty` gives it a real terminal and reads the rendered SCREEN, which is what a
+ * full-screen TUI needs and what makes prompt detection sound (under a pipe a
+ * C program's stdout is fully buffered, so "quiet" can mean "has not flushed").
+ * `rpc` connects to a game that describes itself over the engine bridge — the
+ * strongest channel, and the only one that works with no terminal at all.
+ */
+export type DriverConfig =
+  | { kind: 'stdio' }
+  | { kind: 'pty'; cols?: number; rows?: number; readySentinel?: string }
+  | { kind: 'rpc'; host?: string; port: number; connectTimeoutMs?: number; requestTimeoutMs?: number };
+
 export type Criterion = { id: string; check: string };
 
 /**
@@ -51,6 +73,8 @@ export type SetupStep = { match: string; answer: string };
 export type PlaytestConfig = {
   name: string;
   game: GameConfig;
+  /** Which observation channel to use. Defaults to stdio, so existing configs are unaffected. */
+  driver: DriverConfig;
   seats: Seat[];
   /** Inputs each seat sends while the game is waiting -- setup prompts (name, menus) count, so budget for them. */
   turns: number;
@@ -68,6 +92,14 @@ export type PlaytestConfig = {
   runsDir: string;
   /** Sampling temperature for the player; the critic always runs at 0. */
   playerTemperature: number;
+  /**
+   * How many cross-family jurors judge each transcript. A panel of cheaper
+   * heterogeneous judges has been measured beating one strong judge (kappa
+   * 0.763 vs 0.627) at 7-8x lower cost, and multiple evaluators is the standard
+   * remedy for the evaluator effect. Capped by how many other families are
+   * seated.
+   */
+  panelSize: number;
 };
 
 export class ConfigError extends Error {
@@ -83,6 +115,7 @@ const DEFAULTS = {
   playerMemoryTurns: 8,
   runsDir: 'runs',
   playerTemperature: 0.7,
+  panelSize: 3,
   game: { promptQuietMs: 800, idleQuietMs: 6000, screenTimeoutMs: 180_000, quitInputs: ['quit'] },
 };
 
@@ -101,13 +134,49 @@ export function resolveEnv(env: Record<string, string> | undefined, source: Node
   return out;
 }
 
+export function validateDriver(raw: unknown): DriverConfig {
+  if (raw === undefined || raw === null) return { kind: 'stdio' };
+  if (typeof raw !== 'object') throw new ConfigError('driver must be an object', 'e.g. { "kind": "pty" } or { "kind": "rpc", "port": 7777 }');
+  const d = raw as Record<string, unknown>;
+  const kind = d.kind;
+  if (kind === 'stdio' || kind === undefined) return { kind: 'stdio' };
+  if (kind === 'pty') {
+    return {
+      kind: 'pty',
+      cols: typeof d.cols === 'number' ? d.cols : undefined,
+      rows: typeof d.rows === 'number' ? d.rows : undefined,
+      readySentinel: typeof d.readySentinel === 'string' ? d.readySentinel : undefined,
+    };
+  }
+  if (kind === 'rpc') {
+    if (typeof d.port !== 'number' || !Number.isInteger(d.port) || d.port <= 0 || d.port > 65535) {
+      throw new ConfigError('driver.port must be a TCP port number', 'e.g. { "kind": "rpc", "port": 7777 } -- see docs/engine-bridge.md');
+    }
+    return {
+      kind: 'rpc',
+      host: typeof d.host === 'string' ? d.host : undefined,
+      port: d.port,
+      connectTimeoutMs: typeof d.connectTimeoutMs === 'number' ? d.connectTimeoutMs : undefined,
+      requestTimeoutMs: typeof d.requestTimeoutMs === 'number' ? d.requestTimeoutMs : undefined,
+    };
+  }
+  throw new ConfigError(`unknown driver kind "${String(kind)}"`, 'driver.kind must be one of: stdio, pty, rpc');
+}
+
 export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   if (!raw || typeof raw !== 'object') throw new ConfigError('config is not an object', 'the file must hold one JSON object');
   const c = raw as Record<string, unknown>;
   const game = c.game as Record<string, unknown> | undefined;
   if (!c.name || typeof c.name !== 'string') throw new ConfigError('name missing', 'give the playtest a name');
-  if (!game || typeof game.command !== 'string' || !Array.isArray(game.args)) throw new ConfigError('game.command / game.args missing', 'game.command is the executable, game.args its arguments');
-  if (!Array.isArray(game.promptPatterns) || game.promptPatterns.length === 0) throw new ConfigError('game.promptPatterns missing', 'list at least one regex that matches the game\'s input prompt');
+  const driver = validateDriver(c.driver);
+  // The rpc driver attaches to an already-running game, so it needs no command
+  // to spawn and no prompt pattern to watch for -- the game says when it is
+  // ready. Every other driver needs both.
+  const spawnsGame = driver.kind !== 'rpc';
+  if (spawnsGame) {
+    if (!game || typeof game.command !== 'string' || !Array.isArray(game.args)) throw new ConfigError('game.command / game.args missing', 'game.command is the executable, game.args its arguments');
+    if (!Array.isArray(game.promptPatterns) || game.promptPatterns.length === 0) throw new ConfigError('game.promptPatterns missing', 'list at least one regex that matches the game\'s input prompt');
+  }
   if (!Array.isArray(c.seats) || c.seats.length === 0) throw new ConfigError('seats missing', 'list at least one { id, family, model }');
   const families = new Set<string>();
   for (const s of c.seats as Seat[]) {
@@ -117,7 +186,7 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   }
   if (typeof c.persona !== 'string' || c.persona.length < 20) throw new ConfigError('persona missing', 'brief the player: goals and register, not mechanics');
   if (!Array.isArray(c.criteria) || c.criteria.length === 0) throw new ConfigError('criteria missing', 'list the game\'s own "alive" criteria as { id, check }');
-  for (const p of game.promptPatterns as string[]) {
+  for (const p of ((game?.promptPatterns as string[]) ?? [])) {
     try { new RegExp(p); } catch { throw new ConfigError(`promptPattern ${p} is not a valid regex`, 'fix the pattern'); }
   }
   const setup = Array.isArray(c.setup) ? (c.setup as SetupStep[]) : [];
@@ -127,16 +196,18 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   }
   return {
     name: c.name,
+    driver,
     game: {
-      command: game.command as string,
-      args: game.args as string[],
-      cwd: typeof game.cwd === 'string' ? resolve(baseDir, game.cwd) : baseDir,
-      env: (game.env as Record<string, string>) ?? {},
-      promptPatterns: game.promptPatterns as string[],
-      promptQuietMs: (game.promptQuietMs as number) ?? DEFAULTS.game.promptQuietMs,
-      idleQuietMs: (game.idleQuietMs as number) ?? DEFAULTS.game.idleQuietMs,
-      screenTimeoutMs: (game.screenTimeoutMs as number) ?? DEFAULTS.game.screenTimeoutMs,
-      quitInputs: (game.quitInputs as string[]) ?? DEFAULTS.game.quitInputs,
+      command: (game?.command as string) ?? '',
+      args: (game?.args as string[]) ?? [],
+      cwd: typeof game?.cwd === 'string' ? resolve(baseDir, game.cwd as string) : baseDir,
+      env: (game?.env as Record<string, string>) ?? {},
+      inheritEnv: game?.inheritEnv === true,
+      promptPatterns: (game?.promptPatterns as string[]) ?? [],
+      promptQuietMs: (game?.promptQuietMs as number) ?? DEFAULTS.game.promptQuietMs,
+      idleQuietMs: (game?.idleQuietMs as number) ?? DEFAULTS.game.idleQuietMs,
+      screenTimeoutMs: (game?.screenTimeoutMs as number) ?? DEFAULTS.game.screenTimeoutMs,
+      quitInputs: (game?.quitInputs as string[]) ?? DEFAULTS.game.quitInputs,
     },
     seats: c.seats as Seat[],
     setup,
@@ -147,6 +218,7 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     playerMemoryTurns: (c.playerMemoryTurns as number) ?? DEFAULTS.playerMemoryTurns,
     runsDir: resolve(baseDir, (c.runsDir as string) ?? DEFAULTS.runsDir),
     playerTemperature: (c.playerTemperature as number) ?? DEFAULTS.playerTemperature,
+    panelSize: typeof c.panelSize === 'number' && c.panelSize >= 0 ? c.panelSize : DEFAULTS.panelSize,
   };
 }
 

@@ -1,0 +1,19 @@
+// Type-checking config for the test suite.
+//
+// tsconfig.json deliberately excludes `src/**/*.test.ts` and never mentions
+// `test/`, because tests must not land in dist/. The side effect was that no
+// test file was type-checked by anything: two deliberately broken types passed
+// `tsc --noEmit` while the same error inside src/ was caught. This config
+// restores the check without putting tests in the build.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The base config sets rootDir to src/ for the build; nothing is emitted
+    // here, so widen it to cover test/ as well.
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": []
+}

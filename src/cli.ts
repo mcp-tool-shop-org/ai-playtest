@@ -4,6 +4,7 @@
 // Exit codes: 0 ok, 1 usage, 2 config, 3 provider, 4 run error.
 
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { loadConfig, ConfigError } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 import { runAll } from './run.js';
@@ -27,9 +28,28 @@ function fail(code: number, message: string, hint?: string): never {
   process.exit(code);
 }
 
+/**
+ * Read `--name value`. Returns undefined when the flag is absent; throws when it
+ * is present but its value is missing or is itself another flag — `--turns
+ * --serial` used to silently read "--serial" as the turn count.
+ */
 function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
-  return i >= 0 ? args[i + 1] : undefined;
+  if (i < 0) return undefined;
+  const value = args[i + 1];
+  if (value === undefined || value.startsWith('--')) {
+    fail(1, `${name} needs a value`, `you wrote "${name}${value ? ` ${value}` : ''}"`);
+  }
+  return value;
+}
+
+/** A turn budget has to be a positive whole number; Number("abc") is NaN. */
+function parseTurns(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) {
+    fail(2, `--turns must be a positive whole number, got "${raw}"`, 'e.g. --turns 40');
+  }
+  return n;
 }
 
 async function main(): Promise<void> {
@@ -48,7 +68,13 @@ async function main(): Promise<void> {
   const label = flag(args, '--label') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
   if (verb === 'report') {
-    const path = await writeReport(cfg.name, join(cfg.runsDir, label), label);
+    // Without this the label defaulted to "now", and rebuilding a report read a
+    // directory that cannot exist, surfacing as a raw ENOENT rather than a
+    // coded error naming the real problem.
+    if (!flag(args, '--label')) fail(1, 'report needs --label', 'name the run to rebuild, e.g. --label phase9');
+    const runDir = join(cfg.runsDir, label);
+    if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label, or run the playtest first');
+    const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
     process.stdout.write(`wrote ${path}\n`);
     return;
   }
@@ -57,7 +83,7 @@ async function main(): Promise<void> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) fail(3, 'OPENROUTER_API_KEY is not set', 'export it; players and critics are OpenRouter seats');
   const turns = flag(args, '--turns');
-  if (turns) cfg.turns = Number(turns);
+  if (turns) cfg.turns = parseTurns(turns);
   const seats = flag(args, '--seats')?.split(',').map((s) => s.trim()).filter(Boolean);
   const client = createOpenRouterClient({ apiKey });
 
@@ -68,7 +94,7 @@ async function main(): Promise<void> {
       onTurn: (seat, t) => process.stdout.write(`  [${seat.id}] t${t.turn} (${t.reason}, ${t.ms}ms) > ${t.input}\n`),
       onSeatDone: (r) => process.stdout.write(`  [${r.seat.id}] done: ${r.turnsPlayed} turns, ended by ${r.endedBy}${r.error ? ` (${r.error})` : ''}, critique ${r.critique ? (r.critique.alive ? 'ALIVE' : 'not alive') : `failed (${r.critiqueError})`}\n`),
     });
-    const path = await writeReport(cfg.name, join(cfg.runsDir, label), label);
+    const path = await writeReport(cfg.name, join(cfg.runsDir, label), label, cfg.criteria.map((c) => c.id));
     const failed = results.filter((r) => r.endedBy === 'error');
     process.stdout.write(`report: ${path}\n`);
     if (failed.length === results.length) fail(4, 'every seat failed', failed[0]?.error);
