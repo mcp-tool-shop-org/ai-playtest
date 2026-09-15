@@ -120,6 +120,12 @@ export function spawnGame(cfg: GameConfig, env: Record<string, string>): GamePro
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   const patterns = cfg.promptPatterns.map((p) => new RegExp(p, 'm'));
+  // Sliding window: a redraw loop over screenTimeoutMs (default 180s) used to
+  // grow without bound and OOM every parallel seat. Prompt matching only
+  // needs the tail.
+  const STDOUT_CAP = 2 * 1024 * 1024;
+  const STDERR_CAP = 256 * 1024;
+  const STDERR_TRUNC = '[stderr truncated]\n';
   let buf = '';
   let stderrBuf = '';
   // Only stdout activity may defer the prompt/idle decision. When stderr shared
@@ -131,19 +137,31 @@ export function spawnGame(cfg: GameConfig, env: Record<string, string>): GamePro
   let exitCode: number | null = null;
   let spawnError: Error | null = null;
 
+  const appendStderr = (chunk: string) => {
+    stderrBuf += chunk;
+    if (stderrBuf.length > STDERR_CAP) {
+      const keep = STDERR_CAP - STDERR_TRUNC.length;
+      stderrBuf = STDERR_TRUNC + stderrBuf.slice(-keep);
+    }
+  };
+
   // setEncoding keeps Node's StringDecoder across chunk boundaries. Decoding
   // each Buffer independently corrupted any multi-byte character split across
   // two 'data' events — 15 of 36 split points in a box-drawing sample.
   child.stdout.setEncoding('utf8');
   child.stderr.setEncoding('utf8');
-  child.stdout.on('data', (d: string) => { buf += d; lastStdoutByteAt = Date.now(); });
-  child.stderr.on('data', (d: string) => { stderrBuf += d; });
+  child.stdout.on('data', (d: string) => {
+    buf += d;
+    if (buf.length > STDOUT_CAP) buf = buf.slice(-STDOUT_CAP);
+    lastStdoutByteAt = Date.now();
+  });
+  child.stderr.on('data', (d: string) => { appendStderr(d); });
   child.on('exit', (code) => { exited = true; exitCode = code; });
   child.on('error', (err) => {
     // Discarding this argument made the commonest first-run misconfiguration —
     // a wrong command path — indistinguishable from a game that printed nothing.
     spawnError = err;
-    stderrBuf += `[spawn error] ${err.message}\n`;
+    appendStderr(`[spawn error] ${err.message}\n`);
     exited = true;
     exitCode = exitCode ?? -1;
   });
@@ -152,7 +170,7 @@ export function spawnGame(cfg: GameConfig, env: Record<string, string>): GamePro
   // the whole runner, killing every parallel seat.
   child.stdin.on('error', (err: Error) => {
     spawnError = spawnError ?? err;
-    stderrBuf += `[stdin error] ${err.message}\n`;
+    appendStderr(`[stdin error] ${err.message}\n`);
   });
 
   const take = (reason: Screen['reason']): Screen => {

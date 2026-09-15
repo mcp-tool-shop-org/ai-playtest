@@ -222,13 +222,17 @@ field on the driver seam.
 
 ## Open work this evidence implies
 
-1. **Deterministic verifiers.** The 3% → 38% gap between self-critique and a
-   sound verifier is the largest single number here, and the tool currently
-   spends model judgement on things a checker could settle: softlocks, repeated
-   states, contradictions, parser failures.
-2. **Split the compound `alive` boolean** into separately-evidenced dimensions
+Shipped in swarm #2 (do not re-open): **deterministic verifiers**
+(`src/verifiers.ts`, six transcript-only checks; a trace still cannot prove
+unwinnability) and **multi-run** (`--runs N`, `src/stats.ts` Beta-Binomial;
+n=3 is descriptive). See `docs/research-2.md` and `docs/research-3.md`.
+
+Still open:
+
+1. **Split the compound `alive` boolean** into separately-evidenced dimensions
    (autonomy, reactivity, continuity, comprehensibility, progress), mirroring
    PXI's construct separation.
-3. **Multi-run.** n=1 spans 18.9pp; CI width falls 14.1% → 2.97% at n=3.
-4. **Action chunking.** +7.0–31.3% success at −78.9% model calls — the current
+2. **Action chunking.** +7.0–31.3% success at −78.9% model calls — the current
    loop is one input per turn, which is structurally ReAct.
+3. **Persona presets** and a **browser/canvas driver** — specified in
+   `docs/research-2.md` §B and §C, not built.

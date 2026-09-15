@@ -1,28 +1,38 @@
 #!/usr/bin/env node
-// cli.ts — `ai-playtest run <config.json> [--label x] [--seats a,b] [--turns n] [--serial]`
+// cli.ts — `ai-playtest run <config.json> [--label x] [--seats a,b] [--turns n] [--runs n] [--serial]`
 //          `ai-playtest report <config.json> --label x`
-// Exit codes: 0 ok, 1 usage, 2 config, 3 provider, 4 run error.
+//          `ai-playtest check <config.json>`
+//          `ai-playtest --help | --version`
+// Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.
 
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
-import { loadConfig, ConfigError } from './config.js';
+import { fileURLToPath } from 'node:url';
+import { loadConfig, ConfigError, VERSION } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
-import { runAll } from './run.js';
+import { runAll, type SeatResult } from './run.js';
 import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats } from './report.js';
 import { summarizeRuns } from './stats.js';
+import { PtyUnavailableError } from './pty-driver.js';
 
-function usage(): string {
+export function usage(): string {
   return [
     'ai-playtest -- family-diverse AI playtesting for text games',
     '',
     'Usage:',
     '  ai-playtest run <config.json> [--label <name>] [--seats <id,id>] [--turns <n>] [--runs <n>] [--serial]',
     '  ai-playtest report <config.json> --label <name>',
+    '  ai-playtest check <config.json>',
+    '  ai-playtest --help | --version',
     '',
     '--seats lists config seat ids (not model families). Example: --seats mistral-small,llama',
+    '--help / -h prints this text from any position. --version prints the package version.',
+    'check validates the JSON (no OPENROUTER_API_KEY required) and exits 2 on ConfigError.',
     'Env: OPENROUTER_API_KEY (players and critics). The game\'s own env comes from config.game.env.',
     'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md at the label root.',
+    '',
+    'Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.',
   ].join('\n');
 }
 
@@ -31,23 +41,84 @@ function fail(code: number, message: string, hint?: string): never {
   process.exit(code);
 }
 
+function hinted(err: unknown): string | undefined {
+  if (err && typeof err === 'object' && 'hint' in err && typeof (err as { hint: unknown }).hint === 'string') {
+    const h = (err as { hint: string }).hint;
+    return h.length > 0 ? h : undefined;
+  }
+  return undefined;
+}
+
+/** Map coded errors to their exit codes and keep `.hint`. Unexpected throws get a debug: stack. */
+function failFrom(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err);
+  const hint = hinted(err);
+  if (err instanceof OpenRouterError) fail(3, message, hint);
+  if (err instanceof ConfigError || err instanceof ReportError || err instanceof PtyUnavailableError) {
+    fail(2, message, hint);
+  }
+  const stack = err instanceof Error ? err.stack : undefined;
+  const debug = Boolean(process.env.DEBUG || process.env.AI_PLAYTEST_DEBUG);
+  if (stack && (!hint || debug)) process.stderr.write(`debug: ${stack}\n`);
+  fail(4, message, hint);
+}
+
+const FLAGS_WITH_VALUE = new Set(['--label', '--seats', '--turns', '--runs']);
+const KNOWN_FLAGS = new Set(['--label', '--seats', '--turns', '--runs', '--serial', '--help', '-h', '--version']);
+const KNOWN_VERBS = new Set(['run', 'report', 'check']);
+
+function rejectUnknownFlags(args: string[]): void {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--') break;
+    if (a === '-h' || !a.startsWith('-')) {
+      if (FLAGS_WITH_VALUE.has(a) && args[i + 1] !== undefined) i++;
+      continue;
+    }
+    if (!a.startsWith('--') || !KNOWN_FLAGS.has(a)) {
+      fail(1, `unknown flag ${a}`, usage());
+    }
+    if (FLAGS_WITH_VALUE.has(a) && args[i + 1] !== undefined && !args[i + 1].startsWith('-')) i++;
+  }
+}
+
+function positionals(args: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--') {
+      out.push(...args.slice(i + 1));
+      break;
+    }
+    if (a === '-h' || a.startsWith('--')) {
+      if (FLAGS_WITH_VALUE.has(a) && args[i + 1] !== undefined && !args[i + 1].startsWith('-')) i++;
+      continue;
+    }
+    out.push(a);
+  }
+  return out;
+}
+
 /**
  * Read `--name value`. Returns undefined when the flag is absent; throws when it
  * is present but its value is missing or is itself another flag — `--turns
  * --serial` used to silently read "--serial" as the turn count.
  */
-function flag(args: string[], name: string): string | undefined {
+export function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
   if (i < 0) return undefined;
   const value = args[i + 1];
   if (value === undefined || value.startsWith('--')) {
+    if (name === '--turns' || name === '--runs') {
+      fail(2, `${name} must be a positive whole number, got "${value ?? ''}"`, `e.g. ${name} 3`);
+    }
     fail(1, `${name} needs a value`, `you wrote "${name}${value ? ` ${value}` : ''}"`);
   }
   return value;
 }
 
 /** A turn budget has to be a positive whole number; Number("abc") is NaN. */
-function parseTurns(raw: string): number {
+export function parseTurns(raw: string): number {
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) {
     fail(2, `--turns must be a positive whole number, got "${raw}"`, 'e.g. --turns 40');
@@ -55,7 +126,7 @@ function parseTurns(raw: string): number {
   return n;
 }
 
-function parseRuns(raw: string): number {
+export function parseRuns(raw: string): number {
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) {
     fail(2, `--runs must be a positive whole number, got "${raw}"`, 'e.g. --runs 3');
@@ -93,12 +164,38 @@ function resolveSeatIds(known: string[], raw: string | undefined): string[] | un
   return requested;
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const verb = args[0];
-  if (!verb || verb === '--help' || verb === '-h') { process.stdout.write(usage() + '\n'); process.exit(verb ? 0 : 1); }
-  const configPath = args[1];
+function formatSeatDone(r: SeatResult): string {
+  const head = `  [${r.seat.id}] done: ${r.turnsPlayed} turns, ended by ${r.endedBy}${r.error ? ` (${r.error})` : ''}`;
+  if (r.panel) {
+    const asked = r.panel.jurors.length;
+    const answered = (r.panel.critiques ?? []).filter((c) => c.critique).length;
+    const jury = `jury ${r.panel.alive ? 'ALIVE' : 'not alive'}`;
+    const count = (r.panel.critiques ?? []).length > 0 && answered !== asked
+      ? `${answered}/${asked} jurors answered`
+      : `${asked} juror${asked === 1 ? '' : 's'}`;
+    return `${head}, ${jury} (${count})\n`;
+  }
+  if (r.critique) return `${head}, critique ${r.critique.alive ? 'ALIVE' : 'not alive'} (testimony)\n`;
+  return `${head}, failed (${r.critiqueError})\n`;
+}
+
+export async function main(argv = process.argv.slice(2)): Promise<void> {
+  if (argv.some((a) => a === '--help' || a === '-h')) {
+    process.stdout.write(usage() + '\n');
+    process.exit(0);
+  }
+  if (argv.some((a) => a === '--version')) {
+    process.stdout.write(`${VERSION}\n`);
+    process.exit(0);
+  }
+  rejectUnknownFlags(argv);
+  const pos = positionals(argv);
+  const verb = pos[0];
+  if (!verb) { process.stdout.write(usage() + '\n'); process.exit(1); }
+  if (!KNOWN_VERBS.has(verb)) fail(1, `unknown verb ${verb}`, usage());
+  const configPath = pos[1];
   if (!configPath) fail(1, `${verb} needs a config path`, usage());
+
   let cfg;
   try {
     cfg = await loadConfig(configPath);
@@ -106,13 +203,19 @@ async function main(): Promise<void> {
     if (err instanceof ConfigError) fail(2, err.message, err.hint);
     throw err;
   }
-  const label = flag(args, '--label') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  if (verb === 'check') {
+    process.stdout.write(`ok: ${cfg.name} (schemaVersion ${cfg.schemaVersion}, ${cfg.seats.length} seat${cfg.seats.length === 1 ? '' : 's'})\n`);
+    return;
+  }
+
+  const label = flag(argv, '--label') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
   if (verb === 'report') {
     // Without this the label defaulted to "now", and rebuilding a report read a
     // directory that cannot exist, surfacing as a raw ENOENT rather than a
     // coded error naming the real problem.
-    if (!flag(args, '--label')) fail(1, 'report needs --label', 'name the run to rebuild, e.g. --label phase9');
+    if (!flag(argv, '--label')) fail(1, 'report needs --label', 'name the run to rebuild, e.g. --label phase9');
     const runDir = join(cfg.runsDir, label);
     if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label, or run the playtest first');
     try {
@@ -136,33 +239,30 @@ async function main(): Promise<void> {
       const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
       process.stdout.write(`wrote ${path}\n`);
     } catch (err) {
-      if (err instanceof ReportError) fail(2, err.message, err.hint);
-      throw err;
+      failFrom(err);
     }
     return;
   }
-  if (verb !== 'run') fail(1, `unknown verb ${verb}`, usage());
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) fail(3, 'OPENROUTER_API_KEY is not set', 'export it; players and critics are OpenRouter seats');
-  const turns = flag(args, '--turns');
+  const turns = flag(argv, '--turns');
   if (turns) cfg.turns = parseTurns(turns);
-  const runsFlag = flag(args, '--runs');
+  const runsFlag = flag(argv, '--runs');
   const runCount = runsFlag ? parseRuns(runsFlag) : 1;
-  const seats = resolveSeatIds(cfg.seats.map((s) => s.id), flag(args, '--seats'));
+  const seats = resolveSeatIds(cfg.seats.map((s) => s.id), flag(argv, '--seats'));
   const client = createOpenRouterClient({ apiKey });
 
   process.stdout.write(`${cfg.name}: ${(seats ?? cfg.seats.map((s) => s.id)).join(', ')} × ${cfg.turns} turns × ${runCount} run${runCount === 1 ? '' : 's'} → ${join(cfg.runsDir, label)}\n`);
   if (runCount !== 1) process.stdout.write(`${summarizeRuns([], runCount).warning}\n`);
   const onTurn = (seat: { id: string }, t: { turn: number; reason: string; ms: number; input: string }) =>
     process.stdout.write(`  [${seat.id}] t${t.turn} (${t.reason}, ${t.ms}ms) > ${t.input}\n`);
-  const onSeatDone = (r: { seat: { id: string }; turnsPlayed: number; endedBy: string; error?: string; critique: { alive: boolean } | null; critiqueError?: string; panel: { alive: boolean; jurors: unknown[] } | null }) =>
-    process.stdout.write(`  [${r.seat.id}] done: ${r.turnsPlayed} turns, ended by ${r.endedBy}${r.error ? ` (${r.error})` : ''}, ${r.panel ? `jury ${r.panel.alive ? 'ALIVE' : 'not alive'} (${r.panel.jurors.length} juror${r.panel.jurors.length === 1 ? '' : 's'})` : r.critique ? `critique ${r.critique.alive ? 'ALIVE' : 'not alive'} (testimony)` : `failed (${r.critiqueError})`}\n`);
+  const onSeatDone = (r: SeatResult) => process.stdout.write(formatSeatDone(r));
   try {
     const criterionIds = cfg.criteria.map((c) => c.id);
     if (runCount === 1) {
       const results = await runAll(cfg, {
-        label, client, seats, parallel: !args.includes('--serial'), onTurn, onSeatDone,
+        label, client, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
       });
       if (results.length === 0) fail(4, 'no seats ran', 'check --seats against the config seat ids, not families');
       const path = await writeReport(cfg.name, join(cfg.runsDir, label), label, criterionIds);
@@ -180,7 +280,7 @@ async function main(): Promise<void> {
         const runLabel = `${label}-r${String(i).padStart(2, '0')}`;
         process.stdout.write(`-- run ${i}/${runCount} (${runLabel})\n`);
         const results = await runAll(cfg, {
-          label: runLabel, client, seats, parallel: !args.includes('--serial'), onTurn, onSeatDone,
+          label: runLabel, client, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
         });
         await writeReport(cfg.name, join(cfg.runsDir, runLabel), runLabel, criterionIds);
         if (results.length === 0) continue;
@@ -202,11 +302,20 @@ async function main(): Promise<void> {
       if (!anyPlayOk) fail(4, 'every seat failed in every run');
     }
   } catch (err) {
-    if (err instanceof OpenRouterError) fail(3, err.message, err.hint);
-    if (err instanceof ConfigError) fail(2, err.message, err.hint);
-    if (err instanceof ReportError) fail(4, err.message, err.hint);
-    throw err;
+    failFrom(err);
   }
 }
 
-main().catch((err) => fail(4, err instanceof Error ? err.message : String(err)));
+function runningAsCli(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return fileURLToPath(import.meta.url).toLowerCase() === resolve(entry).toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+if (runningAsCli()) {
+  main().catch((err) => failFrom(err));
+}

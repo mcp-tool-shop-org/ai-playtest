@@ -22,13 +22,21 @@ export class OpenRouterError extends Error {
     readonly status?: number,
     readonly attempt?: number,
     readonly elapsedMs?: number,
+    readonly priorBodies: readonly string[] = [],
   ) {
     super(message);
+    this.name = 'OpenRouterError';
   }
 }
 
 type FetchInit = { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal };
-type FetchLike = (url: string, init: FetchInit) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
+type FetchHeaders = { get(name: string): string | null };
+type FetchLike = (url: string, init: FetchInit) => Promise<{
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+  headers?: FetchHeaders;
+}>;
 
 export type OpenRouterOptions = {
   apiKey: string;
@@ -46,6 +54,9 @@ export type OpenRouterOptions = {
 const DEFAULT_BASE = 'https://openrouter.ai/api/v1';
 const DEFAULT_ATTEMPT_TIMEOUT_MS = 45_000;
 const DEFAULT_BUDGET_MS = 180_000;
+const BACKOFF_BASE_MS = 2_000;
+const BACKOFF_CAP_MS = 30_000;
+const RETRY_AFTER_CAP_MS = 60_000;
 
 function isAbortError(err: unknown): boolean {
   const name = err && typeof err === 'object' && 'name' in err ? String((err as { name: unknown }).name) : '';
@@ -67,12 +78,74 @@ function raceAbort<T>(p: Promise<T>, signal: AbortSignal): Promise<T> {
   });
 }
 
+/** 408/429 and 5xx are transient. Other 4xx (402 credits, 403, 413, 422, …) are terminal. */
+function isRetryableHttp(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function hintForHttp(status: number): string {
+  switch (status) {
+    case 400: return 'bad request (HTTP 400); not retried';
+    case 401: return 'OPENROUTER_API_KEY is missing or invalid';
+    case 402: return 'pay / check account: OpenRouter credits exhausted — this is not a hang';
+    case 403: return 'forbidden (HTTP 403); this key or model is not allowed — not retried';
+    case 404: return 'the model slug has no endpoints; check https://openrouter.ai/models';
+    case 408: return 'request timeout (HTTP 408); retrying';
+    case 413: return 'payload too large (HTTP 413); shrink the prompt — not retried';
+    case 422: return 'unprocessable request (HTTP 422); not retried';
+    case 429: return 'rate-limited (HTTP 429); retrying';
+    default:
+      if (status >= 500) return 'upstream outage; retrying';
+      if (status >= 400) return `client error (HTTP ${status}); not retried`;
+      return 'transient; retried';
+  }
+}
+
+function parseRetryAfter(header: string | null | undefined): number | undefined {
+  if (!header) return undefined;
+  const trimmed = header.trim();
+  if (!trimmed) return undefined;
+  const sec = Number(trimmed);
+  if (Number.isFinite(sec) && sec >= 0) return Math.min(sec * 1000, RETRY_AFTER_CAP_MS);
+  const when = Date.parse(trimmed);
+  if (Number.isFinite(when)) return Math.min(Math.max(0, when - Date.now()), RETRY_AFTER_CAP_MS);
+  return undefined;
+}
+
+/** Equal jitter: half the exponential delay plus a random extra half, so parallel seats do not lockstep. */
+function equalJitter(baseMs: number): number {
+  const exp = Math.min(Math.max(0, baseMs), BACKOFF_CAP_MS);
+  return exp / 2 + Math.random() * (exp / 2);
+}
+
+function flattenMessageContent(content: unknown): string | undefined {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return undefined;
+  const parts: string[] = [];
+  for (const p of content) {
+    if (typeof p === 'string') parts.push(p);
+    else if (p && typeof p === 'object' && typeof (p as { text?: unknown }).text === 'string') {
+      parts.push((p as { text: string }).text);
+    }
+  }
+  return parts.join('');
+}
+
+function finishReasonOf(choice: { finish_reason?: string } | undefined): string {
+  return (choice?.finish_reason ?? '').toLowerCase().replace(/_/g, '-');
+}
+
+function noteBody(priorBodies: string[], status: number | undefined, body: string): void {
+  const snippet = `${status ?? 'net'} ${body.slice(0, 240)}`;
+  if (!priorBodies.includes(snippet)) priorBodies.push(snippet);
+}
+
 export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
   const fetchImpl: FetchLike = opts.fetchImpl ?? ((url, init) => fetch(url, init));
   const sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
-  // Upstream providers rate-limit in bursts (a 429 with "temporarily
-  // rate-limited upstream"); six retries at 2s doubling wait about two
-  // minutes in total before a seat gives up.
+  // Upstream providers rate-limit in bursts. Six retries with equal-jitter
+  // doubling (honouring Retry-After when present) wait about two minutes
+  // before a seat gives up. Terminal 4xx do not enter that budget.
   const retries = opts.retries ?? 6;
   const base = opts.baseUrl ?? DEFAULT_BASE;
   const attemptTimeoutMs = opts.attemptTimeoutMs ?? DEFAULT_ATTEMPT_TIMEOUT_MS;
@@ -80,6 +153,8 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
 
   return async (req) => {
     let lastErr: OpenRouterError | undefined;
+    let retryAfterMs: number | undefined;
+    const priorBodies: string[] = [];
     const started = Date.now();
     const totalAttempts = retries + 1;
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -92,10 +167,22 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
           undefined,
           n,
           elapsed,
+          priorBodies,
         );
       }
       if (attempt > 0) {
-        const wait = Math.min(2000 * 2 ** (attempt - 1), budgetMs - (Date.now() - started));
+        const remaining = budgetMs - (Date.now() - started);
+        const exp = BACKOFF_BASE_MS * 2 ** (attempt - 1);
+        const ra = retryAfterMs;
+        retryAfterMs = undefined;
+        const raw = ra !== undefined
+          ? Math.min(ra + Math.random() * 250, RETRY_AFTER_CAP_MS)
+          : equalJitter(exp);
+        const wait = Math.min(
+          raw,
+          Math.max(0, remaining - 1),
+          ra !== undefined ? RETRY_AFTER_CAP_MS : BACKOFF_CAP_MS,
+        );
         if (wait > 0) await sleep(wait);
         if (Date.now() - started >= budgetMs) {
           const elapsedMs = Date.now() - started;
@@ -105,12 +192,21 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
             undefined,
             n,
             elapsedMs,
+            priorBodies,
           );
         }
       }
       const stamp = (message: string, hint: string, status?: number): OpenRouterError => {
         const elapsedMs = Date.now() - started;
-        return new OpenRouterError(`${message} (attempt ${n}/${totalAttempts}, ${elapsedMs}ms)`, hint, status, n, elapsedMs);
+        const earlier = priorBodies.length > 0 ? `; earlier: ${priorBodies.join(' | ')}` : '';
+        return new OpenRouterError(
+          `${message} (attempt ${n}/${totalAttempts}, ${elapsedMs}ms)${earlier}`,
+          hint,
+          status,
+          n,
+          elapsedMs,
+          [...priorBodies],
+        );
       };
       const body = JSON.stringify({
         model: req.model,
@@ -147,25 +243,46 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
         continue;
       }
       if (!res.ok) {
-        lastErr = stamp(`HTTP ${res.status} from OpenRouter for ${req.model}: ${text.slice(0, 300)}`, res.status === 401 ? 'OPENROUTER_API_KEY is missing or invalid' : res.status === 404 ? 'the model slug has no endpoints; check https://openrouter.ai/models' : 'transient; retried', res.status);
-        if (res.status === 401 || res.status === 404 || res.status === 400) break;
+        lastErr = stamp(
+          `HTTP ${res.status} from OpenRouter for ${req.model}: ${text.slice(0, 300)}`,
+          hintForHttp(res.status),
+          res.status,
+        );
+        noteBody(priorBodies, res.status, text);
+        if (!isRetryableHttp(res.status)) break;
+        retryAfterMs = parseRetryAfter(res.headers?.get?.('retry-after') ?? res.headers?.get?.('Retry-After'));
         continue;
       }
-      let parsed: { choices?: Array<{ message?: { content?: string | null }; finish_reason?: string }>; error?: { message?: string } };
+      let parsed: {
+        choices?: Array<{ message?: { content?: unknown }; finish_reason?: string }>;
+        error?: { message?: string };
+      };
       try {
         parsed = JSON.parse(text);
       } catch {
         lastErr = stamp('non-JSON body from OpenRouter', 'transient; retried');
+        noteBody(priorBodies, res.status, 'non-JSON body');
         continue;
       }
       if (parsed.error) {
         lastErr = stamp(`OpenRouter error for ${req.model}: ${parsed.error.message ?? 'unknown'}`, 'transient; retried');
+        noteBody(priorBodies, res.status, parsed.error.message ?? 'unknown');
         continue;
       }
-      const content = parsed.choices?.[0]?.message?.content;
-      if (typeof content !== 'string') {
-        lastErr = stamp(`empty completion from ${req.model}`, 'transient; retried');
-        continue;
+      const choice = parsed.choices?.[0];
+      const finish = finishReasonOf(choice);
+      // A filtered turn used to look like the model chose to say nothing.
+      // Non-retryable: the same prompt reproduces the moderation block.
+      if (finish === 'content-filter') {
+        const elapsedMs = Date.now() - started;
+        throw new OpenRouterError(
+          `response from ${req.model} was blocked by the provider content filter`,
+          'moderation: the provider filtered this completion; this is not an empty reply — do not retry the same prompt',
+          res.status,
+          n,
+          elapsedMs,
+          priorBodies,
+        );
       }
       // A completion cut off at max_tokens used to be returned as a success.
       // With response_format json_object that guarantees a parse failure
@@ -173,14 +290,25 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
       // "the budget was too small" — which is the failure the 1,800 -> 6,000
       // critic-budget commit was chasing. Non-retryable: the same budget
       // reproduces it.
-      if (parsed.choices?.[0]?.finish_reason === 'length') {
+      if (finish === 'length') {
+        const elapsedMs = Date.now() - started;
         throw new OpenRouterError(
           `response from ${req.model} was truncated at max_tokens=${req.maxTokens}`,
           `raise maxTokens for this call; the model had more to say and the cut-off text is not valid ${req.json ? 'JSON' : 'output'}`,
+          res.status,
+          n,
+          elapsedMs,
+          priorBodies,
         );
+      }
+      const rawContent = choice?.message?.content;
+      const content = flattenMessageContent(rawContent);
+      if (content === undefined || (Array.isArray(rawContent) && content.length === 0)) {
+        lastErr = stamp(`empty completion from ${req.model}`, 'empty reply; retried');
+        continue;
       }
       return content;
     }
-    throw lastErr ?? new OpenRouterError('exhausted retries', 'see the previous errors');
+    throw lastErr ?? new OpenRouterError('exhausted retries', 'see the previous errors', undefined, undefined, undefined, priorBodies);
   };
 }

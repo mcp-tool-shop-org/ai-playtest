@@ -10,7 +10,7 @@ import { spawnGame } from './stdio-game.js';
 import type { Driver, Observation } from './driver.js';
 import { createStdioDriver } from './stdio-driver.js';
 import { chooseInput, type TurnRecord } from './player.js';
-import { critique, type Critique } from './critic.js';
+import { critique, CritiqueError, type Critique } from './critic.js';
 import { computeCoverage, type Coverage } from './coverage.js';
 import { pickJurors, aggregatePanel, type PanelVerdict } from './panel.js';
 import { runVerifiers, type VerifierReport } from './verifiers.js';
@@ -40,6 +40,10 @@ export type SeatResult = {
   panel: PanelVerdict | null;
   durationMs: number;
   dir: string;
+  /** True when scripted setup hit MAX_SETUP_ANSWERS and later matches were ignored. */
+  setupCapped?: boolean;
+  /** Last raw critic body when parse/transport failed. Also written to critique.raw.txt. */
+  critiqueRaw?: string;
 };
 
 export type RunOptions = {
@@ -149,8 +153,15 @@ export async function createDriver(cfg: PlaytestConfig, env: Record<string, stri
         requestTimeoutMs: cfg.driver.requestTimeoutMs,
       });
     }
-    default:
+    case 'stdio':
       return createStdioDriver({ game: cfg.game, env });
+    default: {
+      const unexpected: never = cfg.driver;
+      throw new ConfigError(
+        `unknown driver kind "${String((unexpected as { kind?: unknown }).kind)}"`,
+        'driver.kind must be one of: stdio, pty, rpc',
+      );
+    }
   }
 }
 
@@ -207,6 +218,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   let turn = 0;
   let diagnostics = '';
   let result: SeatResult | undefined;
+  let setupCapped = false;
 
   try {
     try {
@@ -231,11 +243,17 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
         const step = setupSteps.find((st) => st.re.test(tail));
         if (step && setupAnswers < MAX_SETUP_ANSWERS) {
           setupAnswers++;
+          if (setupAnswers >= MAX_SETUP_ANSWERS) setupCapped = true;
           const rec: TurnRecord = { turn: 0, screen: screen.text, input: step.answer, reason: 'setup', ms: Date.now() - t0 };
           history.push(rec);
           opts.onTurn?.(seat, rec);
           pendingScreen = await game.step({ kind: 'line', line: step.answer });
           continue;
+        }
+        if (step && setupAnswers >= MAX_SETUP_ANSWERS) {
+          // Cap hit: do not apply further setup matches. The player sees the
+          // menu; setupCapped is recorded so this is not scored as a choice.
+          setupCapped = true;
         }
         // A player call can fail after the client's own retries (a provider
         // outage lasting minutes); the turn waits and tries again a few times
@@ -267,24 +285,33 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
           },
         );
         turn++;
+        const choice = played.value;
         const rec: TurnRecord = {
-          turn, screen: screen.text, input: played.value, reason: screen.reason, ms: Date.now() - t0,
+          turn, screen: screen.text, input: choice.input,
+          reason: choice.fallback ? 'look-fallback' : screen.reason,
+          ms: Date.now() - t0,
           attempts: played.attempts, lastError: played.lastError,
+          fallback: choice.fallback || undefined,
+          rawSnippet: choice.rawSnippet,
         };
         history.push(rec);
         opts.onTurn?.(seat, rec);
-        pendingScreen = await game.step({ kind: 'line', line: played.value });
+        pendingScreen = await game.step({ kind: 'line', line: choice.input });
       }
       // The screen produced by the last player input is evidence of THAT input.
-      // The quit loop used to consume it and label it `quit`, which dropped the
-      // last action's result from coverage and from the critic (quit records are
-      // filtered out of evidence). Record it first, then send the runner's quit.
+      // Recorded with input:'' so the critic sees it. playerTurns still excludes
+      // empty input (turnsPlayed stays the count of chosen actions);
+      // coverage.analysisTurns / runVerifiers fold the row in as the result of
+      // the previous player turn so novelty, self-loops, absorbing SCC and
+      // terminals see the final state. The quit loop used to consume it and
+      // label it `quit`, which dropped it from both consumers.
       // Skip both steps when the player already ended the game -- sending quit
       // to a dead process recorded a phantom extra turn (reason 'exit', input
       // 'quit') that playerTurns counted.
       if (endedBy === 'turns') {
         if (pendingScreen) {
           history.push({ turn, screen: pendingScreen.text, input: '', reason: pendingScreen.reason, ms: 0 });
+          if (pendingScreen.reason === 'timeout') endedBy = 'timeout';
         }
         if (!(pendingScreen?.done ?? false) && pendingScreen?.reason !== 'exit' && pendingScreen?.reason !== 'timeout') {
           for (const q of cfg.game.quitInputs) {
@@ -312,15 +339,19 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
 
     let crit: Critique | null = null;
     let critiqueError: string | undefined;
+    let critiqueRaw: string | undefined;
     // The player's own turns, for counting. Setup answers and the quit sequence
     // are the runner's inputs, not the player's.
-    const playerTurns = history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit');
+    const playerTurns = history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry');
     // The evidence the critic sees keeps the terminal screens — the consequence
     // of the last input, the save recap, the crash output. Dropping every record
     // with no input made endings, stalls and crashes invisible to the verdict.
-    const evidence = history.filter((h) => h.reason !== 'setup' && h.reason !== 'quit');
+    const evidence = history.filter((h) => h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry');
     let panel: PanelVerdict | null = null;
-    if (playerTurns.length > 0) {
+    const shouldJudge = playerTurns.length > 0
+      || endedBy === 'timeout'
+      || (endedBy === 'error' && evidence.length > 0);
+    if (shouldJudge) {
       const outcome = { endedBy, turnsPlayed: playerTurns.length, error };
       // The author's own reading is kept, but as TESTIMONY -- a first-person
       // account of where it was confused and what it tried. It is not the score.
@@ -328,6 +359,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
         crit = await critique(opts.client, seat.model, cfg.criteria, evidence, { outcome });
       } catch (err) {
         critiqueError = formatErr(err);
+        if (err instanceof CritiqueError && err.raw !== undefined) critiqueRaw = err.raw;
       }
       // The score comes from families that did not write this transcript.
       const requested = cfg.panelSize;
@@ -352,7 +384,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
 
     result = {
       seat, label: opts.label, turnsPlayed: playerTurns.length, endedBy, error, stopError, history,
-      critique: crit, critiqueError,
+      critique: crit, critiqueError, critiqueRaw, setupCapped: setupCapped || undefined,
       coverage: computeCoverage(history),
       verifiers: runVerifiers(history, cfg.verifiers),
       panel,
@@ -369,8 +401,9 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   } catch (err) {
     const partial: Partial<SeatResult> = result ?? {
       seat, label: opts.label, history, endedBy, error: error ?? formatErr(err), stopError, dir,
-      turnsPlayed: history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit').length,
+      turnsPlayed: history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry').length,
       critique: null,
+      setupCapped: setupCapped || undefined,
       coverage: computeCoverage(history),
       verifiers: runVerifiers(history, cfg.verifiers),
       panel: null,
@@ -385,6 +418,7 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   const extra = [
     r.stopError ? `, stopError: ${r.stopError}` : '',
     r.writeError ? `, writeError: ${r.writeError}` : '',
+    r.setupCapped ? ', setupCapped: true' : '',
   ].join('');
   const lines: string[] = [
     `# ai-playtest transcript -- ${cfg.name} -- seat ${r.seat.id} (${r.seat.family}: ${r.seat.model}) -- label ${r.label}`,
@@ -396,16 +430,25 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
     if ((t.attempts ?? 1) > 1 || t.lastError) {
       lines.push(`# attempts ${t.attempts ?? 1}${t.lastError ? `; last retry error: ${t.lastError}` : ''}`);
     }
+    if (t.fallback) {
+      lines.push(`# look-fallback: model reply discarded${t.rawSnippet ? `; raw ${JSON.stringify(t.rawSnippet)}` : ''}; runner sent ${JSON.stringify(t.input)}`);
+    }
     lines.push(t.screen.trimEnd());
     if (t.input) lines.push(`> ${t.input}`);
     lines.push('');
   }
   await writeFile(join(r.dir, 'transcript.txt'), lines.join('\n') + '\n', 'utf8');
-  await writeFile(join(r.dir, 'critique.json'), JSON.stringify(r.critique ?? { error: r.critiqueError ?? 'no turns played' }, null, 2) + '\n', 'utf8');
+  const critiquePayload = r.critique ?? {
+    error: r.critiqueError ?? 'no turns played',
+    ...(r.critiqueRaw ? { raw: r.critiqueRaw } : {}),
+  };
+  await writeFile(join(r.dir, 'critique.json'), JSON.stringify(critiquePayload, null, 2) + '\n', 'utf8');
+  if (r.critiqueRaw) await writeFile(join(r.dir, 'critique.raw.txt'), r.critiqueRaw, 'utf8');
   await writeFile(join(r.dir, 'meta.json'), JSON.stringify({
     name: cfg.name, label: r.label, seat: r.seat, turns: cfg.turns, turnsPlayed: r.turnsPlayed, endedBy: r.endedBy,
     error: r.error ?? null, stopError: r.stopError ?? null, writeError: r.writeError ?? null,
-    critiqueError: r.critiqueError ?? null, coverage: r.coverage, panel: r.panel, verifiers: r.verifiers,
+    critiqueError: r.critiqueError ?? null, setupCapped: r.setupCapped ?? false,
+    coverage: r.coverage, panel: r.panel, verifiers: r.verifiers,
     durationMs: r.durationMs, finishedAt: new Date().toISOString(),
   }, null, 2) + '\n', 'utf8');
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
@@ -439,6 +482,8 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
       history,
       critique: partial?.critique ?? null,
       critiqueError: partial?.critiqueError ?? (history.length > 0 ? undefined : 'the seat threw before producing a critique'),
+      critiqueRaw: partial?.critiqueRaw,
+      setupCapped: partial?.setupCapped,
       coverage: partial?.coverage ?? computeCoverage(history),
       verifiers: partial?.verifiers ?? runVerifiers(history),
       panel: partial?.panel ?? null,

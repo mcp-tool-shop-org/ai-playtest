@@ -99,31 +99,51 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
   });
 
   socket.setEncoding('utf8');
+  const BUFFER_CAP = 2 * 1024 * 1024;
+  const LINE_CAP = 1 * 1024 * 1024;
+  const DIAG_CAP = 256 * 1024;
+  const DIAG_TRUNC = '[diagnostics truncated]\n';
   let buffer = '';
   let closed = false;
   let diagnostics = '';
   let nextId = 1;
   const pending = new Map<number, { resolve: (r: RpcResult) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }>();
 
+  const note = (msg: string) => {
+    diagnostics += msg;
+    if (diagnostics.length > DIAG_CAP) {
+      const keep = DIAG_CAP - DIAG_TRUNC.length;
+      diagnostics = DIAG_TRUNC + diagnostics.slice(-keep);
+    }
+  };
+
   socket.on('data', (chunk: string) => {
     buffer += chunk;
+    if (buffer.length > BUFFER_CAP) {
+      note(`[rpc] inbound buffer truncated from ${buffer.length} bytes\n`);
+      buffer = buffer.slice(-BUFFER_CAP);
+    }
     // Newline-delimited: everything before the last newline is complete
     // messages, and a partial tail waits for more bytes.
     let nl: number;
     while ((nl = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, nl).trim();
+      let line = buffer.slice(0, nl).trim();
       buffer = buffer.slice(nl + 1);
       if (!line) continue;
+      if (line.length > LINE_CAP) {
+        note(`[rpc] line truncated from ${line.length} bytes\n`);
+        line = line.slice(0, LINE_CAP);
+      }
       let msg: { id?: number; result?: RpcResult; error?: { message?: string }; method?: string; params?: unknown };
       try {
         msg = JSON.parse(line);
       } catch {
-        diagnostics += `[rpc] non-JSON line from game: ${line.slice(0, 200)}\n`;
+        note(`[rpc] non-JSON line from game: ${line.slice(0, 200)}\n`);
         continue;
       }
       // An unsolicited "log" notification lets a game report its own diagnostics
       // without polluting the observation the player sees.
-      if (msg.method === 'log') { diagnostics += `${JSON.stringify(msg.params)}\n`; continue; }
+      if (msg.method === 'log') { note(`${JSON.stringify(msg.params)}\n`); continue; }
       if (typeof msg.id !== 'number') continue;
       const waiter = pending.get(msg.id);
       if (!waiter) continue;
@@ -149,7 +169,7 @@ export async function createRpcDriver(opts: RpcDriverOptions): Promise<Driver> {
     }
     pending.clear();
   });
-  socket.on('error', (err) => { diagnostics += `[rpc] socket error: ${err.message}\n`; });
+  socket.on('error', (err) => { note(`[rpc] socket error: ${err.message}\n`); });
 
   function call(method: string, params?: unknown, timeoutMs: number = requestTimeoutMs): Promise<RpcResult> {
     if (closed) {

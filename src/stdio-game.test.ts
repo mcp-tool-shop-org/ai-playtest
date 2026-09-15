@@ -12,6 +12,10 @@ describe('stripAnsi', () => {
   it('does not swallow text between an ST-terminated OSC and a later BEL', () => {
     const input = `${ESC}]0;title${ESC}\\ You enter the cave.\nA bell rings!${BEL} The door opens.`;
     const out = stripAnsi(input);
+    // Exact equality: a toContain-only check stayed green when `.replace(OSC, '')`
+    // was deleted, because the narration remains even if the OSC bytes are left in.
+    expect(out).toBe(` You enter the cave.\nA bell rings!${BEL} The door opens.`);
+    expect(out).not.toContain(ESC);
     expect(out).toContain('You enter the cave.');
     expect(out).toContain('A bell rings!');
     expect(out).toContain('The door opens.');
@@ -171,6 +175,27 @@ describe('spawnGame', () => {
       const screen = await g.nextScreen();
       expect(screen.reason).toBe('timeout');
       expect(screen.text).toContain('one line then silence');
+    } finally {
+      g.kill();
+    }
+  }, 2000);
+
+  it('reports idle when idleQuietMs is shorter than promptQuietMs even if a prompt matches', async () => {
+    // Pin of the steal shape: at idleQuietMs the prompt branch is still false
+    // (quiet < promptQuietMs), so idle fires on a real prompt. validateConfig
+    // should reject this pair; spawnGame is given a raw GameConfig so the steal
+    // stays observable if a caller bypasses validation.
+    const g = spawnGame(cfg({
+      args: ['-e', 'process.stdout.write("Choose:\\n> "); setInterval(() => {}, 1e9)'],
+      promptPatterns: ['>\\s*$'],
+      promptQuietMs: 200,
+      idleQuietMs: 50,
+      screenTimeoutMs: 8000,
+    }), {});
+    try {
+      const screen = await g.nextScreen();
+      expect(screen.reason).toBe('idle');
+      expect(screen.text).toContain('Choose:');
     } finally {
       g.kill();
     }

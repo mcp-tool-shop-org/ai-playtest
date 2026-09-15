@@ -177,12 +177,16 @@ npm run build
 node dist/cli.js run path/to/game.playtest.json --label phase9
 node dist/cli.js run path/to/game.playtest.json --label smoke --seats mistral --turns 8
 node dist/cli.js run path/to/game.playtest.json --label compare --runs 3   # descriptive; cannot reach p<0.05
+node dist/cli.js run path/to/game.playtest.json --label rpc --serial       # one game, several seats; needed for RPC until you multiplex
 node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md from disk
 ```
 
+`--serial` runs seats one after another. RPC seats share one TCP game unless you
+launch one process per seat; without `--serial` they contend.
+
 Exit codes: 0 ok · 1 usage · 2 config · 3 provider (key missing, model has no
-endpoints) · 4 run error (every seat failed, or no seat produced a verdict).
-Errors print `error:` and `hint:`.
+endpoints) · 4 run error (every seat ended in error, or no seat produced a
+verdict). Errors print `error:` and `hint:`.
 
 ## Config reference
 
@@ -194,16 +198,19 @@ Errors print `error:` and `hint:`.
 | `game.env` | extra env for the game; a value `$NAME` reads the runner's env |
 | `game.inheritEnv` | pass the runner's whole environment to the game. **Off by default** — see below |
 | `game.promptPatterns` | regexes meaning "waiting for a line", tested against the stripped tail (`stdio`) or the rendered cursor line (`pty`) |
-| `game.promptQuietMs` / `idleQuietMs` / `screenTimeoutMs` | the waiting rule |
-| `game.quitInputs` | lines sent after the last turn |
+| `game.promptQuietMs` / `idleQuietMs` / `screenTimeoutMs` | the waiting rule (defaults 800 / 6000 / 180000 ms) |
+| `game.quitInputs` | lines sent after the last turn (default `["quit"]`) |
 | `seats[]` | `{ id, family, model }` — OpenRouter slugs; one seat per family |
 | `panelSize` | author-off jurors per transcript (default **1**; raise to flag disagreement, not to average a stronger score) |
-| `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`) and occupancy knobs for the deterministic transcript checks. Empty lists mean "do not guess" |
+| `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`; empty = do not guess). Occupancy: `absorbingMinTurns` (default 4), `noProgressWindow` (default 5), `noOpVerbs` |
 | `setup[]` | `{ match, answer }` scripted answers for setup prompts |
-| `turns` | play inputs per seat (setup answers and quit inputs do not count) |
+| `turns` | play inputs per seat (setup answers and quit inputs do not count; default 40) |
 | `persona` | the player brief |
 | `criteria[]` | `{ id, check }` the game's own alive criteria |
-| `screenChars`, `playerMemoryTurns`, `playerTemperature`, `runsDir` | context and output knobs |
+| `screenChars` | characters of screen kept per turn (default 6000) |
+| `playerMemoryTurns` | recent turns the player sees (default 8) |
+| `playerTemperature` | player sampling temperature (default 0.7); the critic is always 0 |
+| `runsDir` | where runs are written (default `runs`, resolved against the config file) |
 
 A worked config: `claude-rpg/dogfood/playtest/claude-rpg.playtest.json` (the
 shipped Claude narrator runs through OpenRouter's Anthropic-compatible
@@ -242,8 +249,9 @@ executable-equivalent, and game output is untrusted input to a model.
 - **UNCERTAINTY_GATED_HUMANS — 3.** The report aggregates but never rules, and it
   states its own uncertainty: split verdicts, thin coverage, a sample-of-one
   warning, and criteria no judge answered are all surfaced rather than smoothed.
-- **EXTERNAL_VERIFIER — 3.** Each transcript is judged by families that did not
-  produce it, by a panel, with disagreement reported. **This scored 3 while the
+- **EXTERNAL_VERIFIER — 3.** Each transcript is judged by a family that did not
+  produce it (default one author-off seat; raise `panelSize` to flag
+  disagreement), with disagreement reported. **This scored 3 while the
   code did the opposite** until the 2026-09-14 swarm — the critic was the same
   model that played. The claim now matches the implementation, and `pickJurors`
   returns an empty jury rather than ever falling back to the author.
@@ -256,6 +264,6 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-117 tests. `tsconfig.test.json` exists because the build config excludes test
+161 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.

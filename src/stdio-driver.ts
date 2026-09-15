@@ -23,24 +23,53 @@ export type StdioDriverOptions = {
   spawn?: typeof spawnGame;
 };
 
+export class SpawnFailedError extends Error {
+  readonly code = 'E_SPAWN_FAILED';
+  constructor(message: string, readonly hint: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'SpawnFailedError';
+  }
+}
+
 export function createStdioDriver(opts: StdioDriverOptions): Driver {
   const game: GameProcess = (opts.spawn ?? spawnGame)(opts.game, opts.env);
+  let launched = false;
 
   const observe = async (): Promise<Observation> => {
     const screen = await game.nextScreen();
+    // spawnError is also set on a later stdin EPIPE; only the first screen
+    // before a successful launch is "could not start".
+    const spawnFailed = !launched && game.spawnError !== null;
+    const spawnMsg = spawnFailed && game.spawnError ? game.spawnError.message : undefined;
+    if (!spawnFailed) launched = true;
+    const text = spawnMsg
+      ? `[could not start] ${spawnMsg}${screen.text ? `\n${screen.text}` : ''}`
+      : screen.text;
     return {
-      text: screen.text,
+      text,
       actions: opts.actions ?? { kind: 'free-text' },
       reason: screen.reason,
+      endCause: spawnMsg ? 'spawn-failed' : undefined,
       done: screen.reason === 'exit',
       exitCode: screen.exitCode,
+      spawnError: spawnMsg,
     };
   };
 
   return {
     modality: 'stdio',
     get diagnostics() { return game.stderr; },
-    async start() { return observe(); },
+    async start() {
+      const obs = await observe();
+      if (obs.spawnError) {
+        throw new SpawnFailedError(
+          `could not start the game: ${obs.spawnError}`,
+          'the command failed to launch (missing binary, bad path, or spawn ENOENT) — this is not a game that exited immediately',
+          { cause: game.spawnError },
+        );
+      }
+      return obs;
+    },
     async step(action: Action) {
       game.send(actionToLine(action));
       return observe();

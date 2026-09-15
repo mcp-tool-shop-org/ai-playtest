@@ -7,8 +7,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm #2, 2026-09-14. 84 -> 117 tests. First live run against claude-rpg
-(`proof-01`, 8 turns, mistral). Stage B amend landed 24 HIGH fixes.
+Dogfood swarm #2, 2026-09-14. 84 -> 161 tests. First live run against claude-rpg
+(`proof-01`, 8 turns, mistral). Stage B: 24 HIGH. Stage C: remaining MED/LOW
+(humanization — errors that name the cause, CLI help, report honesty).
 
 ### Added
 
@@ -37,24 +38,15 @@ Dogfood swarm #2, 2026-09-14. 84 -> 117 tests. First live run against claude-rpg
   1/3 splits behind `no!` and an em-dash).
 - Jury dead spots and confusions appear in the report, not only the author's.
 
-### Fixed
-
-- **Last player input's resulting screen was labelled `quit`.** The quit loop
-  consumed it, so the critic never saw the last action's result (proof-01:
-  `/director` opened director mode; the recap the jury cited was the save
-  screen). Consequence is now recorded first; runner quit inputs stay `quit`.
-
-### Added
-
 - **Three drivers behind one observation seam.** `stdio` (the original),
   `pty` (a rendered terminal grid, for full-screen TUIs), and `rpc` (structured
   state over TCP, for Godot / Unreal / anything instrumented). Selected with
   `driver` in the config; defaults to `stdio`, so existing configs are
   unaffected. `docs/engine-bridge.md` carries a paste-and-go Godot 4 autoload.
-- **A cross-family jury.** Each transcript is judged by up to `panelSize`
-  (then default 3; default is 1 as of swarm #2) seats from families that did
-  not produce it. Majority verdict,
-  split criteria marked with their count, per-seat dispersion reported.
+- **A cross-family jury.** Each transcript is judged by author-off seats
+  (`panelSize`, default 1). Majority verdict, split criteria marked, dispersion
+  reported. (Shipped at default 3 in swarm #1; default moved to 1 in swarm #2 —
+  see Changed.)
 - **Coverage.** Novelty curve and half-life, repeat / loop / self-loop rates,
   action entropy and a thin/moderate/broad read, computed from turn records
   alone.
@@ -62,6 +54,12 @@ Dogfood swarm #2, 2026-09-14. 84 -> 117 tests. First live run against claude-rpg
   `tsconfig.test.json`, and this changelog.
 
 ### Fixed
+
+- **Last player input's resulting screen was labelled `quit`.** The quit loop
+  consumed it, so the critic never saw the last action's result (proof-01:
+  `/director` opened director mode; the recap the jury cited was the save
+  screen). Consequence is now recorded first; runner quit inputs stay `quit`.
+
 
 - **Verdicts could be inverted.** `parseCritique` coerced with `Boolean()`, and
   `Boolean("false") === true`, so a critic answering `"alive": "false"` as a

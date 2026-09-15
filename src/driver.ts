@@ -80,6 +80,12 @@ export type Observation = {
   endCause?: string;
   done: boolean;
   exitCode: number | null;
+  /**
+   * Set when the child never launched (ENOENT, spawn failed). Distinct from a
+   * game that started and then exited; `reason` stays `'exit'` so the seat
+   * loop still stops.
+   */
+  spawnError?: string;
 };
 
 export interface Driver {
@@ -100,6 +106,14 @@ export interface Driver {
   readonly diagnostics: string;
 }
 
+export class ActionError extends Error {
+  readonly code = 'E_ACTION';
+  constructor(message: string, readonly hint: string) {
+    super(message);
+    this.name = 'ActionError';
+  }
+}
+
 /**
  * Render an action as the line a text game would receive. Drivers that only
  * accept lines use this so every action kind has a defined text form rather
@@ -111,6 +125,13 @@ export function actionToLine(action: Action): string {
     case 'key': return action.key;
     case 'choose': return action.id;
     case 'call': return action.args === undefined ? action.name : `${action.name} ${JSON.stringify(action.args)}`;
+    default: {
+      const unexpected = action as { kind?: unknown };
+      throw new ActionError(
+        `unknown action kind ${JSON.stringify(unexpected.kind)} — refusing to write "undefined" into the game`,
+        'action.kind must be line, key, choose, or call',
+      );
+    }
   }
 }
 
@@ -122,5 +143,6 @@ export function describeActions(space: ActionSpace | undefined): string {
     case 'keys': return `Keys you may press: ${space.keys.join(' ')}`;
     case 'choice': return `Choose one:\n${space.options.map((o) => `  ${o.id}) ${o.label}`).join('\n')}`;
     case 'schema': return `Reply with one call from this schema:\n${JSON.stringify(space.schema)}`;
+    default: return '';
   }
 }

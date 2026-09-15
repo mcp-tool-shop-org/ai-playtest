@@ -1,4 +1,4 @@
-# CI — typecheck + tests + dependency audit.
+# CI — typecheck + tests + emit/pack shape + dependency audit.
 #
 # Trigger scoping (studio GitHub Actions rules):
 #   `push` is filtered to `main` ONLY. A tag push matches no branch filter, and a
@@ -36,7 +36,7 @@ on:
       - 'test/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
       - 'vitest.config.ts'
       - '.github/workflows/**'
   pull_request:
@@ -45,7 +45,7 @@ on:
       - 'test/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
       - 'vitest.config.ts'
       - '.github/workflows/**'
   workflow_dispatch:
@@ -62,12 +62,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # SHA-pinned Node 24 action runtime. Job node-version stays 20 (engines floor).
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       # Node 20 is the floor declared in package.json engines. One cell holds
       # that floor honestly; the author develops on 22, so this is the version
       # that would otherwise go unverified.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
           cache: npm
@@ -77,24 +80,62 @@ jobs:
       - name: Verify (typecheck + tests)
         run: npm run verify
 
-      # Kept in CI rather than in `npm run verify` so the local verify stays
-      # offline-capable.
-      #
+      # Emit + pack stay in CI, not in `npm run verify`, so local verify stays
+      # offline and fast. prepublishOnly is the only other emit gate and cannot
+      # run while the package is private. Fail closed on missing dist entry
+      # points or a tarball that omits LICENSE / CHANGELOG.md (Shipcheck D5).
+      # Print-only dry-run is not a gate. sourceMap/declarationMap files ride
+      # with dist/ once they emit.
+      - name: Build emit + pack shape
+        run: |
+          set -euo pipefail
+          npm run build
+          for f in dist/cli.js dist/index.js dist/index.d.ts dist/cli.js.map dist/index.js.map dist/index.d.ts.map; do
+            if [ ! -f "$f" ]; then
+              echo "::error::missing $f after npm run build"
+              exit 1
+            fi
+          done
+          npm pack --dry-run --json > "${RUNNER_TEMP}/pack.json"
+          cat "${RUNNER_TEMP}/pack.json"
+          missing=0
+          for req in LICENSE CHANGELOG.md; do
+            if ! jq -e --arg p "$req" '
+              (if type == "array" then .[0] else . end).files
+              | map(.path | gsub("\\\\"; "/"))
+              | index($p)
+            ' "${RUNNER_TEMP}/pack.json" >/dev/null; then
+              echo "::error::npm pack omits ${req} (Shipcheck D5)"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       # Two audits, deliberately. The BLOCKING one covers what a consumer of
       # this package is actually exposed to: it ships dist/ with no runtime
       # dependencies (node-pty and @xterm/headless are optional and only the
       # pty driver loads them), so --omit=dev is the honest consumer surface.
+      # Keep it blocking. Do not `|| true` / `|| echo` it.
       #
-      # The second is advisory and prints the developer surface without failing
-      # the build. It currently reports 5 vulnerabilities reachable only through
-      # vitest -> vite -> esbuild; the headline one (GHSA-67mh-4wv8-2f99) is an
-      # esbuild DEV SERVER issue that never runs here or in a consumer install.
-      # The fix is vitest 4, which cannot currently be installed: npm 10.9.8's
-      # arborist crashes with "Cannot read properties of null (reading
-      # 'edgesOut')" in #loadPeerSet on vitest 4's peer graph. Revisit when npm
-      # or vitest moves; do not silence this step to make it quiet.
+      # The second is advisory: developer-surface vulns that never ship.
+      # continue-on-error: true so GitHub paints the step orange and an
+      # npm-audit crash (network, arborist) is distinguishable from advisories
+      # (`|| echo` would swallow both as a green warning).
+      # Live shape: 5 vulnerabilities (3 moderate, 1 high, 1 critical) through
+      # vitest → vite → esbuild. Named:
+      #   - GHSA-67mh-4wv8-2f99 — esbuild DEV SERVER (does not run here)
+      #   - GHSA-82fw-gwwq-j7x9 — vitest @vitest/mocker path traversal
+      #   - plus a critical vitest advisory (browser-mode / UI-server class)
+      # npm's force-upgrade is a breaking vitest major (4.x on the runner
+      # advisory DB, 5.x locally), blocked by npm 10.9.8 arborist's
+      # #loadPeerSet ("Cannot read properties of null (reading 'edgesOut')")
+      # — not "install vitest 4". vitest 4 cannot be installed on npm 10.9.8.
+      # Revisit when npm or vitest moves.
       - name: Audit dependencies (consumer surface — blocking)
         run: npm audit --omit=dev --audit-level=high
 
       - name: Audit dependencies (developer surface — advisory)
-        run: npm audit --audit-level=high || echo "::warning::dev-only advisories above; see the comment in ci.yml"
+        continue-on-error: true
+        run: npm audit --audit-level=high

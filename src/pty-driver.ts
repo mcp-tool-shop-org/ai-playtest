@@ -67,6 +67,50 @@ export class PtyUnavailableError extends Error {
   }
 }
 
+type StderrWrite = typeof process.stderr.write;
+
+let stderrFilterDepth = 0;
+let stderrOrigWrite: StderrWrite | undefined;
+let stderrFilterInstalled: StderrWrite | undefined;
+const attachConsoleListeners = new Set<() => void>();
+
+/** Swallow node-pty's Windows `AttachConsole failed` ConPTY noise while any PTY driver is live. */
+function pushAttachConsoleFilter(onHit: () => void): () => void {
+  attachConsoleListeners.add(onHit);
+  if (stderrFilterDepth === 0) {
+    stderrOrigWrite = process.stderr.write.bind(process.stderr) as StderrWrite;
+    const filter = ((chunk: unknown, encoding?: unknown, cb?: unknown): boolean => {
+      const s = typeof chunk === 'string'
+        ? chunk
+        : chunk instanceof Uint8Array
+          ? Buffer.from(chunk).toString('utf8')
+          : String(chunk);
+      if (/AttachConsole failed/i.test(s)) {
+        for (const hit of attachConsoleListeners) hit();
+        const done = typeof encoding === 'function' ? encoding : typeof cb === 'function' ? cb : undefined;
+        if (typeof done === 'function') (done as () => void)();
+        return true;
+      }
+      return (stderrOrigWrite as (chunk: unknown, encoding?: unknown, cb?: unknown) => boolean)(chunk, encoding, cb);
+    }) as StderrWrite;
+    stderrFilterInstalled = filter;
+    process.stderr.write = filter;
+  }
+  stderrFilterDepth++;
+  let popped = false;
+  return () => {
+    if (popped) return;
+    popped = true;
+    attachConsoleListeners.delete(onHit);
+    stderrFilterDepth = Math.max(0, stderrFilterDepth - 1);
+    if (stderrFilterDepth === 0 && stderrOrigWrite && process.stderr.write === stderrFilterInstalled) {
+      process.stderr.write = stderrOrigWrite;
+      stderrOrigWrite = undefined;
+      stderrFilterInstalled = undefined;
+    }
+  };
+}
+
 async function loadPty(): Promise<{ pty: PtyModule; Terminal: any }> {
   try {
     const pty = (await import('node-pty')) as PtyModule;
@@ -97,6 +141,18 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
   let sawByte = false;
   let bracketedPaste = false;
   let altScreen = false;
+  let writesInFlight = 0;
+  const sentinel = opts.readySentinel && opts.readySentinel.length > 0 ? opts.readySentinel : undefined;
+  const tailMax = Math.max(8192, (sentinel?.length ?? 0) + 64);
+  let byteTail = '';
+  let taggedAttachConsole = false;
+  let diagnostics = 'PTY has no separate stderr; the child\'s stdout and stderr are merged into the grid.';
+  const restoreStderr = pushAttachConsoleFilter(() => {
+    if (!taggedAttachConsole) {
+      taggedAttachConsole = true;
+      diagnostics += '\n[pty] node-pty AttachConsole failed is ConPTY noise on Windows, not a game error.';
+    }
+  });
 
   // DEC private mode set/reset. ?2004h means the terminal turned on bracketed
   // paste, which readline does when it starts reading a line — the one
@@ -120,19 +176,37 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
     }
   }
 
-  const child = pty.spawn(opts.command, opts.args, {
-    name: 'xterm-256color',
-    cols,
-    rows,
-    cwd: opts.cwd ?? process.cwd(),
-    env: buildChildEnv(overlay, process.env, opts.inheritEnv === true) as Record<string, string>,
-  });
+  let child: ReturnType<PtyModule['spawn']>;
+  try {
+    child = pty.spawn(opts.command, opts.args, {
+      name: 'xterm-256color',
+      cols,
+      rows,
+      cwd: opts.cwd ?? process.cwd(),
+      env: buildChildEnv(overlay, process.env, opts.inheritEnv === true) as Record<string, string>,
+    });
+  } catch (err) {
+    restoreStderr();
+    diagnostics += `\n[pty] spawn failed: ${err instanceof Error ? err.message : String(err)}`;
+    throw err;
+  }
 
   child.onData((d: string) => {
     lastByteAt = Date.now();
     if (d.length > 0) sawByte = true;
-    if (opts.readySentinel && d.includes(opts.readySentinel)) sawSentinel = true;
-    term.write(d);
+    if (sentinel) {
+      byteTail = (byteTail + d).slice(-tailMax);
+      if (byteTail.includes(sentinel)) sawSentinel = true;
+    }
+    writesInFlight++;
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      writesInFlight = Math.max(0, writesInFlight - 1);
+    };
+    term.write(d, done);
+    setTimeout(done, 250);
   });
   child.onExit(({ exitCode: c }: { exitCode: number }) => { exited = true; exitCode = c; });
 
@@ -163,6 +237,9 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
       await new Promise((r) => setTimeout(r, 50));
       if (exited) return observe('exit');
       if (Date.now() - started > opts.screenTimeoutMs) return observe('timeout');
+      // The grid lags the raw bytes until term.write's callback; do not
+      // return sentinel/prompt against a frame that has not been rendered.
+      if (writesInFlight > 0) continue;
       const quiet = Date.now() - lastByteAt;
       // Tiered, best evidence first. Each tier is weaker than the one above it,
       // and the observation records which one fired so a reader can tell a
@@ -184,13 +261,20 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
 
   return {
     modality: 'pty',
-    // A PTY has a single stream; stderr is merged into stdout by construction.
-    diagnostics: '',
+    get diagnostics() { return diagnostics; },
     async start() { return waitForTurn(); },
     async step(action: Action) {
       if (!exited) child.write(actionToLine(action) + '\r');
       return waitForTurn();
     },
-    async stop() { if (!exited) { try { child.kill(); } catch { /* already gone */ } } },
+    async stop() {
+      if (!exited) {
+        try { child.kill(); }
+        catch (err) {
+          diagnostics += `\n[pty] kill failed: ${err instanceof Error ? err.message : String(err)}`;
+        }
+      }
+      restoreStderr();
+    },
   };
 }
