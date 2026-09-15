@@ -9,6 +9,7 @@ import type { ChatClient } from './openrouter.js';
 import { spawnGame, type GameProcess } from './stdio-game.js';
 import { chooseInput, type TurnRecord } from './player.js';
 import { critique, type Critique } from './critic.js';
+import { computeCoverage, type Coverage } from './coverage.js';
 
 export type SeatResult = {
   seat: Seat;
@@ -19,6 +20,8 @@ export type SeatResult = {
   history: TurnRecord[];
   critique: Critique | null;
   critiqueError?: string;
+  /** How much of the game this session actually saw. Computed from the turn records. */
+  coverage: Coverage;
   durationMs: number;
   dir: string;
 };
@@ -165,6 +168,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
 
   const result: SeatResult = {
     seat, label: opts.label, turnsPlayed: playerTurns.length, endedBy, error, history, critique: crit, critiqueError,
+    coverage: computeCoverage(history),
     durationMs: Date.now() - started, dir,
   };
   await writeArtifacts(cfg, result, game.stderr);
@@ -188,7 +192,8 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   await writeFile(join(r.dir, 'critique.json'), JSON.stringify(r.critique ?? { error: r.critiqueError ?? 'no turns played' }, null, 2) + '\n', 'utf8');
   await writeFile(join(r.dir, 'meta.json'), JSON.stringify({
     name: cfg.name, label: r.label, seat: r.seat, turns: cfg.turns, turnsPlayed: r.turnsPlayed, endedBy: r.endedBy,
-    error: r.error ?? null, critiqueError: r.critiqueError ?? null, durationMs: r.durationMs, finishedAt: new Date().toISOString(),
+    error: r.error ?? null, critiqueError: r.critiqueError ?? null, coverage: r.coverage,
+    durationMs: r.durationMs, finishedAt: new Date().toISOString(),
   }, null, 2) + '\n', 'utf8');
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
 }
@@ -212,6 +217,7 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
       seat, label: opts.label, turnsPlayed: 0, endedBy: 'error',
       error: r.reason instanceof Error ? `${r.reason.name}: ${r.reason.message}` : String(r.reason),
       history: [], critique: null, critiqueError: 'the seat threw before producing a critique',
+      coverage: computeCoverage([]),
       durationMs: 0, dir: join(cfg.runsDir, opts.label, seat.id),
     });
   });

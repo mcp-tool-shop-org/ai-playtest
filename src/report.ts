@@ -6,6 +6,7 @@ import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Critique } from './critic.js';
 import type { Seat } from './config.js';
+import { renderCoverageLine, type Coverage } from './coverage.js';
 
 export type SeatSummary = {
   seat: Seat;
@@ -14,6 +15,7 @@ export type SeatSummary = {
   error: string | null;
   critique: Critique | null;
   critiqueError: string | null;
+  coverage?: Coverage;
 };
 
 export async function readRun(runDir: string): Promise<SeatSummary[]> {
@@ -22,7 +24,7 @@ export async function readRun(runDir: string): Promise<SeatSummary[]> {
   for (const e of entries.sort()) {
     const dir = join(runDir, e);
     if (!(await stat(dir)).isDirectory()) continue;
-    let meta: { seat: Seat; turnsPlayed: number; endedBy: string; error: string | null; critiqueError: string | null };
+    let meta: { seat: Seat; turnsPlayed: number; endedBy: string; error: string | null; critiqueError: string | null; coverage?: Coverage };
     try {
       meta = JSON.parse(await readFile(join(dir, 'meta.json'), 'utf8'));
     } catch {
@@ -35,7 +37,7 @@ export async function readRun(runDir: string): Promise<SeatSummary[]> {
     } catch {
       crit = null;
     }
-    out.push({ seat: meta.seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit, critiqueError: meta.critiqueError ?? null });
+    out.push({ seat: meta.seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit, critiqueError: meta.critiqueError ?? null, coverage: meta.coverage });
   }
   return out;
 }
@@ -91,6 +93,23 @@ export function renderReport(name: string, label: string, seats: SeatSummary[]):
     lines.push(`| ${cell(id)} | ${cells.join(' | ')} | ${met}/${seats.length} | ${answered < 2 ? '—' : split ? '**split**' : 'unanimous'} |`);
   }
   lines.push('');
+  if (seats.some((s) => s.coverage)) {
+    lines.push('## How much each seat actually saw');
+    lines.push('');
+    lines.push('A verdict is only as good as the play behind it. These are computed from the turn records alone — no instrumentation of the game.');
+    lines.push('');
+    for (const s of seats) {
+      if (!s.coverage) continue;
+      lines.push(`- **${cell(s.seat.family)}** — ${renderCoverageLine(s.coverage)}`);
+      for (const n of s.coverage.notes) lines.push(`  - ${cell(n)}`);
+    }
+    const thin = seats.filter((s) => s.coverage?.confidence === 'thin');
+    if (thin.length > 0) {
+      lines.push('');
+      lines.push(`> ${thin.length} of ${seats.length} seats explored thinly. Weigh their claims about content they may never have reached accordingly.`);
+    }
+    lines.push('');
+  }
   lines.push('## Verdicts');
   lines.push('');
   for (const s of seats) {

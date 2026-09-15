@@ -16,3 +16,5 @@ export { actionToLine, describeActions } from './driver.js';
 export type { Driver, Observation, Action, ActionSpace, ReadyReason } from './driver.js';
 export { createPtyDriver, PtyUnavailableError } from './pty-driver.js';
 export type { PtyDriverOptions } from './pty-driver.js';
+export { computeCoverage, normalizeScreen, playerTurns, renderCoverageLine } from './coverage.js';
+export type { Coverage } from './coverage.js';
