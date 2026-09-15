@@ -18,3 +18,5 @@ export { createPtyDriver, PtyUnavailableError } from './pty-driver.js';
 export type { PtyDriverOptions } from './pty-driver.js';
 export { computeCoverage, normalizeScreen, playerTurns, renderCoverageLine } from './coverage.js';
 export type { Coverage } from './coverage.js';
+export { createRpcDriver, RpcDriverError } from './rpc-driver.js';
+export type { RpcDriverOptions } from './rpc-driver.js';
