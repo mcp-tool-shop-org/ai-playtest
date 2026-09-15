@@ -7,7 +7,7 @@ sidebar:
 
 **ai-playtest** drives a game with model players from several families, judges each transcript with a seat that did *not* play, and writes a report that a human can read without scraping.
 
-It is still **private 0.1.0**. Clone it; do not `npm install @mcptoolshop/ai-playtest` yet.
+GitHub is public. The npm package is still **private 0.1.0** — clone it; do not `npm install @mcptoolshop/ai-playtest` yet.
 
 ## What a run is
 

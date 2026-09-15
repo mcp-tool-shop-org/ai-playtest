@@ -35,7 +35,8 @@ on leaving artefacts, single-run `REPORT.json`.
   only when a turn carries a structured `state` object — never inferred from
   prose.
 - **Landing page + Starlight handbook** (`site/`, accent cyan). Pages workflow
-  path-filtered to `site/**`. Clone-only until the package leaves private.
+  path-filtered to `site/**`. Live at the org GitHub Pages URL.
+- **README translations** (ja, zh, es, fr, hi, it, pt-BR) via TranslateGemma 27B.
 - **README lockup** from `mcp-tool-shop-org/brand` (`logos/ai-playtest/readme.png`).
 - **Deterministic transcript verifiers** (`src/verifiers.ts`). Six checks, all
   transcript-only: absorbing-SCC (Tarjan over the observed screen digraph,

@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="README.md">English</a> | <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
+</p>
+
+<p align="center">
   <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/ai-playtest/readme.png" alt="ai-playtest" width="400">
 </p>
 
@@ -18,7 +22,7 @@ verdicts alongside how much of the game each session actually saw.
 One playthrough by one person tells you what one person saw. Five families
 playing the same forty turns tell you what the world does.
 
-**Private until it is proper.** Not on npm; consumed by path from sibling repos.
+Public on GitHub. Not on npm yet — clone it, or consume by path from a sibling repo.
 
 ## Who judges
 

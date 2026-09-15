@@ -11,7 +11,7 @@ export const config: SiteConfig = {
     'MIT Licensed — built by <a href="https://mcp-tool-shop.github.io/" style="color:var(--color-muted);text-decoration:underline">MCP Tool Shop</a>',
 
   hero: {
-    badge: 'Private 0.1.0 · three drivers · author-off jury · MIT',
+    badge: 'Public 0.1.0 · three drivers · author-off jury · MIT',
     headline: 'Play the game',
     headlineAccent: 'with other families.',
     description:
@@ -94,7 +94,7 @@ runs/proof-01/mistral/transcript.txt`,
       title: 'A run',
       cards: [
         {
-          title: 'From a clone (not npm — still private)',
+          title: 'From a clone (not on npm yet)',
           code: `git clone https://github.com/mcp-tool-shop-org/ai-playtest
 cd ai-playtest && npm ci && npm run build
 export OPENROUTER_API_KEY=...

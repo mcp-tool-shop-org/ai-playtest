@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-The package is private. There is no npm tarball yet.
+The GitHub repo is public. There is no npm tarball yet.
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/ai-playtest
