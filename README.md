@@ -34,6 +34,18 @@ heterogeneous judges measures closer to humans and costs 7–8× less — κ 0.7
 only 20% of 93 problems were found by every evaluator and 46% by a single one
 (Hertzum & Jacobsen 2003).
 
+> **Contested, and worth knowing before you trust the panel size.** [Kohli
+> 2026](https://arxiv.org/abs/2605.29800) measured nine judges across seven
+> families at a Kish effective sample size of **2.18**, found the panel (72.0%)
+> did *not* beat the best single judge (71.8%), and — most relevant here —
+> found **cross-family diversity buys almost nothing**: mean pairwise φ of 0.389
+> across families vs 0.437 within one. A 3-judge cross-family panel is worth
+> roughly **1.68 independent votes**. That does not undo the case for taking the
+> author off its own jury, which rests on different evidence entirely. It does
+> undercut the idea that *family diversity* purchases independence, and it
+> suggests budget is better spent on more RUNS than more judges. Unresolved;
+> see `docs/research-2.md`.
+
 **Disagreement is reported, not averaged away.** A split verdict usually means
 the *criterion* is under-specified, not that the game is ambiguous, so splits are
 marked with their count and each seat's dispersion is surfaced.
@@ -93,10 +105,13 @@ and half-life, repeat / loop / self-loop rates, action entropy, and a plain
 
 This is worth having because the failure is measured, not theoretical.
 Task-oriented LLM agents repeat their previous action **63.4%** of the time with a
-16.0% loop rate, against 24.9% / 7.7% for exploration-conditioned ones ([Ye et
-al. 2026](https://arxiv.org/html/2605.16143)), and low action entropy tracks
-*low* success rather than efficiency — so a tidy transcript with few distinct
-inputs is a warning sign, not a good one.
+16.0% loop rate, against 24.9% / 7.7% for agents *trained* for exploration ([Ye
+et al. 2026](https://arxiv.org/html/2605.16143)). Read that as the band agent
+repetition actually sits in — not as something a persona string buys, since
+merely prompting an agent to explore is worth only **+2.57** average pass@1
+([Englander et al. 2026](https://arxiv.org/html/2604.17609)). Low action entropy
+also tracks *low* success rather than efficiency, so a tidy transcript with few
+distinct inputs is a warning sign, not a good one.
 
 ## How to read a verdict
 

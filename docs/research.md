@@ -81,7 +81,8 @@ ever falling back to the author.
 | measurement | number | source |
 |---|---|---|
 | repetitive-action rate, task-oriented agents | **63.4%** (loop rate 16.0%) | Ye et al. 2026, [arXiv:2605.16143](https://arxiv.org/html/2605.16143) |
-| …exploration-conditioned | 24.9% / 7.7% | same |
+| …agents **trained** for exploration | 24.9% / 7.7% | same |
+| …effect of merely **prompting** an agent to explore | **+2.57** avg pass@1 | Englander et al. 2026, [arXiv:2604.17609](https://arxiv.org/html/2604.17609) |
 | Exploration Checkpoint Coverage by model | Qwen2.5-7B 22.2% · GPT-4.1 49.3% · Opus-4.5 89.5% | same |
 | discovered-but-unused affordances | seen 79–81%, used **37–50%** | Englander et al. 2026, [arXiv:2604.17609](https://arxiv.org/html/2604.17609) |
 | synthetic vs human-authored IF | TextWorld 100% vs **Jericho 15.7%** | TALES, Cui et al. 2025, [arXiv:2504.14128](https://arxiv.org/abs/2504.14128) |
@@ -89,6 +90,14 @@ ever falling back to the author.
 | CI width by run count | 14.1% (n=1) → 2.97% (n=3) → 0.56% (n=28) | same |
 | low action entropy tracks **low** success | 0.389 vs 0.778 | [arXiv:2606.05872](https://arxiv.org/html/2606.05872v2) |
 | NetHack best-model progression | **1.5%** | BALROG |
+
+⚠ **Correction (2026-09-14, study-swarm #2).** An earlier revision of this file,
+`README.md` and `coverage.ts` described the 63.4% → 24.9% contrast as
+task- vs "exploration-**conditioned**" agents, which reads as a prompting
+effect. It is not: in Ye et al. that contrast is an **RL training regime**. Read
+the band as what agent repetition looks like in the wild. The prompt-only effect
+size is Englander's **+2.57** average pass@1 — real, but an order of magnitude
+smaller, and it bounds what a `persona` string can be expected to buy.
 
 **Consequence in this repo:** `coverage.ts` — novelty curve and half-life,
 repeat / loop / self-loop rates, action entropy, thin/moderate/broad. All from
