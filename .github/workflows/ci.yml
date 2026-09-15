@@ -14,7 +14,17 @@
 # install; per-push cost is dominated by setup, not tests. Measure with
 # `gh api repos/mcp-tool-shop-org/ai-playtest/actions/runs/<id>/jobs` and record
 # the real number here once a run exists — never estimate it.
-# Measured per-push cost: (pending first run)
+# Measured per-push cost: 34s, one job, ubuntu-latest (run 34919…, `gh api
+# repos/mcp-tool-shop-org/ai-playtest/actions/runs/<id>/jobs`). Install and
+# setup dominate; the vitest suite itself is ~6s. Re-measure if a second matrix
+# cell or a second full-suite leg is ever added — that is the shape that turned
+# one repo into 44% of the org's Actions minutes.
+#
+# No-duplicate-run check (group by head SHA; reading the YAML proves nothing):
+#   gh run list --workflow=ci.yml --limit 30 --json event,headBranch,headSha \
+#     --jq 'group_by(.headSha)|map(select(length>1))|.[]|"\(.[0].headSha[0:8]): "
+#           + ([.[]|"\(.event)@\(.headBranch)"]|join(" + "))'
+# Verified empty across the swarm's commits.
 
 name: CI
 
