@@ -162,6 +162,64 @@ until someone measures it.
 
 ---
 
+## 7. Terminal observation — why the `pty` driver is not just TUI support
+
+Measured on this rig (Windows 11 26340, Node 22.22.3) rather than taken from a
+paper, because the relevant facts are platform facts.
+
+| measurement | result |
+|---|---|
+| `npm i node-pty @xterm/headless` | **2.3s**, prebuilt win32-x64, no node-gyp |
+| stdio under a **pipe** | `isTTY:false`, `cols:null`, `rows:null` |
+| stdio under a **PTY** | `isTTY:true`, `cols:100`, `rows:30` |
+| same TUI, three redraws — **emulator grid** | **115 chars**, one current screen |
+| same TUI, three redraws — **line-append** | **416 chars**, three stacked copies, player's echoed input interleaved, **three contradictory HP values** |
+| ConPTY injects `ESC]0;<path>BEL` into every Windows session | **confirmed true** |
+
+**The buffering fact is the load-bearing one.** Under a pipe, a C program's
+stdout switches from line-buffered to **fully buffered (4 KB)**
+([glibc manual](https://sourceware.org/glibc/manual/latest/html_node/Buffering-Concepts.html)).
+So "output has been quiet for N ms" can mean *"has not flushed yet"* rather than
+*"is waiting for you"* — the stdio driver's readiness rule is unsound for any
+game that does not flush explicitly. A PTY restores line buffering and makes the
+same heuristic sound. That is why `pty` improves the *text* path and is not
+merely TUI support.
+
+Two more platform facts worth knowing before choosing a driver:
+
+- **ratatui/crossterm apps do not error under a pipe.** crossterm's `tty_fd()`
+  falls back to `/dev/tty`, so raw mode succeeds and escape codes go into the
+  pipe as literal bytes. The [Ratatui FAQ](https://ratatui.rs/faq/) puts it
+  plainly: there is no indication anything went wrong.
+- **On Windows a pipe captures nothing at all** from a game drawing through the
+  Console API. Only ConPTY turns those calls into bytes.
+
+**Readiness detection has no reliable external signal on Windows.** OSC 133
+semantic-prompt marks are emitted by *shells* via `PS1` hooks, never by a game
+binary. Cursor position carries no information (DSR is a query the terminal
+answers — and you are the terminal). ConPTY does not relay the client's termios
+state ([microsoft/terminal#6859](https://github.com/microsoft/terminal/issues/6859)).
+The one usable proxy, verified here: `?2004h` (bracketed paste) means readline is
+reading a line, observable via `parser.registerCsiHandler({prefix:'?',final:'h'})`.
+
+Hence the tiered readiness in `pty-driver.ts`: game-emitted sentinel → `?2004h`
+→ regex against the *rendered cursor line* → quiescence as a backstop, with the
+tier that fired recorded on every observation so a reader can tell knowledge
+from inference.
+
+**Costs of the dependency, stated:** `@xterm/headless` is CJS-only (needs an
+unwrapped import in this ESM repo); node-pty ships **no Linux prebuild** (CI
+would compile it), and its `kill()` has live teardown bugs
+([#952](https://github.com/microsoft/node-pty/issues/952),
+[#967](https://github.com/microsoft/node-pty/issues/967)). Both are therefore
+`optionalDependencies`, loaded lazily. A PTY also **merges stderr into stdout** —
+one stream — which is why `PtyDriver.diagnostics` is always empty.
+
+**Consequence in this repo:** `src/pty-driver.ts`, and the `Observation.grid`
+field on the driver seam.
+
+---
+
 ## Open work this evidence implies
 
 1. **Deterministic verifiers.** The 3% → 38% gap between self-critique and a
