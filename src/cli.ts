@@ -30,7 +30,7 @@ export function usage(): string {
     '--help / -h prints this text from any position. --version prints the package version.',
     'check validates the JSON (no OPENROUTER_API_KEY required) and exits 2 on ConfigError.',
     'Env: OPENROUTER_API_KEY (players and critics). The game\'s own env comes from config.game.env.',
-    'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md at the label root.',
+    'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md and REPORT.json at the label root.',
     '',
     'Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.',
   ].join('\n');

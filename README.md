@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/mcp-tool-shop-org/ai-playtest/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/ai-playtest/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://mcp-tool-shop-org.github.io/ai-playtest/"><img src="https://img.shields.io/badge/Landing_Page-live-brightgreen" alt="Landing Page"></a>
 </p>
 
 # ai-playtest
@@ -243,8 +244,28 @@ player's context and the written report. If you have runs from before that fix,
 treat the key used for them as exposed. `inheritEnv: true` restores full
 inheritance — use it only for a game you trust as much as the runner itself.
 
-See [SECURITY.md](SECURITY.md) for the threat model: a playtest config is
-executable-equivalent, and game output is untrusted input to a model.
+See [SECURITY.md](SECURITY.md) for the full write-up.
+
+## Trust model
+
+**Data touched:** the playtest JSON, whatever `game.command` / the RPC
+bridge prints, OpenRouter chat completions (player + jury), and files the
+runner writes under `runsDir` (`transcript.txt`, `critique.json`,
+`meta.json`, `REPORT.md`, `REPORT.json`).
+
+**Data not touched:** the runner sends no telemetry and collects no
+analytics. The game process does not receive `OPENROUTER_API_KEY` unless
+you set `game.inheritEnv: true`. Nothing is written outside `runsDir`.
+
+**Permissions:** `game.command` is `child_process.spawn` — a playtest
+config is executable-equivalent. Review it as you would a shell script.
+Outbound HTTPS is only the configured OpenRouter base URL. There is no
+sandbox.
+
+## Telemetry
+
+None. No analytics, no crash reporter, no phone-home. The only network
+call is the one you configured for the models.
 
 ## Standards compliance (workflow standards, scored 0–3)
 
@@ -280,6 +301,10 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-161 tests. `tsconfig.test.json` exists because the build config excludes test
+182 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
+
+---
+
+Built by [MCP Tool Shop](https://mcp-tool-shop.github.io/).
