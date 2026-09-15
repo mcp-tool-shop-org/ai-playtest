@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm #2, 2026-09-14. 84 -> 163 tests. First live run against claude-rpg
+Dogfood swarm #2, 2026-09-14. 84 -> 165 tests. First live run against claude-rpg
 (`proof-01`, 8 turns, mistral). Stage B: 24 HIGH. Stage C: remaining MED/LOW
 (humanization — errors that name the cause, CLI help, report honesty).
 
