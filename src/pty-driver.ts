@@ -196,7 +196,17 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
     if (d.length > 0) sawByte = true;
     if (sentinel) {
       byteTail = (byteTail + d).slice(-tailMax);
-      if (byteTail.includes(sentinel)) sawSentinel = true;
+      // Consume every complete match so a prior token cannot re-arm the
+      // next turn. Keep the remainder: a split prefix of a later token
+      // can still complete across the next onData (F-77dc267f).
+      let idx = byteTail.indexOf(sentinel);
+      if (idx !== -1) {
+        sawSentinel = true;
+        do {
+          byteTail = byteTail.slice(idx + sentinel.length);
+          idx = byteTail.indexOf(sentinel);
+        } while (idx !== -1);
+      }
     }
     writesInFlight++;
     let settled = false;

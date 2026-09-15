@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig, ConfigError, VERSION } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 import { runAll, type SeatResult } from './run.js';
-import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats } from './report.js';
+import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats, isEmptyDegradedPanel } from './report.js';
 import { summarizeRuns } from './stats.js';
 import { PtyUnavailableError } from './pty-driver.js';
 
@@ -135,7 +135,10 @@ export function parseRuns(raw: string): number {
 }
 
 function hasVerdict(r: { panel?: unknown; critique?: unknown }): boolean {
-  return r.panel != null || r.critique != null;
+  // An empty degraded panel is not a verdict: alive:false there is a hole,
+  // not a fail-closed dead seat. Exit 4 (no-verdict andon) must still fire.
+  if (r.panel != null && !isEmptyDegradedPanel(r.panel)) return true;
+  return r.critique != null;
 }
 
 function notePlayFailures(results: Array<{ endedBy: string }>): void {
@@ -166,7 +169,7 @@ function resolveSeatIds(known: string[], raw: string | undefined): string[] | un
 
 function formatSeatDone(r: SeatResult): string {
   const head = `  [${r.seat.id}] done: ${r.turnsPlayed} turns, ended by ${r.endedBy}${r.error ? ` (${r.error})` : ''}`;
-  if (r.panel) {
+  if (r.panel && !isEmptyDegradedPanel(r.panel)) {
     const asked = r.panel.jurors.length;
     const answered = (r.panel.critiques ?? []).filter((c) => c.critique).length;
     const jury = `jury ${r.panel.alive ? 'ALIVE' : 'not alive'}`;
@@ -175,7 +178,13 @@ function formatSeatDone(r: SeatResult): string {
       : `${asked} juror${asked === 1 ? '' : 's'}`;
     return `${head}, ${jury} (${count})\n`;
   }
-  if (r.critique) return `${head}, critique ${r.critique.alive ? 'ALIVE' : 'not alive'} (testimony)\n`;
+  if (r.critique) {
+    const degraded = isEmptyDegradedPanel(r.panel) && r.panel?.degraded ? `; ${r.panel.degraded}` : '';
+    return `${head}, critique ${r.critique.alive ? 'ALIVE' : 'not alive'} (testimony${degraded})\n`;
+  }
+  if (isEmptyDegradedPanel(r.panel) && r.panel?.degraded) {
+    return `${head}, no jury verdict (${r.panel.degraded})\n`;
+  }
   return `${head}, failed (${r.critiqueError})\n`;
 }
 
@@ -288,7 +297,9 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
         if (results.some((r) => hasVerdict(r))) anyVerdict = true;
         if (results.some((r) => r.endedBy !== 'error')) anyPlayOk = true;
         for (const id of criterionIds) if (criterionMetBySeats(results, id)) successes[id]++;
-        const alive = results.filter((r) => (r.panel ? r.panel.alive : r.critique?.alive) === true).length;
+        const alive = results.filter((r) => (
+          r.panel && !isEmptyDegradedPanel(r.panel) ? r.panel.alive : r.critique?.alive
+        ) === true).length;
         worstOfN.push({ run: runLabel, alive, of: results.length });
       }
       await mkdir(join(cfg.runsDir, label), { recursive: true });

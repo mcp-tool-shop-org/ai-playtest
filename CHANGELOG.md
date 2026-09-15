@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm #2, 2026-09-14. 84 -> 161 tests. First live run against claude-rpg
+Dogfood swarm #2, 2026-09-14. 84 -> 163 tests. First live run against claude-rpg
 (`proof-01`, 8 turns, mistral). Stage B: 24 HIGH. Stage C: remaining MED/LOW
 (humanization — errors that name the cause, CLI help, report honesty).
 
@@ -25,6 +25,10 @@ Dogfood swarm #2, 2026-09-14. 84 -> 161 tests. First live run against claude-rpg
   and the copy that n=3 is descriptive (`2/2^n` = 0.25). First n that can
   clear α=0.05 is 6. Do not bootstrap.
 - **Jury `n_eff`** on the report: `k / (1+(k−1)·φ̄)`, warn when `n_eff/k < 0.5`.
+
+- **RPC `hello {protocol:1}` is a hard handshake.** A bridge that only
+  speaks `observe` / `act` / `quit` now fails closed on connect. `reset()`
+  exists on the driver; `runAll` still does not send it between seats.
 
 ### Changed
 
