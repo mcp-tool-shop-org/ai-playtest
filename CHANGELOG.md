@@ -13,6 +13,7 @@ Dogfood swarm #2, 2026-09-14. 84 -> 161 tests. First live run against claude-rpg
 
 ### Added
 
+- **README lockup** from `mcp-tool-shop-org/brand` (`logos/ai-playtest/readme.png`).
 - **Deterministic transcript verifiers** (`src/verifiers.ts`). Six checks, all
   transcript-only: absorbing-SCC (Tarjan over the observed screen digraph,
   `kind=review`, never a trap proof), ignored-input attribution, parser
