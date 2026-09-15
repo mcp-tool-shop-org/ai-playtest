@@ -265,8 +265,92 @@ Config `{ kind:'browser', url, mode:'dom'|'canvas', headed?, hook?:'__playtest',
 
 ## D. Deterministic transcript verifiers
 
-*Pending — agent still running at the time of writing. If this section is still
-empty, that question is open and the prompt is reconstructable from the heading.*
+### The headline is a negative result
+
+**No transcript-only check can prove unwinnability.** A linear trace is one
+path, not a graph. Softlock-freedom has exactly one sound formulation — the CTL
+property **`AG(EF(goal))`**, "from every reachable state a goal is still
+reachable" (Mawhorter & Smith, FDG '21,
+[doi:10.1145/3472538.3472542](https://adamsmith.as/papers/fdg21-softlock.pdf);
+verified over a Super Metroid tile abstraction, 3,645 states / 15,344 edges in
+6.72s). Cooper & Bazzaz give the equivalent set relation. **Both need an
+enumerable state graph**, i.e. save/restore instrumentation.
+
+What a transcript *can* yield is the shadow: an **absorbing component** in the
+observed digraph. Report it as "the session never left these N screens after
+turn T" — never as "softlock."
+
+### And a second negative: contradiction detection stays with the jury
+
+| approach | measured | verdict |
+|---|---|---|
+| UNION (Guan & Huang, [arXiv:2009.07602](https://arxiv.org/abs/2009.07602)) | Pearson **0.3687** / Spearman 0.4599 (ROCStories) | Better than BLEU (0.0299) and perplexity (0.2464), **far from usable as a gate** |
+| off-the-shelf NLI on dialogue (DECODE, [arXiv:2012.13391](https://aclanthology.org/2021.acl-long.134/)) | SNLI+MNLI **47.70% strict — below the 50% majority baseline** (in-domain RoBERTa: 93.19%) | Does not transfer |
+| entity grid (Barzilay & Lapata) | 87.2% / 90.4% — but on *sentence-permutation discrimination* | Wrong task; accuracy does **not** carry over |
+
+UNION's negative-sample taxonomy (repetition, substitution, reordering, negation
+alteration) is still useful — as a **generator of adversarial checks**, not as a
+detector. The entity grid earns a place as a *report artifact* that packages
+evidence for judges, never as a verdict.
+
+### The split, measured on the same trajectories
+
+AgentRewardBench ([arXiv:2504.08942](https://arxiv.org/abs/2504.08942), 1,302
+expert-annotated trajectories) is the only study measuring deterministic and
+model-based checks on the *same* data:
+
+| checker | precision | recall |
+|---|---|---|
+| rule-based "Functional" success eval | **83.8** | 55.9 |
+| GPT-4o-mini, repetition from screenshots | **92.3** | **18.5** |
+| Claude 3.7 Sonnet, repetition | 82.8 | **94.9** |
+
+Deterministic checks are **precise and partial**; small judges are the inverse.
+The argument is *not* that judges cannot see loops — a frontier judge sees them
+well. It is that a free exact check should carry the precision floor so the jury
+can spend its budget on what only judgement can settle.
+
+### BUILD LIST — six checks, ~260 LOC, all transcript-only
+
+All operate on `TurnRecord[]` and reuse `normalizeScreen()`. Ranked
+value-to-effort; each carries its false-positive mode, because a check whose
+failure mode is undocumented is a gate nobody will trust.
+
+1. **Absorbing-component detector** (~60 LOC) — Tarjan SCC over the observed
+   digraph (nodes = screen hashes, edges = consecutive turns). Fire on an SCC
+   that contains the final state, has no outgoing edges, spans ≥k turns, and was
+   entered via ≥2 distinct inputs. *FP: a legitimate hub the player camped in; a
+   run that simply ran out of turns.* This is the structural upgrade the current
+   2-gram `loopRate` is missing.
+2. **Ignored-input attribution** (~25 LOC) — per turn, `{no-output |
+   identical-screen | changed}`. Upgrades `selfLoopRate` from a rate to named
+   turns with evidence. This is Jericho's world-state-change test with the screen
+   standing in for the object tree. *FP: Jericho's own documented one — state
+   changed only in variables the screen never renders. Under-reports, never
+   over-reports.*
+3. **Parser-failure vs refusal classifier** (~40 LOC) — two author-supplied regex
+   lists; classify `{unparsed | refused | accepted | unknown}`. **Report the
+   `unknown` rate prominently.** Ship with empty defaults, not clever heuristics.
+   *Nobody measures accuracy for this; TALES notes ALFWorld uses one message for
+   both, where the distinction is genuinely unavailable — the check must say so
+   rather than guess.* This is the harness-failure vs game-finding split.
+4. **Terminal-state / death-loop detector** (~30 LOC) — author-supplied
+   `victory`/`death` regexes; compose with check 1. Answers the binary a reader
+   wants first: *did this session finish?*
+5. **No-progress window** (~35 LOC) — k consecutive turns, zero novelty, high
+   inter-screen Jaccard. Catches drift that self-loop misses. *FP: a correct long
+   puzzle solved by reading — `examine` genuinely doesn't change state. Needs a
+   configurable no-op verb list; expect residual noise.*
+6. **Entity-appearance grid** (~70 LOC) — **ships as evidence, not verdict.**
+   Flags `X → –(long gap) → S` role transitions and singletons. *FP: high with
+   the capitalized-token fallback. Frame explicitly as leads packaged for the
+   jury.*
+
+**Needs instrumentation — do not attempt from screens:** true softlock proof
+(`AG(EF(goal))`), Jericho-style object-tree validity, and state invariants /
+metamorphic relations (HP never negative, inventory monotone). The hook already
+exists — `Observation.state` on the `rpc` driver. **That is the layer after these
+six.**
 
 ---
 
