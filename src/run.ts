@@ -4,7 +4,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PlaytestConfig, Seat } from './config.js';
-import { resolveEnv } from './config.js';
+import { resolveEnv, ConfigError } from './config.js';
 import type { ChatClient } from './openrouter.js';
 import { spawnGame, type GameProcess } from './stdio-game.js';
 import { chooseInput, type TurnRecord } from './player.js';
@@ -50,8 +50,23 @@ async function withTurnRetries<T>(fn: () => Promise<T>, retries: number, sleepMs
   throw lastErr;
 }
 
+/**
+ * `label` comes from a CLI flag and `seat.id` from a config file, and both used
+ * to be joined into a filesystem path unchecked — so `--label ../../etc` wrote
+ * outside runsDir entirely.
+ */
+function safeSegment(value: string, what: string): string {
+  if (!/^[A-Za-z0-9._-]+$/.test(value) || value === '.' || value === '..') {
+    throw new ConfigError(
+      `${what} "${value}" is not usable as a directory name`,
+      'use letters, digits, dot, dash or underscore only — it becomes a folder under runsDir',
+    );
+  }
+  return value;
+}
+
 export function seatDir(cfg: PlaytestConfig, label: string, seat: Seat): string {
-  return join(cfg.runsDir, label, seat.id);
+  return join(cfg.runsDir, safeSegment(label, 'label'), safeSegment(seat.id, 'seat id'));
 }
 
 export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions): Promise<SeatResult> {
@@ -106,13 +121,15 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       for (const q of cfg.game.quitInputs) {
         const t0 = Date.now();
         const screen = await game.nextScreen();
-        if (screen.reason === 'exit' || screen.reason === 'timeout') { history.push({ turn: turn + 1, screen: screen.text, input: '', reason: screen.reason, ms: Date.now() - t0 }); break; }
-        turn++;
-        history.push({ turn, screen: screen.text, input: q, reason: screen.reason, ms: Date.now() - t0 });
+        if (screen.reason === 'exit' || screen.reason === 'timeout') { history.push({ turn, screen: screen.text, input: '', reason: screen.reason, ms: Date.now() - t0 }); break; }
+        // Marked 'quit' and NOT counted as a player turn. These are the
+        // runner's own inputs; counting them inflated turnsPlayed and, worse,
+        // presented them to the critic as decisions the player made.
+        history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0 });
         game.send(q);
       }
       const final = await game.nextScreen();
-      if (final.text.trim().length > 0) history.push({ turn: turn + 1, screen: final.text, input: '', reason: final.reason, ms: 0 });
+      if (final.text.trim().length > 0) history.push({ turn, screen: final.text, input: '', reason: final.reason, ms: 0 });
     }
   } catch (err) {
     endedBy = 'error';
@@ -123,17 +140,31 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
 
   let crit: Critique | null = null;
   let critiqueError: string | undefined;
-  const played = history.filter((h) => h.input.length > 0 && h.reason !== 'setup');
-  if (played.length > 0) {
+  // The player's own turns, for counting. Setup answers and the quit sequence
+  // are the runner's inputs, not the player's.
+  const playerTurns = history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit');
+  // The evidence the critic sees keeps the terminal screens — the consequence
+  // of the last input, the save recap, the crash output. Dropping every record
+  // with no input made endings, stalls and crashes invisible to the verdict.
+  const evidence = history.filter((h) => h.reason !== 'setup' && h.reason !== 'quit');
+  if (playerTurns.length > 0) {
     try {
-      crit = await critique(opts.client, seat.model, cfg.criteria, played);
+      crit = await critique(opts.client, seat.model, cfg.criteria, evidence, {
+        outcome: { endedBy, turnsPlayed: playerTurns.length, error },
+      });
     } catch (err) {
       critiqueError = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     }
+  } else {
+    // A session where the player never moved used to produce a full, confident
+    // verdict over a transcript containing only the runner's own quit input.
+    critiqueError = `no player turns were taken (ended by ${endedBy}); nothing to judge`;
+    if (endedBy === 'turns') endedBy = 'error';
+    error = error ?? 'the player took no turns';
   }
 
   const result: SeatResult = {
-    seat, label: opts.label, turnsPlayed: turn, endedBy, error, history, critique: crit, critiqueError,
+    seat, label: opts.label, turnsPlayed: playerTurns.length, endedBy, error, history, critique: crit, critiqueError,
     durationMs: Date.now() - started, dir,
   };
   await writeArtifacts(cfg, result, game.stderr);
@@ -169,5 +200,20 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
     for (const s of seats) out.push(await runSeat(cfg, s, opts));
     return out;
   }
-  return Promise.all(seats.map((s) => runSeat(cfg, s, opts)));
+  // allSettled, not all: a single seat's rejection used to discard every
+  // sibling's result even though their artifacts were already on disk, turning
+  // one bad seat into a lost run.
+  const settled = await Promise.allSettled(seats.map((s) => runSeat(cfg, s, opts)));
+  const out: SeatResult[] = [];
+  settled.forEach((r, i) => {
+    if (r.status === 'fulfilled') { out.push(r.value); return; }
+    const seat = seats[i];
+    out.push({
+      seat, label: opts.label, turnsPlayed: 0, endedBy: 'error',
+      error: r.reason instanceof Error ? `${r.reason.name}: ${r.reason.message}` : String(r.reason),
+      history: [], critique: null, critiqueError: 'the seat threw before producing a critique',
+      durationMs: 0, dir: join(cfg.runsDir, opts.label, seat.id),
+    });
+  });
+  return out;
 }

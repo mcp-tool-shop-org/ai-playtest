@@ -40,27 +40,55 @@ export async function readRun(runDir: string): Promise<SeatSummary[]> {
   return out;
 }
 
+/**
+ * Markdown table cells hold model-written text, which contains pipes and
+ * newlines often enough that an unescaped cell silently breaks the table and
+ * shifts every column after it.
+ */
+function cell(s: string): string {
+  return s.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
 export function renderReport(name: string, label: string, seats: SeatSummary[]): string {
   const criteriaIds = Array.from(new Set(seats.flatMap((s) => s.critique?.criteria.map((c) => c.id) ?? [])));
   const lines: string[] = [];
   lines.push(`# ${name} — AI playtest report (${label})`);
   lines.push('');
   const judged = seats.filter((s) => s.critique);
+  const unjudged = seats.filter((s) => !s.critique);
   const alive = judged.filter((s) => s.critique!.alive).length;
-  lines.push(`**Seats:** ${seats.length} (${seats.map((s) => s.seat.family).join(', ')}). **Judged:** ${judged.length}. **Alive verdicts:** ${alive} of ${judged.length}. **Would play again:** ${judged.filter((s) => s.critique!.wouldPlayAgain).length} of ${judged.length}.`);
+  // Counting verdicts against `judged` alone made a run where half the seats
+  // died read as unanimous -- "Alive verdicts: 1 of 1" for a two-seat run with
+  // one dead seat. Verdicts are reported against the seats that were ASKED.
+  lines.push(`**Seats:** ${seats.length} (${seats.map((s) => s.seat.family).join(', ')}). **Alive:** ${alive} of ${seats.length} seats. **Would play again:** ${judged.filter((s) => s.critique!.wouldPlayAgain).length} of ${seats.length}.`);
   lines.push('');
+  if (unjudged.length > 0) {
+    lines.push(`> **${unjudged.length} of ${seats.length} seats produced no verdict** — the counts above are out of ${seats.length}, not out of ${judged.length}. ` +
+      unjudged.map((s) => `\`${s.seat.family}\` (ended by ${s.endedBy}${s.critiqueError ? `; ${s.critiqueError}` : ''})`).join(', ') + '.');
+    lines.push('');
+  }
+  if (judged.length === 1) {
+    lines.push('> Single judged seat. One run of one model is a sample of one: repeated runs of a fixed configuration have been measured spanning ~19 percentage points. Treat this as a lead to reproduce, not a measurement.');
+    lines.push('');
+  }
   lines.push('## Criteria by family');
   lines.push('');
-  lines.push(`| criterion | ${seats.map((s) => s.seat.family).join(' | ')} | met |`);
-  lines.push(`|---|${seats.map(() => '---').join('|')}|---|`);
+  lines.push(`| criterion | ${seats.map((s) => s.seat.family).join(' | ')} | met | agreement |`);
+  lines.push(`|---|${seats.map(() => '---').join('|')}|---|---|`);
   for (const id of criteriaIds) {
     const cells = seats.map((s) => {
       const v = s.critique?.criteria.find((c) => c.id === id);
       if (!v) return '—';
       return v.met ? `yes${v.turn !== null ? ` (t${v.turn})` : ''}` : 'no';
     });
+    const answered = seats.filter((s) => s.critique?.criteria.find((c) => c.id === id)).length;
     const met = seats.filter((s) => s.critique?.criteria.find((c) => c.id === id)?.met).length;
-    lines.push(`| ${id} | ${cells.join(' | ')} | ${met}/${judged.length} |`);
+    // Disagreement is information about the CRITERION, not noise to average
+    // away: evaluators applying the same rubric to the same artifact agree far
+    // less than intuition suggests, so a split verdict most often means the
+    // criterion is under-specified.
+    const split = answered > 1 && met > 0 && met < answered;
+    lines.push(`| ${cell(id)} | ${cells.join(' | ')} | ${met}/${seats.length} | ${answered < 2 ? '—' : split ? '**split**' : 'unanimous'} |`);
   }
   lines.push('');
   lines.push('## Verdicts');

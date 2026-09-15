@@ -3,7 +3,7 @@ import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { validateConfig, resolveEnv, ConfigError } from '../src/config.js';
-import { runAll } from '../src/run.js';
+import { runAll, seatDir } from '../src/run.js';
 import { readRun, renderReport, writeReport } from '../src/report.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
@@ -66,7 +66,10 @@ describe('runAll over the echo game', () => {
     expect(results).toHaveLength(2);
     for (const r of results) {
       expect(r.endedBy).toBe('turns');
-      expect(r.turnsPlayed).toBe(4 + 1);
+      // Four PLAYER turns. The scripted setup answer and the runner's own
+      // 'quit' are the runner's inputs, not the player's; counting quit here
+      // is what previously made this 5.
+      expect(r.turnsPlayed).toBe(4);
       expect(r.critique?.alive).toBe(true);
       const transcript = await readFile(join(r.dir, 'transcript.txt'), 'utf8');
       expect(transcript).toContain('═══ setup ── screen');
@@ -79,8 +82,8 @@ describe('runAll over the echo game', () => {
     const seats = await readRun(join(runsDir, 'lbl'));
     expect(seats.map((s) => s.seat.family)).toEqual(['alpha', 'beta']);
     const md = renderReport('echo', 'lbl', seats);
-    expect(md).toContain('**Alive verdicts:** 2 of 2');
-    expect(md).toContain('| ambush | yes (t3) | yes (t3) | 2/2 |');
+    expect(md).toContain('**Alive:** 2 of 2 seats');
+    expect(md).toContain('| ambush | yes (t3) | yes (t3) | 2/2 | unanimous |');
     expect(md).toContain('[alpha] fake/alpha found nothing dead');
     const path = await writeReport('echo', join(runsDir, 'lbl'), 'lbl');
     expect(await readFile(path, 'utf8')).toContain('# echo — AI playtest report (lbl)');
@@ -117,5 +120,77 @@ describe('openrouter client', () => {
     expect(n).toBe(3);
     const unauth = createOpenRouterClient({ apiKey: 'k', retries: 2, sleep: async () => {}, fetchImpl: async () => ({ ok: false, status: 401, text: async () => 'nope' }) });
     await expect(unauth({ model: 'm', messages: [], maxTokens: 5, temperature: 0 })).rejects.toMatchObject({ code: 'E_OPENROUTER', status: 401 });
+  });
+});
+
+describe('report honesty', () => {
+  const seat = (family: string, critique: unknown, endedBy = 'turns'): any => ({
+    seat: { id: family, family, model: `fake/${family}` },
+    turnsPlayed: 10, endedBy, error: null, critique, critiqueError: critique ? null : 'no JSON object in critique',
+  });
+  const crit = (alive: boolean, met: boolean) => ({
+    alive, summary: 's', wouldPlayAgain: alive, highlights: [], deadSpots: [], confusions: [],
+    criteria: [{ id: 'ambush', met, evidence: 'e', turn: 3 }],
+  });
+
+  it('does not report a half-dead run as unanimous', () => {
+    // "Alive verdicts: 1 of 1" for a two-seat run with one dead seat read as a
+    // clean sweep. Verdicts are now counted against the seats that were ASKED.
+    const md = renderReport('g', 'lbl', [seat('alpha', crit(true, true)), seat('beta', null, 'error')]);
+    expect(md).toContain('**Alive:** 1 of 2 seats');
+    expect(md).not.toContain('1 of 1');
+    expect(md).toContain('1 of 2 seats produced no verdict');
+    expect(md).toContain('`beta`');
+  });
+
+  it('marks a split verdict as split rather than averaging it away', () => {
+    const md = renderReport('g', 'lbl', [seat('alpha', crit(true, true)), seat('beta', crit(false, false))]);
+    expect(md).toContain('**split**');
+  });
+
+  it('warns that a single judged seat is a sample of one', () => {
+    expect(renderReport('g', 'lbl', [seat('alpha', crit(true, true))])).toContain('sample of one');
+  });
+
+  it('escapes pipes and newlines so model text cannot break the table', () => {
+    const weird = seat('alpha', {
+      ...crit(true, true),
+      criteria: [{ id: 'a|b\nc', met: true, evidence: 'e', turn: 1 }],
+    });
+    const row = renderReport('g', 'lbl', [weird]).split('\n').find((l) => l.includes('a\\|b'));
+    expect(row).toBeDefined();
+    // The newline is gone and the pipe inside the cell is escaped, so only the
+    // real column delimiters (unescaped pipes) remain: 5 for a 4-cell row.
+    expect(row).toContain('a\\|b c');
+    expect(row!.match(/(?<!\\)\|/g)!.length).toBe(5);
+  });
+});
+
+describe('run safety', () => {
+  it('refuses a label or seat id that would escape runsDir', () => {
+    const cfg = config(2);
+    const seat = { id: 'a', family: 'alpha', model: 'fake/alpha' };
+    // --label ../../etc used to be joined straight into a filesystem path.
+    expect(() => seatDir(cfg, '../../etc', seat)).toThrow(ConfigError);
+    expect(() => seatDir(cfg, 'ok', { ...seat, id: '../escape' })).toThrow(ConfigError);
+    expect(() => seatDir(cfg, 'ok-label_1.2', seat)).not.toThrow();
+  });
+
+  it('does not report a confident verdict for a run where the player never moved', async () => {
+    const cfg = config(0);
+    const results = await runAll(cfg, { label: 'zeroturn', client: fakeClient(['look']), seats: ['a'] });
+    // Previously: zero iterations, endedBy stayed 'turns' (a success status),
+    // and the critic judged a transcript containing only the quit input.
+    expect(results[0].turnsPlayed).toBe(0);
+    expect(results[0].endedBy).toBe('error');
+    expect(results[0].critique).toBeNull();
+    expect(results[0].critiqueError).toMatch(/no player turns/);
+  });
+
+  it('keeps the runner\'s own quit input out of the player\'s turn count', async () => {
+    const cfg = config(2);
+    const results = await runAll(cfg, { label: 'quitcount', client: fakeClient(['look', 'go nave']), seats: ['a'] });
+    expect(results[0].turnsPlayed).toBe(2);
+    expect(results[0].history.some((h) => h.reason === 'quit')).toBe(true);
   });
 });
