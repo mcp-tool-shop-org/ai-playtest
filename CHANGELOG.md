@@ -7,15 +7,52 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+Dogfood swarm, 2026-09-14. 14 -> 84 tests.
+
 ### Added
 
-- `LICENSE` (MIT). `package.json` had declared MIT since the first commit with no
-  license file present, which left the grant ambiguous for anyone receiving the
-  code.
-- `SECURITY.md`, including the threat model the README did not carry: a playtest
-  config is executable-equivalent, the game process inherits the runner's
-  environment (API key included), and game output is untrusted input to a model.
-- This changelog.
+- **Three drivers behind one observation seam.** `stdio` (the original),
+  `pty` (a rendered terminal grid, for full-screen TUIs), and `rpc` (structured
+  state over TCP, for Godot / Unreal / anything instrumented). Selected with
+  `driver` in the config; defaults to `stdio`, so existing configs are
+  unaffected. `docs/engine-bridge.md` carries a paste-and-go Godot 4 autoload.
+- **A cross-family jury.** Each transcript is judged by up to `panelSize`
+  (default 3) seats from families that did not produce it. Majority verdict,
+  split criteria marked with their count, per-seat dispersion reported.
+- **Coverage.** Novelty curve and half-life, repeat / loop / self-loop rates,
+  action entropy and a thin/moderate/broad read, computed from turn records
+  alone.
+- `LICENSE` (MIT), `SECURITY.md` with the threat model, CI, `prepublishOnly`,
+  `tsconfig.test.json`, and this changelog.
+
+### Fixed
+
+- **Verdicts could be inverted.** `parseCritique` coerced with `Boolean()`, and
+  `Boolean("false") === true`, so a critic answering `"alive": "false"` as a
+  string was recorded as alive with every criterion met.
+- **The OSC branch of the ANSI regex over-deleted.** It terminated on the next
+  BEL anywhere in the buffer, so an ST-terminated OSC plus a later BEL removed
+  everything between them — 46 characters of narration in the measured case.
+  That regex also stored literal control bytes, so reviewers saw a different
+  pattern than the one that ran.
+- **`OPENROUTER_API_KEY` reached the game process** and was observed rendered
+  into screen text, from there into the player's context and the written report.
+  The child now gets an allowlist; `game.inheritEnv` opts back in.
+- The critic's evidence included the runner's own quit inputs as player
+  decisions and excluded every terminal screen, so crashes and stalls were
+  invisible to the verdict.
+- The transcript sat last and unframed in the critic's prompt — the most
+  instruction-weighted position — so a game could steer its own grade.
+- stderr shared a quiet-timer with stdout (3063 ms timeout every turn where
+  220 ms prompt was correct); stdout chunks were decoded independently,
+  corrupting split multi-byte characters; an unhandled EPIPE on stdin took down
+  every parallel seat; a failed spawn reported nothing.
+- `finish_reason: 'length'` was returned as success, and `res.text()` sat
+  outside the retry loop's try/catch.
+- `--label ../../etc` escaped `runsDir`; `--turns abc` played zero turns and
+  exited 0; `Promise.all` discarded every sibling when one seat threw; a run
+  where every critique failed exited 0; the report read "Alive verdicts: 1 of 1"
+  for a two-seat run with one dead seat.
 
 ## [0.1.0] - 2026-09-02
 
