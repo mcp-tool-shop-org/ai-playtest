@@ -23,6 +23,13 @@ export type GameConfig = {
   /** Extra environment for the game process; values starting with "$" read the runner's env. */
   env?: Record<string, string>;
   /**
+   * Pass the runner's ENTIRE environment to the game, rather than a minimal
+   * allowlist plus `env`. Off by default: the game under test is arbitrary code
+   * and inheriting everything hands it `OPENROUTER_API_KEY`. Turn it on only for
+   * a game you trust as much as the runner itself.
+   */
+  inheritEnv?: boolean;
+  /**
    * Regexes (source strings) that, when the stripped stdout tail matches one,
    * mean the game is waiting for a line. Checked after `promptQuietMs` of
    * silence; without a match the runner waits `idleQuietMs` instead.
@@ -132,6 +139,7 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
       args: game.args as string[],
       cwd: typeof game.cwd === 'string' ? resolve(baseDir, game.cwd) : baseDir,
       env: (game.env as Record<string, string>) ?? {},
+      inheritEnv: game.inheritEnv === true,
       promptPatterns: game.promptPatterns as string[],
       promptQuietMs: (game.promptQuietMs as number) ?? DEFAULTS.game.promptQuietMs,
       idleQuietMs: (game.idleQuietMs as number) ?? DEFAULTS.game.idleQuietMs,

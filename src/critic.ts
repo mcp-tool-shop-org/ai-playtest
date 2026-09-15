@@ -56,6 +56,33 @@ Transcript:
 ${transcript}`;
 }
 
+/**
+ * Read a verdict boolean without inverting it.
+ *
+ * `Boolean()` was used here, and `Boolean("false") === true`. A critic that
+ * answered `"alive": "false"` — which smaller models do routinely, because JSON
+ * mode nudges them to stringify scalars — was recorded as ALIVE with every
+ * criterion MET. The verdict flipped silently, no retry fired, and the report
+ * printed the opposite of what the critic said.
+ *
+ * Anything that is not recognisably a boolean throws, so the caller's retry can
+ * see it. An unreadable verdict must never resolve to a pass.
+ */
+function strictBool(value: unknown, field: string): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase();
+    if (s === 'true' || s === 'yes') return true;
+    if (s === 'false' || s === 'no') return false;
+  }
+  if (value === 1) return true;
+  if (value === 0) return false;
+  throw new CritiqueError(
+    `critique field ${field} is not a boolean (got ${JSON.stringify(value)})`,
+    'answer with JSON booleans: true or false, unquoted',
+  );
+}
+
 export function parseCritique(raw: string, criteria: Criterion[]): Critique {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
@@ -66,25 +93,36 @@ export function parseCritique(raw: string, criteria: Criterion[]): Critique {
   } catch (err) {
     throw new CritiqueError(`critique JSON does not parse: ${(err as Error).message}`, 'the critic must answer with valid JSON');
   }
-  const verdicts = Array.isArray(obj.criteria) ? (obj.criteria as Array<Record<string, unknown>>) : [];
+  // Any JSON object used to be accepted, so a wrapped answer ({"result":{...}})
+  // or a apology object became a confident all-unmet verdict and the documented
+  // retry could never fire for the likeliest failures.
+  if (!Array.isArray(obj.criteria) || obj.alive === undefined) {
+    throw new CritiqueError(
+      'critique is missing the required "alive" and "criteria" fields',
+      'answer with the exact JSON object requested, not wrapped in another key',
+    );
+  }
+  const verdicts = obj.criteria as Array<Record<string, unknown>>;
   const criteriaOut: CriterionVerdict[] = criteria.map((c) => {
     const v = verdicts.find((x) => x.id === c.id);
     return {
       id: c.id,
-      met: v ? Boolean(v.met) : false,
+      met: v ? strictBool(v.met, `criteria[${c.id}].met`) : false,
       evidence: v && typeof v.evidence === 'string' ? v.evidence : (v ? '' : 'not addressed by the critic'),
       turn: v && typeof v.turn === 'number' ? v.turn : null,
     };
   });
   const arr = (k: string): string[] => (Array.isArray(obj[k]) ? (obj[k] as unknown[]).map(String) : []);
   return {
-    alive: Boolean(obj.alive),
+    alive: strictBool(obj.alive, 'alive'),
     summary: typeof obj.summary === 'string' ? obj.summary : '',
     criteria: criteriaOut,
     highlights: arr('highlights'),
     deadSpots: arr('deadSpots'),
     confusions: arr('confusions'),
-    wouldPlayAgain: Boolean(obj.wouldPlayAgain),
+    // Absent is a real answer here ("the critic did not say"), and defaulting it
+    // to false is the safe direction for a would-play-again claim.
+    wouldPlayAgain: obj.wouldPlayAgain === undefined ? false : strictBool(obj.wouldPlayAgain, 'wouldPlayAgain'),
   };
 }
 

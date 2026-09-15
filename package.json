@@ -15,8 +15,9 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "verify": "npm run typecheck && npm test",
     "playtest": "node dist/cli.js",
     "prepublishOnly": "npm run verify && npm run build"

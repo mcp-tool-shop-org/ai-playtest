@@ -55,6 +55,7 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
         ...(req.json ? { response_format: { type: 'json_object' } } : {}),
       });
       let res: Awaited<ReturnType<FetchLike>>;
+      let text: string;
       try {
         res = await fetchImpl(`${base}/chat/completions`, {
           method: 'POST',
@@ -66,17 +67,22 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
           },
           body,
         });
+        // Reading the body has to sit inside this try. A socket reset partway
+        // through the response is the commonest transient fault there is, and
+        // outside the guard it escaped the retry loop entirely: one attempt
+        // instead of the seven the configuration promises, surfacing as a raw
+        // TypeError with no code or hint.
+        text = await res.text();
       } catch (err) {
         lastErr = new OpenRouterError(`network error: ${(err as Error).message}`, 'check connectivity; the runner retries with backoff');
         continue;
       }
-      const text = await res.text();
       if (!res.ok) {
         lastErr = new OpenRouterError(`HTTP ${res.status} from OpenRouter for ${req.model}: ${text.slice(0, 300)}`, res.status === 401 ? 'OPENROUTER_API_KEY is missing or invalid' : res.status === 404 ? 'the model slug has no endpoints; check https://openrouter.ai/models' : 'transient; retried', res.status);
         if (res.status === 401 || res.status === 404 || res.status === 400) break;
         continue;
       }
-      let parsed: { choices?: Array<{ message?: { content?: string | null } }>; error?: { message?: string } };
+      let parsed: { choices?: Array<{ message?: { content?: string | null }; finish_reason?: string }>; error?: { message?: string } };
       try {
         parsed = JSON.parse(text);
       } catch {
@@ -91,6 +97,18 @@ export function createOpenRouterClient(opts: OpenRouterOptions): ChatClient {
       if (typeof content !== 'string') {
         lastErr = new OpenRouterError(`empty completion from ${req.model}`, 'transient; retried');
         continue;
+      }
+      // A completion cut off at max_tokens used to be returned as a success.
+      // With response_format json_object that guarantees a parse failure
+      // downstream, reported as "the model cannot produce JSON" rather than
+      // "the budget was too small" — which is the failure the 1,800 -> 6,000
+      // critic-budget commit was chasing. Non-retryable: the same budget
+      // reproduces it.
+      if (parsed.choices?.[0]?.finish_reason === 'length') {
+        throw new OpenRouterError(
+          `response from ${req.model} was truncated at max_tokens=${req.maxTokens}`,
+          `raise maxTokens for this call; the model had more to say and the cut-off text is not valid ${req.json ? 'JSON' : 'output'}`,
+        );
       }
       return content;
     }

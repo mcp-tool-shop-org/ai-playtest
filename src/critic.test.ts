@@ -47,3 +47,50 @@ describe('critique', () => {
     expect(c.deadSpots).toEqual(['t2 nothing happened']);
   });
 });
+
+describe('verdict parsing is not coercion', () => {
+  // The defect this pins: parseCritique used Boolean(), and
+  // Boolean("false") === true. A critic answering "alive":"false" -- which
+  // smaller models do routinely under JSON mode -- was recorded as ALIVE with
+  // every criterion MET. The verdict flipped silently and no retry fired.
+  it('reads a stringified false as false, not as true', () => {
+    const raw = '{"alive":"false","summary":"flat","criteria":[{"id":"ambush","met":"false","evidence":"never","turn":null}],"highlights":[],"deadSpots":[],"confusions":[],"wouldPlayAgain":"false"}';
+    const c = parseCritique(raw, CRITERIA);
+    expect(c.alive).toBe(false);
+    expect(c.criteria.find((x) => x.id === 'ambush')!.met).toBe(false);
+    expect(c.wouldPlayAgain).toBe(false);
+  });
+
+  it('accepts the yes/no and 0/1 spellings models actually emit', () => {
+    const raw = '{"alive":"yes","summary":"s","criteria":[{"id":"ambush","met":1,"evidence":"e","turn":3}],"highlights":[],"deadSpots":[],"confusions":[],"wouldPlayAgain":"no"}';
+    const c = parseCritique(raw, CRITERIA);
+    expect(c.alive).toBe(true);
+    expect(c.criteria[0].met).toBe(true);
+    expect(c.wouldPlayAgain).toBe(false);
+  });
+
+  it('throws rather than guessing when a verdict is unreadable', () => {
+    const raw = '{"alive":"maybe","summary":"s","criteria":[],"highlights":[],"deadSpots":[],"confusions":[],"wouldPlayAgain":false}';
+    expect(() => parseCritique(raw, CRITERIA)).toThrow(/not a boolean/);
+  });
+
+  it('rejects a wrapped critique so the documented retry can fire', () => {
+    // Any JSON object used to be accepted, so {"result":{...}} became a
+    // confident all-unmet verdict instead of triggering the retry.
+    const wrapped = '{"result":{"alive":true,"criteria":[{"id":"ambush","met":true,"evidence":"e","turn":1}]}}';
+    expect(() => parseCritique(wrapped, CRITERIA)).toThrow(/missing the required/);
+  });
+
+  it('retries a coercion failure and succeeds on a well-formed second answer', async () => {
+    let calls = 0;
+    const client: ChatClient = async () => {
+      calls++;
+      return calls === 1
+        ? '{"alive":"definitely","summary":"s","criteria":[],"highlights":[],"deadSpots":[],"confusions":[],"wouldPlayAgain":true}'
+        : '{"alive":true,"summary":"s","criteria":[{"id":"ambush","met":true,"evidence":"e","turn":2}],"highlights":[],"deadSpots":[],"confusions":[],"wouldPlayAgain":true}';
+    };
+    const c = await critique(client, 'fake/model', CRITERIA, [{ turn: 1, screen: 's', input: 'look', reason: 'prompt', ms: 1 }]);
+    expect(calls).toBe(2);
+    expect(c.alive).toBe(true);
+  });
+});
