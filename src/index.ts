@@ -12,3 +12,7 @@ export { runSeat, runAll } from './run.js';
 export type { SeatResult, RunOptions } from './run.js';
 export { readRun, renderReport, writeReport } from './report.js';
 export type { SeatSummary } from './report.js';
+export { actionToLine, describeActions } from './driver.js';
+export type { Driver, Observation, Action, ActionSpace, ReadyReason } from './driver.js';
+export { createPtyDriver, PtyUnavailableError } from './pty-driver.js';
+export type { PtyDriverOptions } from './pty-driver.js';
