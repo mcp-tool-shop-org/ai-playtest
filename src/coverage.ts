@@ -59,6 +59,27 @@ export type Coverage = {
 const hash = (s: string): string => createHash('sha1').update(s).digest('hex').slice(0, 12);
 
 /**
+ * Canonical string for a turn's state. Prefer structured `state` when it is a
+ * real object (engine-bridge hp/room), falling back to the normalised screen.
+ * Never invent state from prose.
+ */
+export function turnStateKey(t: TurnRecord): string {
+  if (t.state !== undefined && t.state !== null && typeof t.state === 'object') {
+    try {
+      return `state:${JSON.stringify(t.state)}`;
+    } catch {
+      // cyclic / bigint — fall back to the screen
+    }
+  }
+  return normalizeScreen(t.screen);
+}
+
+/** Hash used by coverage and verifiers so novelty and absorbing-SCC share one key. */
+export function hashTurn(t: TurnRecord): string {
+  return hash(turnStateKey(t));
+}
+
+/**
  * Normalise a screen so "the same room" hashes the same across visits.
  *
  * The tension: collapsing every number makes `HP 40/100` and `HP 10/100` one
@@ -100,9 +121,14 @@ function entropy(items: string[]): number {
   return h;
 }
 
-/** Player-chosen inputs only: scripted setup, the quit sequence, and empty consequence rows are the runner's. */
+/** Runner/harness rows that must not count as the player choosing an action. */
+export function isHarnessReason(reason: string): boolean {
+  return reason === 'setup' || reason === 'quit' || reason === 'retry' || reason === 'illegal-action';
+}
+
+/** Player-chosen inputs only: scripted setup, the quit sequence, empty consequence rows, and rejected actions are the runner's. */
 export function playerTurns(history: TurnRecord[]): TurnRecord[] {
-  return history.filter((t) => t.input.length > 0 && t.reason !== 'setup' && t.reason !== 'quit' && t.reason !== 'retry');
+  return history.filter((t) => t.input.length > 0 && !isHarnessReason(t.reason));
 }
 
 /**
@@ -115,12 +141,12 @@ export function lastConsequence(history: TurnRecord[]): TurnRecord | undefined {
   let lastPlayer = -1;
   for (let i = 0; i < history.length; i++) {
     const t = history[i];
-    if (t.input.length > 0 && t.reason !== 'setup' && t.reason !== 'quit' && t.reason !== 'retry') lastPlayer = i;
+    if (t.input.length > 0 && !isHarnessReason(t.reason)) lastPlayer = i;
   }
   if (lastPlayer < 0) return undefined;
   for (let i = lastPlayer + 1; i < history.length; i++) {
     const t = history[i];
-    if (t.reason === 'setup' || t.reason === 'quit' || t.reason === 'retry') continue;
+    if (isHarnessReason(t.reason)) continue;
     if (t.input.length === 0) return t;
   }
   return undefined;
@@ -147,7 +173,7 @@ export function computeCoverage(history: TurnRecord[]): Coverage {
   // Hash the pre-action screens AND the last command's result screen. Action
   // metrics (repeat/loop/entropy) stay over chosen inputs only.
   const states = analysisTurns(history);
-  const hashes = states.map((t) => hash(normalizeScreen(t.screen)));
+  const hashes = states.map((t) => hashTurn(t));
   const seen = new Set<string>();
   let turnOfLastNovelState = 0;
   const novelByTurn: number[] = [];

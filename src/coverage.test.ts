@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeCoverage, normalizeScreen, playerTurns } from './coverage.js';
+import { computeCoverage, normalizeScreen, playerTurns, hashTurn } from './coverage.js';
 import type { TurnRecord } from './player.js';
 
 const t = (turn: number, screen: string, input: string, reason = 'prompt'): TurnRecord =>
@@ -33,6 +33,23 @@ describe('playerTurns', () => {
       t(1, 'c', '', 'exit'),
     ];
     expect(playerTurns(h).map((x) => x.input)).toEqual(['look']);
+  });
+
+  it('excludes illegal-action harness events', () => {
+    const h = [
+      t(1, 'Choose.', 'nope', 'illegal-action'),
+      t(1, 'Choose.', 'look'),
+    ];
+    expect(playerTurns(h).map((x) => x.input)).toEqual(['look']);
+  });
+});
+
+describe('hashTurn', () => {
+  it('prefers structured state over screen prose when state is an object', () => {
+    const a = { ...t(1, 'HP 40/100', 'look'), state: { room: 'Nave', hp: 40 } };
+    const b = { ...t(2, 'HP 10/100', 'wait'), state: { room: 'Nave', hp: 40 } };
+    expect(hashTurn(a)).toBe(hashTurn(b));
+    expect(hashTurn(t(1, 'HP 40/100', 'look'))).not.toBe(hashTurn(t(2, 'HP 10/100', 'wait')));
   });
 });
 

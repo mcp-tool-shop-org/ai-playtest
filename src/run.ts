@@ -4,14 +4,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PlaytestConfig, Seat } from './config.js';
-import { resolveEnv, ConfigError } from './config.js';
+import { resolveEnv, ConfigError, VERSION, SCHEMA_VERSION } from './config.js';
 import type { ChatClient } from './openrouter.js';
 import { spawnGame } from './stdio-game.js';
-import type { Driver, Observation } from './driver.js';
+import type { Action, ActionSpace, Driver, Observation } from './driver.js';
+import { ActionError, describeActions } from './driver.js';
 import { createStdioDriver } from './stdio-driver.js';
 import { chooseInput, type TurnRecord } from './player.js';
 import { critique, CritiqueError, type Critique } from './critic.js';
-import { computeCoverage, type Coverage } from './coverage.js';
+import { computeCoverage, playerTurns as chosenTurns, type Coverage } from './coverage.js';
 import { pickJurors, aggregatePanel, type PanelVerdict } from './panel.js';
 import { runVerifiers, type VerifierReport } from './verifiers.js';
 
@@ -57,12 +58,55 @@ export type RunOptions = {
   spawn?: typeof spawnGame;
   /** Injectable for tests, and the seam the pty/rpc drivers arrive through. */
   makeDriver?: (cfg: PlaytestConfig, env: Record<string, string>) => Promise<Driver>;
+  /**
+   * Reuse a driver already started by runAll (serial rpc panel). Skips
+   * makeDriver and stop; start is skipped when `initialObservation` is set.
+   */
+  sharedDriver?: Driver;
+  /** First observation when start() or reset() already ran for this seat. */
+  initialObservation?: Observation;
+  /** When false, runSeat does not stop the driver. Default true. */
+  manageLifecycle?: boolean;
   env?: NodeJS.ProcessEnv;
   onTurn?: (seat: Seat, t: TurnRecord) => void;
   /** Fired before each extra turn-retry sleep so a provider outage is visible. */
   onRetry?: (seat: Seat, info: { turn: number; attempt: number; of: number; sleepMs: number; error: string }) => void;
   onSeatDone?: (r: SeatResult) => void;
 };
+
+/**
+ * Map a player reply onto the current action space.
+ * choice id/label → choose, key in set → key, else line. Closed sets throw
+ * ActionError so the runner can record a harness event instead of stepping.
+ * Local copy: io-seams may later export actionFromInput from driver.ts.
+ */
+export function toAction(input: string, space: ActionSpace | undefined): Action {
+  const line = input;
+  if (!space || space.kind === 'free-text') return { kind: 'line', line };
+  if (space.kind === 'choice') {
+    const exactId = space.options.find((o) => o.id === line);
+    if (exactId) return { kind: 'choose', id: exactId.id };
+    const lower = line.toLowerCase();
+    const ciId = space.options.find((o) => o.id.toLowerCase() === lower);
+    if (ciId) return { kind: 'choose', id: ciId.id };
+    const byLabel = space.options.find((o) => o.label === line || o.label.toLowerCase() === lower);
+    if (byLabel) return { kind: 'choose', id: byLabel.id };
+    throw new ActionError(
+      `input ${JSON.stringify(line)} is not a legal choice`,
+      `legal ids: ${space.options.map((o) => o.id).join(', ')}`,
+    );
+  }
+  if (space.kind === 'keys') {
+    if (space.keys.includes(line)) return { kind: 'key', key: line };
+    const found = space.keys.find((k) => k.toLowerCase() === line.toLowerCase());
+    if (found) return { kind: 'key', key: found };
+    throw new ActionError(
+      `input ${JSON.stringify(line)} is not a legal key`,
+      `legal keys: ${space.keys.join(' ')}`,
+    );
+  }
+  return { kind: 'line', line };
+}
 
 function formatErr(err: unknown): string {
   return err instanceof Error ? `${err.name}: ${err.message}` : String(err);
@@ -224,19 +268,19 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
     try {
       // makeDriver / start / setup compile can spawn or fail; they must sit
       // inside the same try/finally as stop so a rejected start cannot leak
-      // the child.
-      const game = await makeDriver(cfg, env);
+      // the child. sharedDriver skips makeDriver (and stop, in finally).
+      const game = opts.sharedDriver ?? await makeDriver(cfg, env);
       driver = game;
-      pendingScreen = await game.start();
+      pendingScreen = opts.initialObservation ?? await game.start();
       const setupSteps = cfg.setup.map((st) => ({ re: new RegExp(st.match, 'm'), answer: st.answer }));
       let setupAnswers = 0;
       const MAX_SETUP_ANSWERS = 60;
       while (turn < cfg.turns) {
         const t0 = Date.now();
-        const screen = pendingScreen ?? await game.step({ kind: 'line', line: '' });
+        const screen: Observation = pendingScreen ?? await game.step({ kind: 'line', line: '' });
         pendingScreen = null;
-        if (screen.reason === 'exit') { endedBy = 'exit'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'exit', ms: Date.now() - t0 }); break; }
-        if (screen.reason === 'timeout') { endedBy = 'timeout'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'timeout', ms: Date.now() - t0 }); break; }
+        if (screen.reason === 'exit') { endedBy = 'exit'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'exit', ms: Date.now() - t0, state: screen.state }); break; }
+        if (screen.reason === 'timeout') { endedBy = 'timeout'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'timeout', ms: Date.now() - t0, state: screen.state }); break; }
         // Scripted setup: the first matching step answers without the player
         // and without spending a turn (recorded, so the transcript stays whole).
         const tail = screen.text.slice(-600);
@@ -244,7 +288,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
         if (step && setupAnswers < MAX_SETUP_ANSWERS) {
           setupAnswers++;
           if (setupAnswers >= MAX_SETUP_ANSWERS) setupCapped = true;
-          const rec: TurnRecord = { turn: 0, screen: screen.text, input: step.answer, reason: 'setup', ms: Date.now() - t0 };
+          const rec: TurnRecord = { turn: 0, screen: screen.text, input: step.answer, reason: 'setup', ms: Date.now() - t0, state: screen.state };
           history.push(rec);
           opts.onTurn?.(seat, rec);
           pendingScreen = await game.step({ kind: 'line', line: step.answer });
@@ -266,6 +310,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
             memoryTurns: cfg.playerMemoryTurns,
             screenChars: cfg.screenChars,
             temperature: cfg.playerTemperature,
+            actionHint: describeActions(screen.actions) || undefined,
           }),
           retries,
           sleepMs,
@@ -284,8 +329,26 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
             });
           },
         );
-        turn++;
         const choice = played.value;
+        let action: Action;
+        try {
+          action = toAction(choice.input, screen.actions);
+        } catch (err) {
+          if (!(err instanceof ActionError)) throw err;
+          turn++;
+          const rec: TurnRecord = {
+            turn, screen: screen.text, input: choice.input,
+            reason: 'illegal-action',
+            ms: Date.now() - t0,
+            attempts: played.attempts, lastError: err.message,
+            state: screen.state,
+          };
+          history.push(rec);
+          opts.onTurn?.(seat, rec);
+          pendingScreen = screen;
+          continue;
+        }
+        turn++;
         const rec: TurnRecord = {
           turn, screen: screen.text, input: choice.input,
           reason: choice.fallback ? 'look-fallback' : screen.reason,
@@ -293,10 +356,11 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
           attempts: played.attempts, lastError: played.lastError,
           fallback: choice.fallback || undefined,
           rawSnippet: choice.rawSnippet,
+          state: screen.state,
         };
         history.push(rec);
         opts.onTurn?.(seat, rec);
-        pendingScreen = await game.step({ kind: 'line', line: choice.input });
+        pendingScreen = await game.step(action);
       }
       // The screen produced by the last player input is evidence of THAT input.
       // Recorded with input:'' so the critic sees it. playerTurns still excludes
@@ -310,7 +374,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       // 'quit') that playerTurns counted.
       if (endedBy === 'turns') {
         if (pendingScreen) {
-          history.push({ turn, screen: pendingScreen.text, input: '', reason: pendingScreen.reason, ms: 0 });
+          history.push({ turn, screen: pendingScreen.text, input: '', reason: pendingScreen.reason, ms: 0, state: pendingScreen.state });
           if (pendingScreen.reason === 'timeout') endedBy = 'timeout';
         }
         if (!(pendingScreen?.done ?? false) && pendingScreen?.reason !== 'exit' && pendingScreen?.reason !== 'timeout') {
@@ -318,7 +382,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
             const t0 = Date.now();
             const screen = await game.step({ kind: 'line', line: q });
             pendingScreen = screen;
-            history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0 });
+            history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0, state: screen.state });
             if (screen.reason === 'exit' || screen.reason === 'timeout') break;
           }
         }
@@ -328,10 +392,13 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       error = formatErr(err);
     } finally {
       if (driver) {
-        try {
-          await driver.stop();
-        } catch (err) {
-          stopError = formatErr(err);
+        const manage = opts.manageLifecycle !== false && !opts.sharedDriver;
+        if (manage) {
+          try {
+            await driver.stop();
+          } catch (err) {
+            stopError = formatErr(err);
+          }
         }
         diagnostics = driver.diagnostics;
       }
@@ -342,7 +409,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
     let critiqueRaw: string | undefined;
     // The player's own turns, for counting. Setup answers and the quit sequence
     // are the runner's inputs, not the player's.
-    const playerTurns = history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry');
+    const playerTurns = chosenTurns(history);
     // The evidence the critic sees keeps the terminal screens — the consequence
     // of the last input, the save recap, the crash output. Dropping every record
     // with no input made endings, stalls and crashes invisible to the verdict.
@@ -401,7 +468,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   } catch (err) {
     const partial: Partial<SeatResult> = result ?? {
       seat, label: opts.label, history, endedBy, error: error ?? formatErr(err), stopError, dir,
-      turnsPlayed: history.filter((h) => h.input.length > 0 && h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry').length,
+      turnsPlayed: chosenTurns(history).length,
       critique: null,
       setupCapped: setupCapped || undefined,
       coverage: computeCoverage(history),
@@ -433,6 +500,9 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
     if (t.fallback) {
       lines.push(`# look-fallback: model reply discarded${t.rawSnippet ? `; raw ${JSON.stringify(t.rawSnippet)}` : ''}; runner sent ${JSON.stringify(t.input)}`);
     }
+    if (t.reason === 'illegal-action') {
+      lines.push(`# illegal-action: ${JSON.stringify(t.input)} is not in the current action space; runner did not step`);
+    }
     lines.push(t.screen.trimEnd());
     if (t.input) lines.push(`> ${t.input}`);
     lines.push('');
@@ -446,6 +516,7 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   if (r.critiqueRaw) await writeFile(join(r.dir, 'critique.raw.txt'), r.critiqueRaw, 'utf8');
   await writeFile(join(r.dir, 'meta.json'), JSON.stringify({
     name: cfg.name, label: r.label, seat: r.seat, turns: cfg.turns, turnsPlayed: r.turnsPlayed, endedBy: r.endedBy,
+    schemaVersion: cfg.schemaVersion ?? SCHEMA_VERSION, toolVersion: VERSION,
     error: r.error ?? null, stopError: r.stopError ?? null, writeError: r.writeError ?? null,
     critiqueError: r.critiqueError ?? null, setupCapped: r.setupCapped ?? false,
     coverage: r.coverage, panel: r.panel, verifiers: r.verifiers,
@@ -454,9 +525,132 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
 }
 
+function failedSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions, error: string): SeatResult {
+  const history: TurnRecord[] = [];
+  return {
+    seat,
+    label: opts.label,
+    turnsPlayed: 0,
+    endedBy: 'error',
+    error,
+    history,
+    critique: null,
+    coverage: computeCoverage(history),
+    verifiers: runVerifiers(history),
+    panel: null,
+    durationMs: 0,
+    dir: trySeatDir(cfg, opts.label, seat),
+  };
+}
+
+function settleRejectedSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions, reason: unknown): SeatResult {
+  const partial = partialFromRejection(reason);
+  const history = partial?.history ?? [];
+  return {
+    seat,
+    label: partial?.label ?? opts.label,
+    turnsPlayed: partial?.turnsPlayed ?? 0,
+    endedBy: partial?.endedBy ?? 'error',
+    error: formatErr(reason),
+    stopError: partial?.stopError,
+    writeError: partial?.writeError,
+    history,
+    critique: partial?.critique ?? null,
+    critiqueError: partial?.critiqueError ?? (history.length > 0 ? undefined : 'the seat threw before producing a critique'),
+    critiqueRaw: partial?.critiqueRaw,
+    setupCapped: partial?.setupCapped,
+    coverage: partial?.coverage ?? computeCoverage(history),
+    verifiers: partial?.verifiers ?? runVerifiers(history),
+    panel: partial?.panel ?? null,
+    durationMs: partial?.durationMs ?? 0,
+    dir: partial?.dir ?? trySeatDir(cfg, opts.label, seat),
+  };
+}
+
+/**
+ * Serial rpc: one Driver, start once, reset() between seats, stop once.
+ * Missing or throwing reset fails that next seat (no silent second client).
+ * Parallel rpc stays one process per seat — the paste-and-go bridge is single-client.
+ */
+async function runSerialRpc(
+  cfg: PlaytestConfig,
+  seats: Seat[],
+  opts: RunOptions,
+): Promise<SeatResult[]> {
+  if (seats.length === 0) return [];
+  const env = resolveEnv(cfg.game.env, opts.env ?? process.env);
+  const makeDriver = opts.makeDriver
+    ?? (opts.spawn ? async (c: PlaytestConfig, e: Record<string, string>) => createStdioDriver({ game: c.game, env: e, spawn: opts.spawn }) : createDriver);
+
+  let driver: Driver | undefined;
+  const out: SeatResult[] = [];
+  try {
+    let game: Driver;
+    try {
+      game = await makeDriver(cfg, env);
+      driver = game;
+    } catch (err) {
+      const msg = formatErr(err);
+      return seats.map((s) => failedSeat(cfg, s, opts, msg));
+    }
+    let firstObs: Observation;
+    try {
+      firstObs = await game.start();
+    } catch (err) {
+      const msg = formatErr(err);
+      return seats.map((s) => failedSeat(cfg, s, opts, msg));
+    }
+
+    for (let i = 0; i < seats.length; i++) {
+      const seat = seats[i];
+      let initial: Observation;
+      if (i === 0) {
+        initial = firstObs;
+      } else if (typeof game.reset !== 'function') {
+        out.push(failedSeat(
+          cfg,
+          seat,
+          opts,
+          'E_RESET: rpc driver has no reset(); serial panel reuse cannot start a second client — launch one process per seat or implement Driver.reset',
+        ));
+        continue;
+      } else {
+        try {
+          initial = await game.reset();
+        } catch (err) {
+          out.push(failedSeat(cfg, seat, opts, `E_RESET: driver.reset() failed: ${formatErr(err)}`));
+          continue;
+        }
+      }
+      try {
+        out.push(await runSeat(cfg, seat, {
+          ...opts,
+          sharedDriver: game,
+          initialObservation: initial,
+          manageLifecycle: false,
+        }));
+      } catch (err) {
+        out.push(settleRejectedSeat(cfg, seat, opts, err));
+      }
+    }
+    return out;
+  } finally {
+    if (driver) {
+      try {
+        await driver.stop();
+      } catch (err) {
+        const stopError = formatErr(err);
+        const last = out[out.length - 1];
+        if (last && !last.stopError) last.stopError = stopError;
+      }
+    }
+  }
+}
+
 export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: string[]; parallel?: boolean }): Promise<SeatResult[]> {
   const seats = opts.seats && opts.seats.length > 0 ? cfg.seats.filter((s) => opts.seats!.includes(s.id)) : cfg.seats;
   if (opts.parallel === false) {
+    if (cfg.driver.kind === 'rpc') return runSerialRpc(cfg, seats, opts);
     const out: SeatResult[] = [];
     for (const s of seats) out.push(await runSeat(cfg, s, opts));
     return out;
@@ -468,28 +662,7 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
   const out: SeatResult[] = [];
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') { out.push(r.value); return; }
-    const seat = seats[i];
-    const partial = partialFromRejection(r.reason);
-    const history = partial?.history ?? [];
-    out.push({
-      seat,
-      label: partial?.label ?? opts.label,
-      turnsPlayed: partial?.turnsPlayed ?? 0,
-      endedBy: partial?.endedBy ?? 'error',
-      error: formatErr(r.reason),
-      stopError: partial?.stopError,
-      writeError: partial?.writeError,
-      history,
-      critique: partial?.critique ?? null,
-      critiqueError: partial?.critiqueError ?? (history.length > 0 ? undefined : 'the seat threw before producing a critique'),
-      critiqueRaw: partial?.critiqueRaw,
-      setupCapped: partial?.setupCapped,
-      coverage: partial?.coverage ?? computeCoverage(history),
-      verifiers: partial?.verifiers ?? runVerifiers(history),
-      panel: partial?.panel ?? null,
-      durationMs: partial?.durationMs ?? 0,
-      dir: partial?.dir ?? trySeatDir(cfg, opts.label, seat),
-    });
+    out.push(settleRejectedSeat(cfg, seats[i], opts, r.reason));
   });
   return out;
 }

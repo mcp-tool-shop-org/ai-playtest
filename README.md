@@ -159,24 +159,30 @@ dead spots and confusions as leads to check, not as findings.
    `playerMemoryTurns` exchanges, briefed by `persona` (goals and register —
    never the mechanics under test), and answers with one line. Malformed answers
    fall back to `look`.
-4. **Quit.** After `turns` inputs the runner sends `quitInputs` (e.g. `save`,
+4. **Act.** When the observation carries `actions`, the cleaned reply maps onto
+   `choose` / `key` / `line`. A closed-set miss is a harness event — the runner
+   does not spend a game turn on it. Setup and quit stay `kind:line`.
+5. **Quit.** After `turns` inputs the runner sends `quitInputs` (e.g. `save`,
    `quit`). Those are the *runner's* inputs: they are excluded from the turn
    count and from the evidence, while the terminal screens they produce are kept
    — a crash or a save recap is evidence.
-5. **The jury** — one author-off seat by default, temperature 0 — judges the
+6. **The jury** — one author-off seat by default, temperature 0 — judges the
    transcript against `criteria[]`. Extra jurors (if `panelSize` > 1) flag
    disagreement; they are not averaged into a stronger score. The playing
    seat's own reading is testimony.
-6. **Deterministic checks** run on the turn records: absorbing-SCC (Tarjan, never
+7. **Deterministic checks** run on the turn records: absorbing-SCC (Tarjan, never
    labelled a trap), ignored-input attribution, optional parser/victory/death
-   regexes, no-progress windows, entity-appearance leads.
-7. **The report** aggregates: criteria by family with juror splits marked,
+   regexes, no-progress windows, entity-appearance leads, and (when `state` is
+   an object) HP/inventory invariants.
+8. **The report** aggregates: criteria by family with juror splits marked,
    coverage as a sampling qualifier, the verifier block, and every dead spot
-   and confusion named — jury findings first, author testimony kept.
+   and confusion named — jury findings first, author testimony kept. Glyphs
+   (`!`, `H(a)`, `repeat`, `loop`) are legend'd on the page.
 
 Artifacts per seat under `<runsDir>/<label>/<seat>/`: `transcript.txt`,
-`critique.json`, `meta.json`, `stderr.txt` (when the game wrote any).
-`REPORT.md` at the label root.
+`critique.json`, `meta.json` (pins `schemaVersion` + `toolVersion`),
+`stderr.txt` (when the game wrote any). `REPORT.md` and `REPORT.json`
+(`kind: "single-run-report"`) at the label root.
 
 ## Usage
 
@@ -187,11 +193,12 @@ node dist/cli.js run path/to/game.playtest.json --label phase9
 node dist/cli.js run path/to/game.playtest.json --label smoke --seats mistral --turns 8
 node dist/cli.js run path/to/game.playtest.json --label compare --runs 3   # descriptive; cannot reach p<0.05
 node dist/cli.js run path/to/game.playtest.json --label rpc --serial       # one game, several seats; needed for RPC until you multiplex
-node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md from disk
+node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md + REPORT.json from disk
 ```
 
-`--serial` runs seats one after another. RPC seats share one TCP game unless you
-launch one process per seat; without `--serial` they contend.
+`--serial` runs seats one after another. On the RPC driver it reuses one TCP
+client and calls `reset()` between seats. Without `--serial`, each RPC seat
+is its own process — they will contend if they share one listening game.
 
 Exit codes: 0 ok · 1 usage · 2 config · 3 provider (key missing, model has no
 endpoints) · 4 run error (every seat ended in error, or no seat produced a
