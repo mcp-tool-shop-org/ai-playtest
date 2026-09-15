@@ -18,7 +18,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "verify": "npm run typecheck && npm test",
-    "playtest": "node dist/cli.js"
+    "playtest": "node dist/cli.js",
+    "prepublishOnly": "npm run verify && npm run build"
   },
   "engines": {
     "node": ">=20"

@@ -1,0 +1,73 @@
+# CI — typecheck + tests + dependency audit.
+#
+# Trigger scoping (studio GitHub Actions rules):
+#   `push` is filtered to `main` ONLY. A tag push matches no branch filter, and a
+#   feature-branch push leaves just the `pull_request` event — so one commit
+#   cannot pay for two matrices. A concurrency group cannot fix that on its own,
+#   because push sees refs/heads/<branch> while the PR sees refs/pull/N/merge.
+#   `pull_request` deliberately carries NO `branches:` filter — that would filter
+#   the PR's *base* branch, not its head.
+#   Accepted cost: a branch with no open PR gets no automatic run. Use the
+#   workflow_dispatch fallback.
+#
+# Cost: one job, one matrix cell, ubuntu-latest. The suite is ~2 s of vitest plus
+# install; per-push cost is dominated by setup, not tests. Measure with
+# `gh api repos/mcp-tool-shop-org/ai-playtest/actions/runs/<id>/jobs` and record
+# the real number here once a run exists — never estimate it.
+# Measured per-push cost: (pending first run)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 20 is the floor declared in package.json engines. One cell holds
+      # that floor honestly; the author develops on 22, so this is the version
+      # that would otherwise go unverified.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify (typecheck + tests)
+        run: npm run verify
+
+      # Kept in CI rather than in `npm run verify` so the local verify stays
+      # offline-capable.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
