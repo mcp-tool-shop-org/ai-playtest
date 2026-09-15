@@ -64,6 +64,9 @@ describe('aggregatePanel', () => {
     expect(alive.metCount).toBe(1);
     expect(alive.answeredCount).toBe(3);
     expect(panel.dispersion).toBeCloseTo(0.5);
+    expect(panel.nEff).toBeGreaterThan(0);
+    expect(panel.nEff).toBeLessThanOrEqual(panel.jurors.length);
+    expect(typeof panel.meanPhi).toBe('number');
   });
 
   it('cites a juror who actually reached the majority answer', () => {

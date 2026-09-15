@@ -13,6 +13,7 @@ import { chooseInput, type TurnRecord } from './player.js';
 import { critique, type Critique } from './critic.js';
 import { computeCoverage, type Coverage } from './coverage.js';
 import { pickJurors, aggregatePanel, type PanelVerdict } from './panel.js';
+import { runVerifiers, type VerifierReport } from './verifiers.js';
 
 export type SeatResult = {
   seat: Seat;
@@ -25,6 +26,8 @@ export type SeatResult = {
   critiqueError?: string;
   /** How much of the game this session actually saw. Computed from the turn records. */
   coverage: Coverage;
+  /** Deterministic transcript checks. Precise and partial; never a softlock proof. */
+  verifiers: VerifierReport;
   /**
    * The cross-family jury's reading of this transcript. Null when no other
    * family was seated, in which case `critique` (the author's own reading) is
@@ -169,24 +172,26 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       opts.onTurn?.(seat, rec);
       pendingScreen = await driver.step({ kind: 'line', line: input });
     }
-    // Quit sequence: every screen the game prints from here on is still
-    // evidence (the last input's consequences, the save recap), so it is
-    // recorded like a turn, with the quit input as the reply.
-    if (!(pendingScreen?.done ?? false)) {
-      for (const q of cfg.game.quitInputs) {
-        const t0 = Date.now();
-        const screen = pendingScreen ?? await driver.step({ kind: 'line', line: '' });
-        pendingScreen = null;
-        if (screen.reason === 'exit' || screen.reason === 'timeout') { history.push({ turn, screen: screen.text, input: '', reason: screen.reason, ms: Date.now() - t0 }); break; }
-        // Marked 'quit' and NOT counted as a player turn. These are the
-        // runner's own inputs; counting them inflated turnsPlayed and, worse,
-        // presented them to the critic as decisions the player made.
-        history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0 });
-        pendingScreen = await driver.step({ kind: 'line', line: q });
+    // The screen produced by the last player input is evidence of THAT input.
+    // The quit loop used to consume it and label it `quit`, which dropped the
+    // last action's result from coverage and from the critic (quit records are
+    // filtered out of evidence). Record it first, then send the runner's quit.
+    // Skip both steps when the player already ended the game -- sending quit
+    // to a dead process recorded a phantom extra turn (reason 'exit', input
+    // 'quit') that playerTurns counted.
+    if (endedBy === 'turns') {
+      if (pendingScreen) {
+        history.push({ turn, screen: pendingScreen.text, input: '', reason: pendingScreen.reason, ms: 0 });
       }
-      const final = pendingScreen ?? await driver.step({ kind: 'line', line: '' });
-      pendingScreen = null;
-      if (final.text.trim().length > 0) history.push({ turn, screen: final.text, input: '', reason: final.reason, ms: 0 });
+      if (!(pendingScreen?.done ?? false) && pendingScreen?.reason !== 'exit' && pendingScreen?.reason !== 'timeout') {
+        for (const q of cfg.game.quitInputs) {
+          const t0 = Date.now();
+          const screen = await driver.step({ kind: 'line', line: q });
+          pendingScreen = screen;
+          history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0 });
+          if (screen.reason === 'exit' || screen.reason === 'timeout') break;
+        }
+      }
     }
   } catch (err) {
     endedBy = 'error';
@@ -237,6 +242,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   const result: SeatResult = {
     seat, label: opts.label, turnsPlayed: playerTurns.length, endedBy, error, history, critique: crit, critiqueError,
     coverage: computeCoverage(history),
+    verifiers: runVerifiers(history, cfg.verifiers),
     panel,
     durationMs: Date.now() - started, dir,
   };
@@ -261,7 +267,7 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
   await writeFile(join(r.dir, 'critique.json'), JSON.stringify(r.critique ?? { error: r.critiqueError ?? 'no turns played' }, null, 2) + '\n', 'utf8');
   await writeFile(join(r.dir, 'meta.json'), JSON.stringify({
     name: cfg.name, label: r.label, seat: r.seat, turns: cfg.turns, turnsPlayed: r.turnsPlayed, endedBy: r.endedBy,
-    error: r.error ?? null, critiqueError: r.critiqueError ?? null, coverage: r.coverage, panel: r.panel,
+    error: r.error ?? null, critiqueError: r.critiqueError ?? null, coverage: r.coverage, panel: r.panel, verifiers: r.verifiers,
     durationMs: r.durationMs, finishedAt: new Date().toISOString(),
   }, null, 2) + '\n', 'utf8');
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
@@ -287,6 +293,7 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
       error: r.reason instanceof Error ? `${r.reason.name}: ${r.reason.message}` : String(r.reason),
       history: [], critique: null, critiqueError: 'the seat threw before producing a critique',
       coverage: computeCoverage([]),
+      verifiers: runVerifiers([]),
       panel: null,
       durationMs: 0, dir: join(cfg.runsDir, opts.label, seat.id),
     });

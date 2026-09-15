@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { validateConfig, resolveEnv, ConfigError } from '../src/config.js';
 import { runAll, seatDir } from '../src/run.js';
-import { readRun, renderReport, writeReport } from '../src/report.js';
+import { readRun, renderReport, writeReport, renderAggregateReport } from '../src/report.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
 
@@ -78,6 +78,11 @@ describe('runAll over the echo game', () => {
       expect(transcript).toContain('── Ambush: Chapel Patrol in Chapel Nave ──');
       expect(transcript).not.toMatch(/\x1b\[/); // ANSI stripped
       expect(transcript).toContain('Saved. Goodbye.');
+      // Last player input's resulting screen must not be labelled quit --
+      // that used to drop it from critic evidence (proof-01 /director).
+      expect(transcript).toMatch(/═══ turn 4 ── screen \((prompt|idle)/);
+      expect(r.verifiers).toBeDefined();
+      expect(r.verifiers.parser.listsEmpty).toBe(true);
     }
     const seats = await readRun(join(runsDir, 'lbl'));
     expect(seats.map((s) => s.seat.family)).toEqual(['alpha', 'beta']);
@@ -150,6 +155,30 @@ describe('report honesty', () => {
 
   it('warns that a single judged seat is a sample of one', () => {
     expect(renderReport('g', 'lbl', [seat('alpha', crit(true, true))])).toContain('sample of one');
+  });
+
+  it('does not tell a reader a short varied session "never reached the content"', () => {
+    const md = renderReport('g', 'lbl', [{
+      ...seat('alpha', crit(true, true)),
+      coverage: {
+        turns: 8, novelStates: 8, turnOfLastNovelState: 8, noveltyHalfLife: 4,
+        repeatRate: 0.14, loopRate: 0, selfLoopRate: 0, actionEntropy: 2.75, distinctActions: 7,
+        confidence: 'thin', notes: ['only 8 player turns - too few to characterise a game'],
+      },
+    }]);
+    expect(md).toMatch(/sample-size limit/);
+    expect(md).not.toMatch(/explored thinly/);
+  });
+
+  it('prints the n=3 copy on an aggregate, shrinking 3/3 away from 100%', () => {
+    const md = renderAggregateReport('g', 'lbl', 3, [{ id: 'ambush', successes: 3 }], [{ run: 'r1', alive: 1, of: 1 }]);
+    expect(md).toMatch(/DESCRIPTIVE/);
+    expect(md).toMatch(/2\/2\^n/);
+    expect(md).toMatch(/0\.25/);
+    expect(md).toMatch(/STABLE_PASS/);
+    expect(md).toMatch(/0\.800/);
+    expect(md).toMatch(/No p-value/);
+    expect(md).not.toMatch(/p<0.05 was achieved/);
   });
 
   it('escapes pipes and newlines so model text cannot break the table', () => {

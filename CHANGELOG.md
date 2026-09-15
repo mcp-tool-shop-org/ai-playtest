@@ -7,7 +7,42 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm, 2026-09-14. 14 -> 84 tests.
+Dogfood swarm #2, 2026-09-14. 84 -> 109 tests. First live run against claude-rpg
+(`proof-01`, 8 turns, mistral).
+
+### Added
+
+- **Deterministic transcript verifiers** (`src/verifiers.ts`). Six checks, all
+  transcript-only: absorbing-SCC (Tarjan over the observed screen digraph,
+  `kind=review`, never a trap proof), ignored-input attribution, parser
+  unparsed/refused/accepted with empty defaults, terminal victory/death,
+  no-progress windows, entity-appearance leads for the jury. Specified in
+  `docs/research-2.md` §D; false-positive modes printed beside every hit.
+- **`--runs N`** with a Beta-Binomial posterior `Beta(s+1, n−s+1)`, stability
+  labels `STABLE_PASS` / `STABLE_FAIL` / `UNSTABLE`, worst-of-n beside the mean,
+  and the copy that n=3 is descriptive (`2/2^n` = 0.25). First n that can
+  clear α=0.05 is 6. Do not bootstrap.
+- **Jury `n_eff`** on the report: `k / (1+(k−1)·φ̄)`, warn when `n_eff/k < 0.5`.
+
+### Changed
+
+- **`panelSize` default 1**, not 3. Kohli 2026 (Kish n_eff 2.18, panel 72.0% vs
+  best single 71.8%, cross-family φ 0.389 vs same-family 0.437) undercuts
+  *family diversity buys independence*. Author-off-jury stays (Panickssery /
+  Stechly). Extra jurors flag disagreement. Decision written in
+  `docs/research-3.md`.
+- Coverage "thin" on a short-but-varied session is labelled a **sample-size
+  limit**, not "explored thinly / never reached the content" (proof-01).
+- Criteria-table agreement uses juror splits on a 1-seat run (proof-01 hid
+  1/3 splits behind `no!` and an em-dash).
+- Jury dead spots and confusions appear in the report, not only the author's.
+
+### Fixed
+
+- **Last player input's resulting screen was labelled `quit`.** The quit loop
+  consumed it, so the critic never saw the last action's result (proof-01:
+  `/director` opened director mode; the recap the jury cited was the save
+  screen). Consequence is now recorded first; runner quit inputs stay `quit`.
 
 ### Added
 

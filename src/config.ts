@@ -4,6 +4,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
+import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
 
 export type Seat = {
   /** Short id, used for the run directory (e.g. "mistral"). */
@@ -93,13 +94,14 @@ export type PlaytestConfig = {
   /** Sampling temperature for the player; the critic always runs at 0. */
   playerTemperature: number;
   /**
-   * How many cross-family jurors judge each transcript. A panel of cheaper
-   * heterogeneous judges has been measured beating one strong judge (kappa
-   * 0.763 vs 0.627) at 7-8x lower cost, and multiple evaluators is the standard
-   * remedy for the evaluator effect. Capped by how many other families are
-   * seated.
+   * How many cross-family jurors judge each transcript. Default 1: a second
+   * family is required so the author is not scoring itself, but extra jurors
+   * buy almost no independence (Kohli 2026 Kish n_eff 2.18 across 7 families).
+   * Raise this to flag disagreement, not to average into a stronger score.
    */
   panelSize: number;
+  /** Deterministic transcript checks. Empty regex lists mean "do not guess". */
+  verifiers: VerifierConfig;
 };
 
 export class ConfigError extends Error {
@@ -115,7 +117,10 @@ const DEFAULTS = {
   playerMemoryTurns: 8,
   runsDir: 'runs',
   playerTemperature: 0.7,
-  panelSize: 3,
+  // Default 1: Kohli 2026 measured a 3-judge cross-family panel at n_eff ~1.68
+  // and no accuracy gain over the best single judge. Author-off-jury is a
+  // different claim (Panickssery/Stechly) and still holds at panelSize 1.
+  panelSize: 1,
   game: { promptQuietMs: 800, idleQuietMs: 6000, screenTimeoutMs: 180_000, quitInputs: ['quit'] },
 };
 
@@ -219,6 +224,31 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     runsDir: resolve(baseDir, (c.runsDir as string) ?? DEFAULTS.runsDir),
     playerTemperature: (c.playerTemperature as number) ?? DEFAULTS.playerTemperature,
     panelSize: typeof c.panelSize === 'number' && c.panelSize >= 0 ? c.panelSize : DEFAULTS.panelSize,
+    verifiers: validateVerifiers(c.verifiers),
+  };
+}
+
+function strList(x: unknown): string[] {
+  return Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : [];
+}
+
+export function validateVerifiers(raw: unknown): VerifierConfig {
+  if (raw === undefined || raw === null) return { ...DEFAULT_VERIFIERS };
+  if (typeof raw !== 'object') throw new ConfigError('verifiers must be an object', 'omit it to use empty regex lists and the occupancy defaults');
+  const v = raw as Record<string, unknown>;
+  for (const key of ['unparsed', 'refused', 'victory', 'death'] as const) {
+    for (const src of strList(v[key])) {
+      try { new RegExp(src); } catch { throw new ConfigError(`verifiers.${key} entry ${src} is not a valid regex`, 'fix the pattern'); }
+    }
+  }
+  return {
+    absorbingMinTurns: typeof v.absorbingMinTurns === 'number' && v.absorbingMinTurns > 0 ? v.absorbingMinTurns : DEFAULT_VERIFIERS.absorbingMinTurns,
+    noProgressWindow: typeof v.noProgressWindow === 'number' && v.noProgressWindow > 1 ? v.noProgressWindow : DEFAULT_VERIFIERS.noProgressWindow,
+    noOpVerbs: strList(v.noOpVerbs),
+    unparsed: strList(v.unparsed),
+    refused: strList(v.refused),
+    victory: strList(v.victory),
+    death: strList(v.death),
   };
 }
 

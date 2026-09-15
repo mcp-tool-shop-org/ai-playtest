@@ -29,6 +29,7 @@
 
 import type { Criterion, Seat } from './config.js';
 import type { Critique, CriterionVerdict } from './critic.js';
+import { juryNEff, meanPairwisePhi } from './stats.js';
 
 export type PanelVerdict = {
   /** Which seats judged this transcript. */
@@ -48,6 +49,10 @@ export type PanelVerdict = {
    * predicts and which averaging would hide.
    */
   dispersion: number;
+  /** Mean pairwise |phi| over per-criterion met vectors. */
+  meanPhi: number;
+  /** Kish n_eff = k / (1+(k-1)*meanPhi). Warn in the report when n_eff/k < 0.5. */
+  nEff: number;
   /** Set when no cross-family juror was available and the panel fell back. */
   degraded?: string;
 };
@@ -102,6 +107,10 @@ export function aggregatePanel(
   });
 
   const splits = criteriaOut.filter((c) => c.split).length;
+  const vectors = good.map((g) =>
+    criteria.map((c) => g.critique.criteria.find((x) => x.id === c.id)?.met ?? false));
+  const meanPhi = meanPairwisePhi(vectors);
+  const nEff = juryNEff(meanPhi, good.length);
   return {
     jurors,
     critiques,
@@ -110,5 +119,7 @@ export function aggregatePanel(
     aliveCount: good.filter((g) => g.critique.alive).length,
     wouldPlayAgainCount: good.filter((g) => g.critique.wouldPlayAgain).length,
     dispersion: criteriaOut.length === 0 ? 0 : splits / criteriaOut.length,
+    meanPhi,
+    nEff,
   };
 }
