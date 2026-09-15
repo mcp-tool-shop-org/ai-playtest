@@ -124,6 +124,19 @@ const DEFAULTS = {
   game: { promptQuietMs: 800, idleQuietMs: 6000, screenTimeoutMs: 180_000, quitInputs: ['quit'] },
 };
 
+/** Alphabet seatDir uses for label and seat id path segments. */
+const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
+
+export function isSafeSegment(value: string): boolean {
+  return SAFE_SEGMENT.test(value) && value !== '.' && value !== '..';
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export function resolveEnv(env: Record<string, string> | undefined, source: NodeJS.ProcessEnv): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(env ?? {})) {
@@ -184,13 +197,51 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   }
   if (!Array.isArray(c.seats) || c.seats.length === 0) throw new ConfigError('seats missing', 'list at least one { id, family, model }');
   const families = new Set<string>();
-  for (const s of c.seats as Seat[]) {
-    if (!s.id || !s.family || !s.model) throw new ConfigError(`seat ${JSON.stringify(s)} incomplete`, 'each seat needs id, family, model');
-    if (families.has(s.family)) throw new ConfigError(`family ${s.family} seated twice`, 'one seat per family -- diversity is the point');
-    families.add(s.family);
+  const seatIds = new Set<string>();
+  const seats: Seat[] = [];
+  for (const raw of c.seats) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new ConfigError(`seat ${JSON.stringify(raw)} incomplete`, 'each seat needs id, family, model');
+    }
+    const rec = raw as Record<string, unknown>;
+    const id = asNonEmptyString(rec.id);
+    const family = asNonEmptyString(rec.family);
+    const model = asNonEmptyString(rec.model);
+    if (!id || !family || !model) throw new ConfigError(`seat ${JSON.stringify(raw)} incomplete`, 'each seat needs id, family, model');
+    if (!isSafeSegment(id)) {
+      throw new ConfigError(
+        `seat id "${id}" is not usable as a directory name`,
+        'use letters, digits, dot, dash or underscore only — it becomes a folder under runsDir',
+      );
+    }
+    if (!isSafeSegment(family)) {
+      throw new ConfigError(
+        `seat family "${family}" is not a usable family name`,
+        'use letters, digits, dot, dash or underscore only',
+      );
+    }
+    if (seatIds.has(id)) throw new ConfigError(`seat id ${id} seated twice`, 'seat ids become folders under the run directory -- they must be unique');
+    if (families.has(family)) throw new ConfigError(`family ${family} seated twice`, 'one seat per family -- diversity is the point');
+    seatIds.add(id);
+    families.add(family);
+    seats.push({ id, family, model });
   }
   if (typeof c.persona !== 'string' || c.persona.length < 20) throw new ConfigError('persona missing', 'brief the player: goals and register, not mechanics');
   if (!Array.isArray(c.criteria) || c.criteria.length === 0) throw new ConfigError('criteria missing', 'list the game\'s own "alive" criteria as { id, check }');
+  const criterionIds = new Set<string>();
+  const criteria: Criterion[] = [];
+  for (const raw of c.criteria) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new ConfigError(`criterion ${JSON.stringify(raw)} incomplete`, 'each criterion needs { id, check }');
+    }
+    const rec = raw as Record<string, unknown>;
+    const id = asNonEmptyString(rec.id);
+    const check = asNonEmptyString(rec.check);
+    if (!id || !check) throw new ConfigError(`criterion ${JSON.stringify(raw)} incomplete`, 'each criterion needs { id, check }');
+    if (criterionIds.has(id)) throw new ConfigError(`criterion ${id} listed twice`, 'criterion ids become report rows -- they must be unique');
+    criterionIds.add(id);
+    criteria.push({ id, check });
+  }
   for (const p of ((game?.promptPatterns as string[]) ?? [])) {
     try { new RegExp(p); } catch { throw new ConfigError(`promptPattern ${p} is not a valid regex`, 'fix the pattern'); }
   }
@@ -214,11 +265,11 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
       screenTimeoutMs: (game?.screenTimeoutMs as number) ?? DEFAULTS.game.screenTimeoutMs,
       quitInputs: (game?.quitInputs as string[]) ?? DEFAULTS.game.quitInputs,
     },
-    seats: c.seats as Seat[],
+    seats,
     setup,
     turns: (c.turns as number) ?? DEFAULTS.turns,
     persona: c.persona,
-    criteria: c.criteria as Criterion[],
+    criteria,
     screenChars: (c.screenChars as number) ?? DEFAULTS.screenChars,
     playerMemoryTurns: (c.playerMemoryTurns as number) ?? DEFAULTS.playerMemoryTurns,
     runsDir: resolve(baseDir, (c.runsDir as string) ?? DEFAULTS.runsDir),

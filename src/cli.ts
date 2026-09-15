@@ -9,7 +9,7 @@ import { mkdir } from 'node:fs/promises';
 import { loadConfig, ConfigError } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 import { runAll } from './run.js';
-import { writeReport, writeAggregateReport } from './report.js';
+import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats } from './report.js';
 import { summarizeRuns } from './stats.js';
 
 function usage(): string {
@@ -17,9 +17,10 @@ function usage(): string {
     'ai-playtest -- family-diverse AI playtesting for text games',
     '',
     'Usage:',
-    '  ai-playtest run <config.json> [--label <name>] [--seats a,b] [--turns <n>] [--runs <n>] [--serial]',
+    '  ai-playtest run <config.json> [--label <name>] [--seats <id,id>] [--turns <n>] [--runs <n>] [--serial]',
     '  ai-playtest report <config.json> --label <name>',
     '',
+    '--seats lists config seat ids (not model families). Example: --seats mistral-small,llama',
     'Env: OPENROUTER_API_KEY (players and critics). The game\'s own env comes from config.game.env.',
     'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md at the label root.',
   ].join('\n');
@@ -62,12 +63,34 @@ function parseRuns(raw: string): number {
   return n;
 }
 
-function criterionMetInRun(results: Array<{ panel?: { criteria: Array<{ id: string; met: boolean }> } | null; critique?: { criteria: Array<{ id: string; met: boolean }> } | null }>, id: string): boolean {
-  const votes = results.map((r) => {
-    const row = r.panel?.criteria.find((c) => c.id === id) ?? r.critique?.criteria.find((c) => c.id === id);
-    return row?.met ?? false;
-  });
-  return votes.filter(Boolean).length * 2 > votes.length;
+function hasVerdict(r: { panel?: unknown; critique?: unknown }): boolean {
+  return r.panel != null || r.critique != null;
+}
+
+function notePlayFailures(results: Array<{ endedBy: string }>): void {
+  const n = results.filter((r) => r.endedBy === 'error').length;
+  // Mixed play-failure must still surface in CI logs even when the process
+  // stays 0 because some other seat produced a verdict.
+  if (n > 0 && n < results.length) {
+    process.stderr.write(`${n}/${results.length} seats ended by error\n`);
+  }
+}
+
+function resolveSeatIds(known: string[], raw: string | undefined): string[] | undefined {
+  if (raw === undefined) return undefined;
+  const requested = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (requested.length === 0) {
+    fail(1, '--seats matched no seat ids', `known seat ids: ${known.join(', ')} (seat id, not family)`);
+  }
+  const unknown = requested.filter((id) => !known.includes(id));
+  if (unknown.length > 0) {
+    fail(
+      2,
+      `unknown seat id${unknown.length === 1 ? '' : 's'}: ${unknown.join(', ')}`,
+      `known seat ids: ${known.join(', ')} (seat id, not family)`,
+    );
+  }
+  return requested;
 }
 
 async function main(): Promise<void> {
@@ -92,8 +115,30 @@ async function main(): Promise<void> {
     if (!flag(args, '--label')) fail(1, 'report needs --label', 'name the run to rebuild, e.g. --label phase9');
     const runDir = join(cfg.runsDir, label);
     if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label, or run the playtest first');
-    const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
-    process.stdout.write(`wrote ${path}\n`);
+    try {
+      const siblings = await listRunSiblings(cfg.runsDir, label);
+      const aggregate = await isAggregateDir(runDir);
+      if (aggregate && siblings.length === 0) {
+        fail(2, `${runDir} is a multi-run aggregate`, `rebuild a single run with --label ${label}-r01`);
+      }
+      let rebuildFromSiblings = aggregate && siblings.length > 0;
+      if (!rebuildFromSiblings && siblings.length > 0) {
+        const existing = await readRun(runDir);
+        rebuildFromSiblings = existing.length === 0 && existing.skipped.length === 0;
+      }
+      if (rebuildFromSiblings) {
+        const path = await writeAggregateFromRuns(
+          cfg.name, runDir, label, cfg.criteria.map((c) => c.id), siblings, cfg.runsDir,
+        );
+        process.stdout.write(`wrote ${path}\n`);
+        return;
+      }
+      const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
+      process.stdout.write(`wrote ${path}\n`);
+    } catch (err) {
+      if (err instanceof ReportError) fail(2, err.message, err.hint);
+      throw err;
+    }
     return;
   }
   if (verb !== 'run') fail(1, `unknown verb ${verb}`, usage());
@@ -104,7 +149,7 @@ async function main(): Promise<void> {
   if (turns) cfg.turns = parseTurns(turns);
   const runsFlag = flag(args, '--runs');
   const runCount = runsFlag ? parseRuns(runsFlag) : 1;
-  const seats = flag(args, '--seats')?.split(',').map((s) => s.trim()).filter(Boolean);
+  const seats = resolveSeatIds(cfg.seats.map((s) => s.id), flag(args, '--seats'));
   const client = createOpenRouterClient({ apiKey });
 
   process.stdout.write(`${cfg.name}: ${(seats ?? cfg.seats.map((s) => s.id)).join(', ')} × ${cfg.turns} turns × ${runCount} run${runCount === 1 ? '' : 's'} → ${join(cfg.runsDir, label)}\n`);
@@ -119,14 +164,18 @@ async function main(): Promise<void> {
       const results = await runAll(cfg, {
         label, client, seats, parallel: !args.includes('--serial'), onTurn, onSeatDone,
       });
+      if (results.length === 0) fail(4, 'no seats ran', 'check --seats against the config seat ids, not families');
       const path = await writeReport(cfg.name, join(cfg.runsDir, label), label, criterionIds);
-      const failed = results.filter((r) => r.endedBy === 'error');
       process.stdout.write(`report: ${path}\n`);
+      notePlayFailures(results);
+      if (results.every((r) => !hasVerdict(r))) fail(4, 'no seat produced a verdict', results[0]?.critiqueError ?? results[0]?.error);
+      const failed = results.filter((r) => r.endedBy === 'error');
       if (failed.length === results.length) fail(4, 'every seat failed', failed[0]?.error);
     } else {
       const successes = Object.fromEntries(criterionIds.map((id) => [id, 0]));
       const worstOfN: Array<{ run: string; alive: number; of: number }> = [];
-      let anyOk = false;
+      let anyVerdict = false;
+      let anyPlayOk = false;
       for (let i = 1; i <= runCount; i++) {
         const runLabel = `${label}-r${String(i).padStart(2, '0')}`;
         process.stdout.write(`-- run ${i}/${runCount} (${runLabel})\n`);
@@ -134,9 +183,11 @@ async function main(): Promise<void> {
           label: runLabel, client, seats, parallel: !args.includes('--serial'), onTurn, onSeatDone,
         });
         await writeReport(cfg.name, join(cfg.runsDir, runLabel), runLabel, criterionIds);
-        const failed = results.filter((r) => r.endedBy === 'error');
-        if (failed.length < results.length) anyOk = true;
-        for (const id of criterionIds) if (criterionMetInRun(results, id)) successes[id]++;
+        if (results.length === 0) continue;
+        notePlayFailures(results);
+        if (results.some((r) => hasVerdict(r))) anyVerdict = true;
+        if (results.some((r) => r.endedBy !== 'error')) anyPlayOk = true;
+        for (const id of criterionIds) if (criterionMetBySeats(results, id)) successes[id]++;
         const alive = results.filter((r) => (r.panel ? r.panel.alive : r.critique?.alive) === true).length;
         worstOfN.push({ run: runLabel, alive, of: results.length });
       }
@@ -147,11 +198,13 @@ async function main(): Promise<void> {
         worstOfN,
       );
       process.stdout.write(`aggregate: ${path}\n`);
-      if (!anyOk) fail(4, 'every seat failed in every run');
+      if (!anyVerdict) fail(4, 'no seat produced a verdict in any run');
+      if (!anyPlayOk) fail(4, 'every seat failed in every run');
     }
   } catch (err) {
     if (err instanceof OpenRouterError) fail(3, err.message, err.hint);
     if (err instanceof ConfigError) fail(2, err.message, err.hint);
+    if (err instanceof ReportError) fail(4, err.message, err.hint);
     throw err;
   }
 }

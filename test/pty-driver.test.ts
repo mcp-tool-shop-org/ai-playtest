@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
-import { createPtyDriver } from '../src/pty-driver.js';
+import { createPtyDriver, type PtyDriverOptions } from '../src/pty-driver.js';
 import { stripAnsi } from '../src/stdio-game.js';
 
 const TUI = resolve(__dirname, 'fixtures', 'tui-game.mjs');
@@ -82,4 +82,68 @@ describe.skipIf(!available)('pty driver', () => {
     expect(obs.reason).toBe('exit');
     await d.stop();
   }, 30000);
+
+  async function driveMode(mode: string, over: Partial<PtyDriverOptions> = {}) {
+    return createPtyDriver({
+      command: process.execPath,
+      args: [TUI, mode],
+      promptPatterns: ['NEVER_MATCH_PROMPT_xyzzy\\s*$'],
+      promptQuietMs: 80,
+      idleQuietMs: 2500,
+      screenTimeoutMs: 8000,
+      ...over,
+    });
+  }
+
+  it('reports sentinel when the child prints the configured token', async () => {
+    // Gate: deleting `if (sawSentinel) { ... return observe('sentinel') }` makes this RED
+    // (reason falls through to idle).
+    const d = await driveMode('sentinel', { readySentinel: 'READY_SENTINEL_9f3e', idleQuietMs: 2500 });
+    try {
+      const obs = await d.start();
+      expect(obs.reason).toBe('sentinel');
+      expect(obs.text).toContain('READY_SENTINEL_9f3e');
+    } finally {
+      await d.stop();
+    }
+  }, 5000);
+
+  it('reports ready-signal when the child enables bracketed paste and no prompt matches', async () => {
+    // Gate: deleting `if (bracketedPaste && quiet >= opts.promptQuietMs) return observe('ready-signal')`
+    // makes this RED (reason becomes 'idle' after idleQuietMs).
+    const d = await driveMode('ready-signal', { promptQuietMs: 80, idleQuietMs: 2500 });
+    try {
+      const obs = await d.start();
+      expect(obs.reason).toBe('ready-signal');
+    } finally {
+      await d.stop();
+    }
+  }, 5000);
+
+  it('reports idle when output is quiet and no prompt, sentinel, or ready-signal matches', async () => {
+    // Gate: deleting `if (quiet >= opts.idleQuietMs) return observe('idle')` makes this RED
+    // (reason becomes 'timeout' at screenTimeoutMs).
+    const d = await driveMode('idle', { idleQuietMs: 200, screenTimeoutMs: 8000 });
+    try {
+      const obs = await d.start();
+      expect(obs.reason).toBe('idle');
+      expect(obs.text).toContain('ruined chapel');
+    } finally {
+      await d.stop();
+    }
+  }, 5000);
+
+  it('reports timeout when the child stays silent, and waitForTurn returns rather than spinning', async () => {
+    // Gate: deleting `if (Date.now() - started > opts.screenTimeoutMs) return observe('timeout')`
+    // makes this RED (reason becomes 'idle' after idleQuietMs, or the for(;;) loop never returns).
+    const t0 = Date.now();
+    const d = await driveMode('timeout', { idleQuietMs: 10_000, screenTimeoutMs: 400 });
+    try {
+      const obs = await d.start();
+      expect(obs.reason).toBe('timeout');
+      expect(Date.now() - t0).toBeLessThan(3000);
+    } finally {
+      await d.stop();
+    }
+  }, 5000);
 });

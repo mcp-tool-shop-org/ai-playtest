@@ -2,11 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { validateConfig, resolveEnv, ConfigError } from '../src/config.js';
+import { validateConfig, resolveEnv, ConfigError, type GameConfig } from '../src/config.js';
 import { runAll, seatDir } from '../src/run.js';
 import { readRun, renderReport, writeReport, renderAggregateReport } from '../src/report.js';
 import { createOpenRouterClient } from '../src/openrouter.js';
 import type { ChatClient } from '../src/openrouter.js';
+import type { GameProcess, Screen } from '../src/stdio-game.js';
 
 const FIXTURE = resolve(__dirname, 'fixtures', 'echo-game.mjs');
 let runsDir: string;
@@ -103,6 +104,82 @@ describe('runAll over the echo game', () => {
     // name prompt was scripted setup, not a turn).
     expect(results[0].turnsPlayed).toBe(2);
     expect(results[0].critique).not.toBeNull();
+  });
+
+  function scriptedSpawn(screens: Screen[]): (cfg: GameConfig, env: Record<string, string>) => GameProcess {
+    return () => {
+      let i = 0;
+      const proc: GameProcess = {
+        send() { /* scripted */ },
+        async nextScreen() {
+          const s = screens[Math.min(i, screens.length - 1)];
+          i++;
+          return s;
+        },
+        kill() { /* scripted */ },
+        get exited() { return i >= screens.length; },
+        get exitCode() { return null; },
+        get stderr() { return ''; },
+        get spawnError() { return null; },
+      };
+      return proc;
+    };
+  }
+
+  it('ends the seat by timeout, keeps reason timeout, and still writes transcript.txt and meta.json', async () => {
+    // Gate: deleting `if (now - started > cfg.screenTimeoutMs) return resolveScreen(take('timeout'))`
+    // makes this RED — the fixture prints one line and hangs, so without that
+    // bound the seat never ends by timeout (idleQuietMs is 10s; this test's
+    // budget is 2s). Do not rely on vitest's 30s timeout as the gate.
+    const cfg = validateConfig({
+      name: 'stall',
+      game: {
+        command: process.execPath, args: [FIXTURE, 'timeout'],
+        promptPatterns: ['NEVER_MATCH_PROMPT_xyzzy\\s*$'],
+        promptQuietMs: 50, idleQuietMs: 10_000, screenTimeoutMs: 400, quitInputs: ['quit'],
+      },
+      seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+      turns: 3,
+      persona: 'You are a curious wanderer who wants to see what the world does when poked.',
+      criteria: [{ id: 'ambush', check: 'an ambush headline appeared' }],
+      runsDir,
+    }, runsDir);
+    const results = await runAll(cfg, { label: 'stallout', client: fakeClient(['look']), seats: ['a'] });
+    expect(results[0].endedBy).toBe('timeout');
+    expect(results[0].history.some((h) => h.reason === 'timeout')).toBe(true);
+    const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
+    const meta = JSON.parse(await readFile(join(results[0].dir, 'meta.json'), 'utf8'));
+    expect(meta.endedBy).toBe('timeout');
+    expect(transcript).toContain('one line then silence');
+    expect(transcript).toMatch(/screen \(timeout/);
+  }, 5000);
+
+  it('records idle screens in the transcript when no prompt pattern matches', async () => {
+    // Gate: deleting the idle path in spawnGame makes the real-process idle
+    // test RED. This injects a fake GameProcess so runAll's '(idle' transcript
+    // header is milliseconds, not a quiet wait.
+    const cfg = validateConfig({
+      name: 'idlepath',
+      game: {
+        command: process.execPath, args: [FIXTURE, 'idle'],
+        promptPatterns: ['NEVER_MATCH_PROMPT_xyzzy\\s*$'],
+        promptQuietMs: 50, idleQuietMs: 200, screenTimeoutMs: 8000, quitInputs: ['quit'],
+      },
+      seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+      turns: 2,
+      persona: 'You are a curious wanderer who wants to see what the world does when poked.',
+      criteria: [{ id: 'ambush', check: 'an ambush headline appeared' }],
+      runsDir,
+    }, runsDir);
+    const spawn = scriptedSpawn([
+      { text: 'You stand in a ruined chapel.\n', reason: 'idle', exitCode: null },
+      { text: 'Still the chapel.\n', reason: 'idle', exitCode: null },
+      { text: 'Saved.\n', reason: 'exit', exitCode: 0 },
+    ]);
+    const results = await runAll(cfg, { label: 'idlepath', client: fakeClient(['look', 'go nave']), seats: ['a'], spawn });
+    const transcript = await readFile(join(results[0].dir, 'transcript.txt'), 'utf8');
+    expect(transcript).toContain('(idle');
+    expect(results[0].history.some((h) => h.reason === 'idle')).toBe(true);
   });
 });
 

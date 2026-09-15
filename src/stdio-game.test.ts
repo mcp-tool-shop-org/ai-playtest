@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { spawn } from 'node:child_process';
 import { stripAnsi, buildChildEnv, spawnGame } from './stdio-game.js';
 import type { GameConfig } from './config.js';
 
@@ -157,4 +156,42 @@ describe('spawnGame', () => {
     expect(screen.text).not.toContain('\ufffd');
     expect(screen.text).toContain('\u250c\u2500\u2510');
   }, 15000);
+
+  it('reports timeout when the game prints one line then goes silent', async () => {
+    // Gate: deleting `if (now - started > cfg.screenTimeoutMs) return resolveScreen(take('timeout'))`
+    // makes this RED (reason becomes 'idle' after idleQuietMs, or the poll loop never returns).
+    const g = spawnGame(cfg({
+      args: ['-e', 'process.stdout.write("one line then silence\\n"); setInterval(() => {}, 1e9)'],
+      promptPatterns: ['NEVER_MATCH_PROMPT_xyzzy\\s*$'],
+      promptQuietMs: 50,
+      idleQuietMs: 10_000,
+      screenTimeoutMs: 400,
+    }), {});
+    try {
+      const screen = await g.nextScreen();
+      expect(screen.reason).toBe('timeout');
+      expect(screen.text).toContain('one line then silence');
+    } finally {
+      g.kill();
+    }
+  }, 2000);
+
+  it('reports idle when output is quiet and no prompt pattern matches', async () => {
+    // Gate: deleting `if (quiet >= cfg.idleQuietMs) return resolveScreen(take('idle'))`
+    // makes this RED (reason becomes 'timeout' at screenTimeoutMs).
+    const g = spawnGame(cfg({
+      args: ['-e', 'process.stdout.write("You stand in a ruined chapel.\\nExits: nave.\\n"); setInterval(() => {}, 1e9)'],
+      promptPatterns: ['NEVER_MATCH_PROMPT_xyzzy\\s*$'],
+      promptQuietMs: 50,
+      idleQuietMs: 200,
+      screenTimeoutMs: 8000,
+    }), {});
+    try {
+      const screen = await g.nextScreen();
+      expect(screen.reason).toBe('idle');
+      expect(screen.text).toContain('ruined chapel');
+    } finally {
+      g.kill();
+    }
+  }, 2000);
 });

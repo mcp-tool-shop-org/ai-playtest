@@ -2,7 +2,7 @@
 // and every dead spot and confusion named with its seat. Reads the per-seat
 // artifacts back from disk so a report can be rebuilt without replaying.
 
-import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Critique } from './critic.js';
 import type { Seat } from './config.js';
@@ -30,7 +30,17 @@ export class ReportError extends Error {
   }
 }
 
-export async function readRun(runDir: string): Promise<SeatSummary[]> {
+export type SkippedSeatDir = { name: string; why: 'missing meta' | 'invalid JSON' | 'missing seat' };
+
+export type RunContents = SeatSummary[] & { skipped: SkippedSeatDir[] };
+
+function skipWhyFromMetaRead(err: unknown): 'missing meta' | 'invalid JSON' {
+  const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: string }).code : undefined;
+  if (code === 'ENOENT') return 'missing meta';
+  return 'invalid JSON';
+}
+
+export async function readRun(runDir: string): Promise<RunContents> {
   let entries: string[];
   try {
     entries = await readdir(runDir);
@@ -40,25 +50,53 @@ export async function readRun(runDir: string): Promise<SeatSummary[]> {
     throw new ReportError(`no run directory at ${runDir}`, 'check --label matches a run under runsDir');
   }
   const out: SeatSummary[] = [];
+  const skipped: SkippedSeatDir[] = [];
   for (const e of entries.sort()) {
     const dir = join(runDir, e);
     if (!(await stat(dir)).isDirectory()) continue;
-    let meta: { seat: Seat; turnsPlayed: number; endedBy: string; error: string | null; critiqueError: string | null; coverage?: Coverage; panel?: PanelVerdict | null; verifiers?: VerifierReport };
+    let raw: string;
     try {
-      meta = JSON.parse(await readFile(join(dir, 'meta.json'), 'utf8'));
+      raw = await readFile(join(dir, 'meta.json'), 'utf8');
+    } catch (err) {
+      skipped.push({ name: e, why: skipWhyFromMetaRead(err) });
+      continue;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
     } catch {
+      skipped.push({ name: e, why: 'invalid JSON' });
+      continue;
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      skipped.push({ name: e, why: 'invalid JSON' });
+      continue;
+    }
+    const meta = parsed as {
+      seat?: Seat;
+      turnsPlayed: number;
+      endedBy: string;
+      error: string | null;
+      critiqueError: string | null;
+      coverage?: Coverage;
+      panel?: PanelVerdict | null;
+      verifiers?: VerifierReport;
+    };
+    const seat = meta.seat;
+    if (!seat || typeof seat !== 'object' || !seat.id || !seat.family || !seat.model) {
+      skipped.push({ name: e, why: 'missing seat' });
       continue;
     }
     let crit: Critique | null = null;
     try {
-      const raw = JSON.parse(await readFile(join(dir, 'critique.json'), 'utf8'));
-      crit = raw && Array.isArray(raw.criteria) ? (raw as Critique) : null;
+      const critiqueRaw = JSON.parse(await readFile(join(dir, 'critique.json'), 'utf8'));
+      crit = critiqueRaw && Array.isArray(critiqueRaw.criteria) ? (critiqueRaw as Critique) : null;
     } catch {
       crit = null;
     }
-    out.push({ seat: meta.seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit, critiqueError: meta.critiqueError ?? null, coverage: meta.coverage, panel: meta.panel ?? null, verifiers: meta.verifiers });
+    out.push({ seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit, critiqueError: meta.critiqueError ?? null, coverage: meta.coverage, panel: meta.panel ?? null, verifiers: meta.verifiers });
   }
-  return out;
+  return Object.assign(out, { skipped });
 }
 
 /**
@@ -70,7 +108,7 @@ function cell(s: string): string {
   return s.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
 
-export function renderReport(name: string, label: string, seats: SeatSummary[], expectedCriteria?: string[]): string {
+export function renderReport(name: string, label: string, seats: SeatSummary[], expectedCriteria?: string[], skipped: SkippedSeatDir[] = []): string {
   const answeredIds = Array.from(new Set(seats.flatMap((s) =>
     (s.panel?.criteria ?? s.critique?.criteria ?? []).map((c) => c.id))));
   // Rows used to come only from what the critics happened to return, so a
@@ -79,6 +117,8 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   // unanswered ones are listed too.
   const missingIds = (expectedCriteria ?? []).filter((id) => !answeredIds.includes(id));
   const criteriaIds = [...answeredIds, ...missingIds];
+  const asked = seats.length + skipped.length;
+  const columnNames = [...seats.map((s) => s.seat.family), ...skipped.map((s) => s.name)];
   const lines: string[] = [];
   lines.push(`# ${name} — AI playtest report (${label})`);
   lines.push('');
@@ -92,12 +132,18 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   const alive = seats.filter((s) => verdictOf(s) === true).length;
   // Counting verdicts against `judged` alone made a run where half the seats
   // died read as unanimous -- "Alive verdicts: 1 of 1" for a two-seat run with
-  // one dead seat. Verdicts are reported against the seats that were ASKED.
-  lines.push(`**Seats:** ${seats.length} (${seats.map((s) => s.seat.family).join(', ')}). **Alive:** ${alive} of ${seats.length} seats. **Would play again:** ${seats.filter((s) => s.panel ? s.panel.wouldPlayAgainCount * 2 > s.panel.jurors.length : s.critique?.wouldPlayAgain).length} of ${seats.length}.`);
+  // one dead seat. Verdicts are reported against the seats that were ASKED,
+  // including directories whose meta.json could not be read.
+  lines.push(`**Seats:** ${asked} (${columnNames.join(', ')}). **Alive:** ${alive} of ${asked} seats. **Would play again:** ${seats.filter((s) => s.panel ? s.panel.wouldPlayAgainCount * 2 > s.panel.jurors.length : s.critique?.wouldPlayAgain).length} of ${asked}.`);
   lines.push('');
   if (unjudged.length > 0) {
-    lines.push(`> **${unjudged.length} of ${seats.length} seats produced no verdict** — the counts above are out of ${seats.length}, not out of ${judged.length}. ` +
+    lines.push(`> **${unjudged.length} of ${asked} seats produced no verdict** — the counts above are out of ${asked}, not out of ${judged.length}. ` +
       unjudged.map((s) => `\`${s.seat.family}\` (ended by ${s.endedBy}${s.critiqueError ? `; ${s.critiqueError}` : ''})`).join(', ') + '.');
+    lines.push('');
+  }
+  if (skipped.length > 0) {
+    lines.push(`> **${skipped.length} of ${asked} seat directories could not be read** — they still count in the denominator above, not dropped. ` +
+      skipped.map((s) => `\`${s.name}\` (${s.why})`).join(', ') + '.');
     lines.push('');
   }
   if (judged.length === 1) {
@@ -129,17 +175,20 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   }
   lines.push('## Criteria by family');
   lines.push('');
-  lines.push(`| criterion | ${seats.map((s) => s.seat.family).join(' | ')} | met | agreement |`);
-  lines.push(`|---|${seats.map(() => '---').join('|')}|---|---|`);
+  lines.push(`| criterion | ${columnNames.join(' | ')} | met | agreement |`);
+  lines.push(`|---|${columnNames.map(() => '---').join('|')}|---|---|`);
   for (const id of criteriaIds) {
     const rowOf = (s: SeatSummary) =>
       s.panel?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id);
-    const cells = seats.map((s) => {
-      const v = rowOf(s);
-      if (!v) return '—';
-      const split = 'split' in v && v.split ? '!' : '';
-      return v.met ? `yes${split}${v.turn !== null ? ` (t${v.turn})` : ''}` : `no${split}`;
-    });
+    const cells = [
+      ...seats.map((s) => {
+        const v = rowOf(s);
+        if (!v) return '—';
+        const split = 'split' in v && v.split ? '!' : '';
+        return v.met ? `yes${split}${v.turn !== null ? ` (t${v.turn})` : ''}` : `no${split}`;
+      }),
+      ...skipped.map(() => '—'),
+    ];
     const answered = seats.filter((s) => rowOf(s)).length;
     const met = seats.filter((s) => rowOf(s)?.met).length;
     // Disagreement is information about the CRITERION, not noise to average
@@ -154,7 +203,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
     const agreement = panelRow
       ? (panelRow.answeredCount < 2 ? '—' : panelRow.split ? `**split** ${panelRow.metCount}/${panelRow.answeredCount}` : 'unanimous')
       : (answered < 2 ? '—' : split ? '**split**' : 'unanimous');
-    lines.push(`| ${cell(id)} | ${cells.join(' | ')} | ${met}/${seats.length} | ${agreement} |`);
+    lines.push(`| ${cell(id)} | ${cells.join(' | ')} | ${met}/${asked} | ${agreement} |`);
   }
   if (missingIds.length > 0) {
     lines.push('');
@@ -275,12 +324,126 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
   return lines.join('\n');
 }
 
+export function isAggregateMarkdown(md: string): boolean {
+  const first = md.trimStart().split('\n', 1)[0] ?? '';
+  return /-- multi-run aggregate \(/.test(first);
+}
+
+async function readOptional(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+export async function isAggregateDir(dir: string): Promise<boolean> {
+  const sidecar = await readOptional(join(dir, 'aggregate.json'));
+  if (sidecar) {
+    try {
+      const parsed = JSON.parse(sidecar) as { kind?: string };
+      if (parsed && parsed.kind === 'multi-run-aggregate') return true;
+    } catch {
+      // Fall through to the REPORT.md header.
+    }
+  }
+  const md = await readOptional(join(dir, 'REPORT.md'));
+  return md !== null && isAggregateMarkdown(md);
+}
+
+function isRunSiblingName(name: string, label: string): boolean {
+  const prefix = `${label}-r`;
+  if (!name.startsWith(prefix)) return false;
+  const rest = name.slice(prefix.length);
+  return rest.length > 0 && /^[0-9]+$/.test(rest);
+}
+
+export async function listRunSiblings(runsDir: string, label: string): Promise<string[]> {
+  let names: string[];
+  try {
+    names = await readdir(runsDir);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const n of names.sort()) {
+    if (!isRunSiblingName(n, label)) continue;
+    try {
+      if ((await stat(join(runsDir, n))).isDirectory()) out.push(n);
+    } catch {
+      // Name raced out from under us; skip.
+    }
+  }
+  return out;
+}
+
+export function criterionMetBySeats(
+  results: Array<{ panel?: { criteria: Array<{ id: string; met: boolean }> } | null; critique?: { criteria: Array<{ id: string; met: boolean }> } | null }>,
+  id: string,
+): boolean {
+  const votes = results.map((r) => {
+    const row = r.panel?.criteria.find((c) => c.id === id) ?? r.critique?.criteria.find((c) => c.id === id);
+    return row?.met ?? false;
+  });
+  return votes.filter(Boolean).length * 2 > votes.length;
+}
+
 export async function writeReport(name: string, runDir: string, label: string, expectedCriteria?: string[]): Promise<string> {
+  if (await isAggregateDir(runDir)) {
+    throw new ReportError(
+      `${runDir} is a multi-run aggregate, not a single-run directory`,
+      `rebuild a single run with --label ${label}-r01, or let report rebuild the aggregate from ${label}-r*`,
+    );
+  }
   const seats = await readRun(runDir);
-  const md = renderReport(name, label, seats, expectedCriteria);
+  if (seats.length === 0) {
+    const skipped = seats.skipped;
+    if (skipped.length > 0) {
+      throw new ReportError(
+        `no readable seats in ${runDir} (${skipped.length} skipped)`,
+        skipped.map((s) => `${s.name}: ${s.why}`).join('; '),
+      );
+    }
+    const existing = await readOptional(join(runDir, 'REPORT.md'));
+    if (existing && existing.trim().length > 0) {
+      throw new ReportError(
+        `refusing to overwrite non-empty REPORT.md at ${runDir} with a 0-seat report`,
+        'this directory has no seat artifacts',
+      );
+    }
+    throw new ReportError(
+      `no seat directories in ${runDir}`,
+      'check --label, or run the playtest first',
+    );
+  }
+  const md = renderReport(name, label, seats, expectedCriteria, seats.skipped);
   const path = join(runDir, 'REPORT.md');
   await writeFile(path, md, 'utf8');
   return path;
+}
+
+export async function writeAggregateFromRuns(
+  name: string,
+  dir: string,
+  label: string,
+  criterionIds: string[],
+  runLabels: string[],
+  runsDir: string,
+): Promise<string> {
+  await mkdir(dir, { recursive: true });
+  const worstOfN: Array<{ run: string; alive: number; of: number }> = [];
+  const successes = Object.fromEntries(criterionIds.map((id) => [id, 0]));
+  for (const runLabel of runLabels) {
+    const seats = await readRun(join(runsDir, runLabel));
+    for (const id of criterionIds) if (criterionMetBySeats(seats, id)) successes[id]++;
+    const alive = seats.filter((s) => (s.panel ? s.panel.alive : s.critique?.alive) === true).length;
+    worstOfN.push({ run: runLabel, alive, of: seats.length + seats.skipped.length });
+  }
+  return writeAggregateReport(
+    name, dir, label, runLabels.length,
+    criterionIds.map((id) => ({ id, successes: successes[id] })),
+    worstOfN,
+  );
 }
 
 export function renderAggregateReport(
@@ -330,5 +493,6 @@ export async function writeAggregateReport(
   const md = renderAggregateReport(name, label, runCount, perCriterion, worstOfN);
   const path = join(dir, 'REPORT.md');
   await writeFile(path, md, 'utf8');
+  await writeFile(join(dir, 'aggregate.json'), JSON.stringify({ kind: 'multi-run-aggregate', label, runCount }) + '\n', 'utf8');
   return path;
 }

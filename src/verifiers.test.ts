@@ -46,13 +46,35 @@ describe('detectAbsorbing', () => {
     expect(detectAbsorbing(h, 4)).toBeNull();
   });
 
-  it('does not fire when the final SCC has an outgoing edge', () => {
-    // Mutation target: deleting the outgoing-edge guard makes this RED.
-    const h = [
-      t(1, 'A', 'go b'), t(2, 'B', 'go a'), t(3, 'A', 'go b'), t(4, 'B', 'go a'),
-      t(5, 'A', 'go b'), t(6, 'B', 'go c'), t(7, 'C', 'wait'), t(8, 'C', 'look'),
+  it('does not fire when a high-occupancy 2-input hub was left (outgoing edge)', () => {
+    // A-B ping-pong for 6 turns (occupancy 6 >= minTurns, two distinct inputs),
+    // leave to Crypt, stay there. Last hash is Crypt (occupancy 2, one input),
+    // so neither the occupancy floor nor the 2-input guard is what skips A-B —
+    // A-B is skipped because it does not contain last / it has an outgoing edge.
+    //
+    // Executable mutation: the A-B prefix (no leave) is a hit. Deleting
+    // minTurns keeps this test green (Crypt has one input). Deleting the
+    // 2-input guard keeps it green (Crypt occupancy 2 < 4). The occupancy-floor
+    // sibling below stays a 3-turn trace so it uniquely kills minTurns.
+    const left = [
+      t(1, 'Alcove', 'go nave'), t(2, 'Nave', 'go alcove'),
+      t(3, 'Alcove', 'go nave'), t(4, 'Nave', 'go alcove'),
+      t(5, 'Alcove', 'go nave'), t(6, 'Nave', 'go crypt'),
+      t(7, 'Crypt', 'wait'), t(8, 'Crypt', 'wait'),
     ];
-    expect(detectAbsorbing(h, 4)).toBeNull();
+    expect(detectAbsorbing(left, 4)).toBeNull();
+    expect(detectAbsorbing(left.slice(0, 6), 4)).not.toBeNull();
+
+    // Leave and return (the brief's example) merges {Alcove,Nave,Crypt} into
+    // one SCC — last sits in that SCC with occupancy 8 and no outgoing edge —
+    // so it fires. It cannot isolate the outgoing-edge continue.
+    const returned = [
+      t(1, 'Alcove', 'go nave'), t(2, 'Nave', 'go alcove'),
+      t(3, 'Alcove', 'go nave'), t(4, 'Nave', 'go alcove'),
+      t(5, 'Alcove', 'go nave'), t(6, 'Nave', 'go crypt'),
+      t(7, 'Crypt', 'go alcove'), t(8, 'Alcove', 'look'),
+    ];
+    expect(detectAbsorbing(returned, 4)).not.toBeNull();
   });
 
   it('does not fire below the occupancy floor', () => {

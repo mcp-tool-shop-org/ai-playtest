@@ -2,6 +2,15 @@
 // reacts to a few inputs, exits on "quit". Deterministic; no dependencies.
 import { createInterface } from 'node:readline';
 
+const mode = process.argv[2];
+if (mode === 'timeout') {
+  process.stdout.write('one line then silence\n');
+  setInterval(() => {}, 1e9);
+} else if (mode === 'idle') {
+  process.stdout.write('You stand in a ruined chapel. Exits: nave, alcove.\nHeat 0\n');
+  setInterval(() => {}, 1e9);
+} else {
+
 const rl = createInterface({ input: process.stdin, terminal: false });
 let turn = 0;
 let heat = 0;
@@ -19,3 +28,5 @@ rl.on('line', (line) => {
   if (/^ambush-me$/.test(input)) { screen('── Ambush: Chapel Patrol in Chapel Nave ──\n'); return; }
   screen(`You ${input}.\n`);
 });
+
+}

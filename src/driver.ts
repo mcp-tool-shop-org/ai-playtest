@@ -71,6 +71,13 @@ export type Observation = {
    *  from "the harness cannot parse". */
   actions?: ActionSpace;
   reason: ReadyReason;
+  /**
+   * The game's own end cause when the session is over. The engine-bridge
+   * protocol sends `win` / `lose` / `quit` / `stuck` / `timeout` here; the
+   * seat loop keys on `reason === 'exit' | 'timeout'`, so those protocol
+   * strings must not occupy `reason`.
+   */
+  endCause?: string;
   done: boolean;
   exitCode: number | null;
 };
@@ -84,6 +91,11 @@ export interface Driver {
   step(action: Action): Promise<Observation>;
   /** Stop the game. Safe to call more than once. */
   stop(): Promise<void>;
+  /**
+   * Restore a fresh session without relaunching the engine. The rpc driver
+   * implements this so one process can serve a panel; stdio/pty omit it.
+   */
+  reset?(): Promise<Observation>;
   /** Anything the game wrote to a diagnostic channel. */
   readonly diagnostics: string;
 }

@@ -7,8 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-Dogfood swarm #2, 2026-09-14. 84 -> 109 tests. First live run against claude-rpg
-(`proof-01`, 8 turns, mistral).
+Dogfood swarm #2, 2026-09-14. 84 -> 117 tests. First live run against claude-rpg
+(`proof-01`, 8 turns, mistral). Stage B amend landed 24 HIGH fixes.
 
 ### Added
 
@@ -52,7 +52,8 @@ Dogfood swarm #2, 2026-09-14. 84 -> 109 tests. First live run against claude-rpg
   `driver` in the config; defaults to `stdio`, so existing configs are
   unaffected. `docs/engine-bridge.md` carries a paste-and-go Godot 4 autoload.
 - **A cross-family jury.** Each transcript is judged by up to `panelSize`
-  (default 3) seats from families that did not produce it. Majority verdict,
+  (then default 3; default is 1 as of swarm #2) seats from families that did
+  not produce it. Majority verdict,
   split criteria marked with their count, per-seat dispersion reported.
 - **Coverage.** Novelty curve and half-life, repeat / loop / self-loop rates,
   action entropy and a thin/moderate/broad read, computed from turn records
