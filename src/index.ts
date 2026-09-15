@@ -20,3 +20,8 @@ export { computeCoverage, normalizeScreen, playerTurns, renderCoverageLine } fro
 export type { Coverage } from './coverage.js';
 export { createRpcDriver, RpcDriverError } from './rpc-driver.js';
 export type { RpcDriverOptions } from './rpc-driver.js';
+export { createStdioDriver } from './stdio-driver.js';
+export type { StdioDriverOptions } from './stdio-driver.js';
+export { createDriver } from './run.js';
+export { validateDriver } from './config.js';
+export type { DriverConfig } from './config.js';

@@ -93,3 +93,44 @@ describe('rpc driver', () => {
     await expect(pending).rejects.toThrow(/closed the connection/);
   }, 20000);
 });
+
+describe('a full playtest through the rpc driver', () => {
+  it('plays, critiques and reports against an engine that describes itself', async () => {
+    const { validateConfig } = await import('../src/config.js');
+    const { runAll } = await import('../src/run.js');
+    const { mkdtemp, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+
+    const port = await startGame();
+    const dir = await mkdtemp(join(tmpdir(), 'ai-playtest-rpc-'));
+    try {
+      const cfg = validateConfig({
+        name: 'rpc game',
+        // No game.command and no promptPatterns: the rpc driver attaches to a
+        // running game and the game says when it is ready.
+        driver: { kind: 'rpc', port, requestTimeoutMs: 5000 },
+        seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+        turns: 3,
+        persona: 'You are a cautious scout who wants to find out what is in the dark.',
+        criteria: [{ id: 'reacts', check: 'the world changed in response to an action' }],
+        runsDir: dir,
+      }, dir);
+
+      const client: any = async (req: any) => req.json
+        ? JSON.stringify({ alive: true, summary: 's', criteria: [{ id: 'reacts', met: true, evidence: 'hp fell', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true })
+        : 'attack';
+
+      const [r] = await runAll(cfg, { label: 'rpc', client, parallel: false });
+      expect(r.turnsPlayed).toBe(3);
+      expect(r.critique?.alive).toBe(true);
+      // The state the engine reported actually reached the transcript.
+      const text = r.history.map((h) => h.screen).join('\n');
+      expect(text).toContain('Chapel Nave');
+      expect(text).toContain('HP 10/100');
+      expect(r.coverage.turns).toBe(3);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+});

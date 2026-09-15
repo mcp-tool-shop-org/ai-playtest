@@ -6,7 +6,9 @@ import { join } from 'node:path';
 import type { PlaytestConfig, Seat } from './config.js';
 import { resolveEnv, ConfigError } from './config.js';
 import type { ChatClient } from './openrouter.js';
-import { spawnGame, type GameProcess } from './stdio-game.js';
+import { spawnGame } from './stdio-game.js';
+import type { Driver, Observation } from './driver.js';
+import { createStdioDriver } from './stdio-driver.js';
 import { chooseInput, type TurnRecord } from './player.js';
 import { critique, type Critique } from './critic.js';
 import { computeCoverage, type Coverage } from './coverage.js';
@@ -35,6 +37,8 @@ export type RunOptions = {
   turnRetrySleepMs?: number;
   /** Injectable for tests. */
   spawn?: typeof spawnGame;
+  /** Injectable for tests, and the seam the pty/rpc drivers arrive through. */
+  makeDriver?: (cfg: PlaytestConfig, env: Record<string, string>) => Promise<Driver>;
   env?: NodeJS.ProcessEnv;
   onTurn?: (seat: Seat, t: TurnRecord) => void;
   onSeatDone?: (r: SeatResult) => void;
@@ -72,13 +76,53 @@ export function seatDir(cfg: PlaytestConfig, label: string, seat: Seat): string 
   return join(cfg.runsDir, safeSegment(label, 'label'), safeSegment(seat.id, 'seat id'));
 }
 
+/**
+ * Build the driver the config asked for. stdio is constructed inline; pty and
+ * rpc are imported lazily so their optional dependencies are only required by
+ * the runs that actually use them.
+ */
+export async function createDriver(cfg: PlaytestConfig, env: Record<string, string>): Promise<Driver> {
+  switch (cfg.driver.kind) {
+    case 'pty': {
+      const { createPtyDriver } = await import('./pty-driver.js');
+      return createPtyDriver({
+        command: cfg.game.command,
+        args: cfg.game.args,
+        cwd: cfg.game.cwd,
+        env: { ...env },
+        cols: cfg.driver.cols,
+        rows: cfg.driver.rows,
+        readySentinel: cfg.driver.readySentinel,
+        promptPatterns: cfg.game.promptPatterns,
+        promptQuietMs: cfg.game.promptQuietMs,
+        idleQuietMs: cfg.game.idleQuietMs,
+        screenTimeoutMs: cfg.game.screenTimeoutMs,
+      });
+    }
+    case 'rpc': {
+      const { createRpcDriver } = await import('./rpc-driver.js');
+      return createRpcDriver({
+        host: cfg.driver.host,
+        port: cfg.driver.port,
+        connectTimeoutMs: cfg.driver.connectTimeoutMs,
+        requestTimeoutMs: cfg.driver.requestTimeoutMs,
+      });
+    }
+    default:
+      return createStdioDriver({ game: cfg.game, env });
+  }
+}
+
 export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions): Promise<SeatResult> {
   const started = Date.now();
   const dir = seatDir(cfg, opts.label, seat);
   await mkdir(dir, { recursive: true });
   const env = resolveEnv(cfg.game.env, opts.env ?? process.env);
-  const game: GameProcess = (opts.spawn ?? spawnGame)(cfg.game, env);
+  const makeDriver = opts.makeDriver
+    ?? (opts.spawn ? async (c: PlaytestConfig, e: Record<string, string>) => createStdioDriver({ game: c.game, env: e, spawn: opts.spawn }) : createDriver);
+  const driver: Driver = await makeDriver(cfg, env);
   const history: TurnRecord[] = [];
+  let pendingScreen: Observation | null = await driver.start();
   let endedBy: SeatResult['endedBy'] = 'turns';
   let error: string | undefined;
   let turn = 0;
@@ -88,7 +132,8 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
   try {
     while (turn < cfg.turns) {
       const t0 = Date.now();
-      const screen = await game.nextScreen();
+      const screen = pendingScreen ?? await driver.step({ kind: 'line', line: '' });
+      pendingScreen = null;
       if (screen.reason === 'exit') { endedBy = 'exit'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'exit', ms: Date.now() - t0 }); break; }
       if (screen.reason === 'timeout') { endedBy = 'timeout'; history.push({ turn: turn + 1, screen: screen.text, input: '', reason: 'timeout', ms: Date.now() - t0 }); break; }
       // Scripted setup: the first matching step answers without the player
@@ -100,7 +145,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
         const rec: TurnRecord = { turn: 0, screen: screen.text, input: step.answer, reason: 'setup', ms: Date.now() - t0 };
         history.push(rec);
         opts.onTurn?.(seat, rec);
-        game.send(step.answer);
+        pendingScreen = await driver.step({ kind: 'line', line: step.answer });
         continue;
       }
       // A player call can fail after the client's own retries (a provider
@@ -115,30 +160,32 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       const rec: TurnRecord = { turn, screen: screen.text, input, reason: screen.reason, ms: Date.now() - t0 };
       history.push(rec);
       opts.onTurn?.(seat, rec);
-      game.send(input);
+      pendingScreen = await driver.step({ kind: 'line', line: input });
     }
     // Quit sequence: every screen the game prints from here on is still
     // evidence (the last input's consequences, the save recap), so it is
     // recorded like a turn, with the quit input as the reply.
-    if (!game.exited) {
+    if (!(pendingScreen?.done ?? false)) {
       for (const q of cfg.game.quitInputs) {
         const t0 = Date.now();
-        const screen = await game.nextScreen();
+        const screen = pendingScreen ?? await driver.step({ kind: 'line', line: '' });
+        pendingScreen = null;
         if (screen.reason === 'exit' || screen.reason === 'timeout') { history.push({ turn, screen: screen.text, input: '', reason: screen.reason, ms: Date.now() - t0 }); break; }
         // Marked 'quit' and NOT counted as a player turn. These are the
         // runner's own inputs; counting them inflated turnsPlayed and, worse,
         // presented them to the critic as decisions the player made.
         history.push({ turn, screen: screen.text, input: q, reason: 'quit', ms: Date.now() - t0 });
-        game.send(q);
+        pendingScreen = await driver.step({ kind: 'line', line: q });
       }
-      const final = await game.nextScreen();
+      const final = pendingScreen ?? await driver.step({ kind: 'line', line: '' });
+      pendingScreen = null;
       if (final.text.trim().length > 0) history.push({ turn, screen: final.text, input: '', reason: final.reason, ms: 0 });
     }
   } catch (err) {
     endedBy = 'error';
     error = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
   } finally {
-    game.kill();
+    await driver.stop();
   }
 
   let crit: Critique | null = null;
@@ -171,7 +218,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
     coverage: computeCoverage(history),
     durationMs: Date.now() - started, dir,
   };
-  await writeArtifacts(cfg, result, game.stderr);
+  await writeArtifacts(cfg, result, driver.diagnostics);
   opts.onSeatDone?.(result);
   return result;
 }
