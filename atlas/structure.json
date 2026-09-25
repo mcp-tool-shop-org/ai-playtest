@@ -1,0 +1,2385 @@
+{
+  "boundaries": [
+    {
+      "dynamicReads": 0,
+      "dynamicSpawns": 0,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 0,
+      "entryPoints": [],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "4df6ef4548249156d2665c9757cee448cb860484379af62fc8ed1deec2ec1f2f",
+          "path": ".github/workflows/ci.yml"
+        },
+        {
+          "hash": "dc2b3c74d915ac684bb494c8a342440a0be1ffb7a01a4fcb7518ab9d0c545cad",
+          "path": ".github/workflows/pages.yml"
+        }
+      ],
+      "globs": [
+        ".github/**"
+      ],
+      "importConfidence": "full",
+      "name": ".github",
+      "origin": "authored",
+      "role": "config",
+      "testedBy": 0,
+      "unresolvedSites": 0
+    },
+    {
+      "dynamicReads": 0,
+      "dynamicSpawns": 0,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 0,
+      "entryPoints": [],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "eb39d596d15fbea2563bf935f5a01a0f1cd8f1bcf86dea8f9f43128d8f8472a2",
+          "path": "docs/engine-bridge.md"
+        },
+        {
+          "hash": "f41741ee5fed584816f1b074c5b4119a7a54bde57ee90ca727dd32fa7582b415",
+          "path": "docs/research-2.md"
+        },
+        {
+          "hash": "9721f99e5f967ef863dab63c7e8c0d47b29f698016c010b9cee02172da03ff6e",
+          "path": "docs/research-3.md"
+        },
+        {
+          "hash": "de2c7f6690138240524e60f8f469b65ef73e6113976bfe713fe994323381794d",
+          "path": "docs/research.md"
+        }
+      ],
+      "globs": [
+        "docs/**"
+      ],
+      "importConfidence": "full",
+      "name": "docs",
+      "origin": "authored",
+      "role": "docs",
+      "testedBy": 0,
+      "unresolvedSites": 0
+    },
+    {
+      "dynamicReads": 0,
+      "dynamicSpawns": 0,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 0,
+      "entryPoints": [],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "082a0f79bd03df6ebf89347d561260ba43244429907d3d0228440aec9573681d",
+          "path": ".gitignore"
+        },
+        {
+          "hash": "f51f8adb4cac8f182ccae9d55c02659eb86077ffbf8268300976a42d07221bc8",
+          "path": "CHANGELOG.md"
+        },
+        {
+          "hash": "367e5141e4f5884e5791c4021f33a9faa958840a5decf44e1b273a87aad1c459",
+          "path": "LICENSE"
+        },
+        {
+          "hash": "54f4dfb239b396cf0be578e08b8811af35f9289c414891a0edcab029d8311b63",
+          "path": "README.es.md"
+        },
+        {
+          "hash": "dccfa64e4ce82a051a79924d46b5e7991c4f20314129c289ed78744620ce1310",
+          "path": "README.fr.md"
+        },
+        {
+          "hash": "46577eab90896b4e3232b5d586b2c0d920800bcedaf9d77b503b30c89481b59e",
+          "path": "README.hi.md"
+        },
+        {
+          "hash": "4229440a01cb1201a9ea53aa8389c5e26e1617c6392b9b096c3ef9628d365db6",
+          "path": "README.it.md"
+        },
+        {
+          "hash": "71ae02ef68ee557e315da55cc9bc0513474569292faca41b4dcab09d4b38f566",
+          "path": "README.ja.md"
+        },
+        {
+          "hash": "da4e1697b7e9e8a627a5583f45b7455ebd9039db894554d9c5984560439c9fdc",
+          "path": "README.md"
+        },
+        {
+          "hash": "d5bcc18e1ea8b54602691fb204eda9182bbf771f38b1f70b4f84952021321558",
+          "path": "README.pt-BR.md"
+        },
+        {
+          "hash": "0905a8c536308227276f71ebd494b0073da2bdea4b2c68547ca84666875c0f16",
+          "path": "README.zh.md"
+        },
+        {
+          "hash": "b00fe74cf255d8d6944fb5374a73f2502e777569e36e2d5f52656be9af010c32",
+          "path": "SCORECARD.md"
+        },
+        {
+          "hash": "9399e007992668b7b7cd760620135a2a27bb14d542b15a328470fd769a0e66b8",
+          "path": "SECURITY.md"
+        },
+        {
+          "hash": "953ec2d1a3e2dc7b7301da38a9359d6c6aafec6e4684683ae54a1b7623a9d668",
+          "path": "SHIP_GATE.md"
+        },
+        {
+          "hash": "4f3a0430a6127d9dffc2f8036a9b5b6c232895f7d37b94cff7877432cb6e2dc1",
+          "path": "package-lock.json"
+        },
+        {
+          "hash": "b2f8b4c0ce2981e1f36af1a4a33d85d27ff078e2bd05055f31e88cd1ca63080e",
+          "path": "package.json"
+        },
+        {
+          "hash": "e1f352870b64bb3a13e35761a13ff1b65ef6188a35feb4c3e9c623a8beef46c1",
+          "path": "tsconfig.json"
+        },
+        {
+          "hash": "1dbb813ea69fa07e4cab9d7a1ed2b7a07ef3eda5318f8127a9dd190ef412f96d",
+          "path": "tsconfig.test.json"
+        },
+        {
+          "hash": "f1f647636cb73197cfc4a447578962e02957d92c78ad8558d847c88d899ed19e",
+          "path": "vitest.config.ts"
+        }
+      ],
+      "globs": [
+        "*"
+      ],
+      "importConfidence": "full",
+      "name": "root",
+      "origin": "authored",
+      "role": "config",
+      "testedBy": 1,
+      "unresolvedSites": 1
+    },
+    {
+      "dynamicReads": 0,
+      "dynamicSpawns": 0,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 0,
+      "entryPoints": [],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "816e8aed84287e0b7a82c1357604459ec7b49ff00cc5ee88f13143fd6e24656d",
+          "path": "site/astro.config.mjs"
+        },
+        {
+          "hash": "579d47b92833532c3ab547fac53fa21d246549cfdb48a814fa20235515fd96b8",
+          "path": "site/package-lock.json"
+        },
+        {
+          "hash": "9c39e620ebae2c5718ecd8c6188bd3451409a614ec8f5308dc15d5fd886e5b91",
+          "path": "site/package.json"
+        },
+        {
+          "hash": "db3c76ae1d22efa9f6c9a1cf3d8b1f45a5e94210d34e4b518006018e7d3d097d",
+          "path": "site/public/favicon.svg"
+        },
+        {
+          "hash": "8bc4cf1f821783dda31210c23145b9ae3c3c8ede62fd46bcc9169c3bd3087aa8",
+          "path": "site/src/assets/logo.png"
+        },
+        {
+          "hash": "ee756dfba4122d2acc94a39b2555d9f200fff56a87a8c0b10f9cd01df26a8b62",
+          "path": "site/src/content.config.ts"
+        },
+        {
+          "hash": "b9443112b95eb7464419e69bdb52df1d9e4ad8b4ae26678c22332c2f7c4a8c79",
+          "path": "site/src/content/docs/handbook/configuration.md"
+        },
+        {
+          "hash": "47856197618a00d820a12c5e68420044e5915fa8714ea226b6a1667b6e3e5add",
+          "path": "site/src/content/docs/handbook/drivers.md"
+        },
+        {
+          "hash": "049f1540f60918ff6e336a8d5667a8160dea226e42e7f1b5f2a700153cd2115c",
+          "path": "site/src/content/docs/handbook/engine-bridge.md"
+        },
+        {
+          "hash": "332d6fcb37d754751aa3e4b13cda7510fe153035802d320acd45d514224cdaec",
+          "path": "site/src/content/docs/handbook/getting-started.md"
+        },
+        {
+          "hash": "b6d26c090ccf4076c7464b61e02447623d4875afde43c53a8d09d3ea915ad481",
+          "path": "site/src/content/docs/handbook/index.md"
+        },
+        {
+          "hash": "9b8ccb4a770d66882e6b6d3ba9264bf402f0b67b894247a7766fdd973a25e0a4",
+          "path": "site/src/content/docs/handbook/reading-a-report.md"
+        },
+        {
+          "hash": "8a985d9eae92cce2f5352b3d235b4ce4465423809ae7566ee13d6124b33a3d5a",
+          "path": "site/src/content/docs/handbook/reference.md"
+        },
+        {
+          "hash": "4fb84a646c4d833c33f4058e1ed1775849e855c65e5adb7e45d2a633674bd603",
+          "path": "site/src/pages/index.astro"
+        },
+        {
+          "hash": "9afde3f3868ffd8e5806f29a23a698916da3a5cf6c561f5997b6d8aa7f42e692",
+          "path": "site/src/site-config.ts"
+        },
+        {
+          "hash": "29ee8df91833e694bdba973126b34a6177de4cf01dab6d9ef7d3126e8e2b67fb",
+          "path": "site/src/styles/global.css"
+        },
+        {
+          "hash": "b17173f07c0db8b532533b5de48035355a12d9582f0918d75b12214b07d53a17",
+          "path": "site/src/styles/starlight-custom.css"
+        },
+        {
+          "hash": "b5b0a5b04a14cddd7713c5e1c82e86c79c17c2f86b170e26e9b170b3d5e01cd9",
+          "path": "site/tsconfig.json"
+        }
+      ],
+      "globs": [
+        "site/**"
+      ],
+      "importConfidence": "full",
+      "name": "site",
+      "origin": "authored",
+      "role": "site",
+      "testedBy": 0,
+      "unresolvedSites": 0
+    },
+    {
+      "dynamicReads": 1,
+      "dynamicSpawns": 1,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 2,
+      "entryPoints": [
+        "src/cli.ts"
+      ],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "9f0e89dd0447890adb697e991a12c5ab4aa882504e5212083fc617a2f844a80b",
+          "importsFiles": [
+            "src/cli.ts"
+          ],
+          "path": "src/cli.test.ts"
+        },
+        {
+          "entry": "main",
+          "entryRule": 1,
+          "exports": [
+            "flag",
+            "main",
+            "parseRuns",
+            "parseTurns",
+            "usage"
+          ],
+          "hash": "37a75d01f077320c9e75e22633731bbe9a46e5bf3ca783cddd71cfe465b18d79",
+          "importsFiles": [
+            "src/config.ts",
+            "src/openrouter.ts",
+            "src/pty-driver.ts",
+            "src/report.ts",
+            "src/run.ts",
+            "src/stats.ts"
+          ],
+          "path": "src/cli.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 140,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "hasVerdict"
+            },
+            {
+              "calls": [
+                {
+                  "line": 172,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "branch": "r.critique",
+                  "line": 182,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 185,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "formatSeatDone"
+            },
+            {
+              "calls": [
+                {
+                  "line": 210,
+                  "name": "loadConfig",
+                  "target": {
+                    "file": "src/config.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'report'",
+                  "line": 231,
+                  "name": "listRunSiblings",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'report'",
+                  "line": 232,
+                  "name": "isAggregateDir",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'report'",
+                  "line": 238,
+                  "name": "readRun",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "branch": "rebuildFromSiblings",
+                  "inner": [
+                    {
+                      "line": 671,
+                      "name": "summarizeRuns",
+                      "target": {
+                        "file": "src/stats.ts"
+                      },
+                      "via": "renderAggregateReport"
+                    }
+                  ],
+                  "line": 242,
+                  "name": "writeAggregateFromRuns",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'report'",
+                  "inner": [
+                    {
+                      "line": 364,
+                      "name": "renderCoverageLine",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 391,
+                      "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    }
+                  ],
+                  "line": 248,
+                  "name": "writeReport",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 263,
+                  "name": "createOpenRouterClient",
+                  "target": {
+                    "file": "src/openrouter.ts"
+                  }
+                },
+                {
+                  "line": 266,
+                  "name": "summarizeRuns",
+                  "target": {
+                    "file": "src/stats.ts"
+                  }
+                },
+                {
+                  "inner": [
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 581,
+                      "name": "resolveEnv",
+                      "target": {
+                        "file": "src/config.ts"
+                      },
+                      "via": "runSerialRpc"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 583,
+                      "name": "createStdioDriver",
+                      "target": {
+                        "file": "src/stdio-driver.ts"
+                      },
+                      "via": "makeDriver"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 538,
+                      "name": "computeCoverage",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "failedSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 539,
+                      "name": "runVerifiers",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "failedSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 253,
+                      "name": "resolveEnv",
+                      "target": {
+                        "file": "src/config.ts"
+                      },
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 255,
+                      "name": "createStdioDriver",
+                      "target": {
+                        "file": "src/stdio-driver.ts"
+                      },
+                      "via": "makeDriver"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 274,
+                      "name": "start",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 280,
+                      "name": "step",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 293,
+                      "name": "onTurn",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 294,
+                      "name": "step",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 313,
+                      "name": "describeActions",
+                      "target": {
+                        "file": "src/driver.ts"
+                      },
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 309,
+                      "name": "chooseInput",
+                      "target": {
+                        "file": "src/player.ts"
+                      },
+                      "via": "runSeat"
+                    }
+                  ],
+                  "innerTruncated": true,
+                  "line": 273,
+                  "name": "runAll",
+                  "target": {
+                    "file": "src/run.ts"
+                  }
+                },
+                {
+                  "inner": [
+                    {
+                      "line": 364,
+                      "name": "renderCoverageLine",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 391,
+                      "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    }
+                  ],
+                  "line": 277,
+                  "name": "writeReport",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 140,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  },
+                  "via": "hasVerdict"
+                },
+                {
+                  "inner": [
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 581,
+                      "name": "resolveEnv",
+                      "target": {
+                        "file": "src/config.ts"
+                      },
+                      "via": "runSerialRpc"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 583,
+                      "name": "createStdioDriver",
+                      "target": {
+                        "file": "src/stdio-driver.ts"
+                      },
+                      "via": "makeDriver"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 538,
+                      "name": "computeCoverage",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "failedSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 539,
+                      "name": "runVerifiers",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "failedSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 253,
+                      "name": "resolveEnv",
+                      "target": {
+                        "file": "src/config.ts"
+                      },
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 255,
+                      "name": "createStdioDriver",
+                      "target": {
+                        "file": "src/stdio-driver.ts"
+                      },
+                      "via": "makeDriver"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 274,
+                      "name": "start",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 280,
+                      "name": "step",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 293,
+                      "name": "onTurn",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 294,
+                      "name": "step",
+                      "target": null,
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 313,
+                      "name": "describeActions",
+                      "target": {
+                        "file": "src/driver.ts"
+                      },
+                      "via": "runSeat"
+                    },
+                    {
+                      "branch": "cfg.driver.kind === 'rpc'",
+                      "line": 309,
+                      "name": "chooseInput",
+                      "target": {
+                        "file": "src/player.ts"
+                      },
+                      "via": "runSeat"
+                    }
+                  ],
+                  "innerTruncated": true,
+                  "line": 291,
+                  "name": "runAll",
+                  "target": {
+                    "file": "src/run.ts"
+                  }
+                },
+                {
+                  "inner": [
+                    {
+                      "line": 364,
+                      "name": "renderCoverageLine",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 391,
+                      "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    }
+                  ],
+                  "line": 294,
+                  "name": "writeReport",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 299,
+                  "name": "criterionMetBySeats",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 301,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "inner": [
+                    {
+                      "line": 671,
+                      "name": "summarizeRuns",
+                      "target": {
+                        "file": "src/stats.ts"
+                      },
+                      "via": "renderAggregateReport"
+                    }
+                  ],
+                  "line": 306,
+                  "name": "writeAggregateReport",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": true,
+              "isDefaultExport": false,
+              "name": "main"
+            }
+          ]
+        },
+        {
+          "entry": "readOwnVersion",
+          "entryRule": 1,
+          "exports": [
+            "isSafeSegment",
+            "loadConfig",
+            "resolveEnv",
+            "validateConfig",
+            "validateDriver",
+            "validateVerifiers"
+          ],
+          "hash": "654d6d2afe93fc270451ee7ec212e60593ab8b5b56a903657347f0a64e4d76c7",
+          "importsFiles": [
+            "src/verifiers.ts"
+          ],
+          "path": "src/config.ts",
+          "sequences": []
+        },
+        {
+          "hash": "0c3ebc22751cc02d13a38cb28a6cf66a2dec3355428704fd13db58a7a0252d22",
+          "importsFiles": [
+            "src/coverage.ts",
+            "src/player.ts"
+          ],
+          "path": "src/coverage.test.ts"
+        },
+        {
+          "exports": [
+            "analysisTurns",
+            "computeCoverage",
+            "hashTurn",
+            "isHarnessReason",
+            "lastConsequence",
+            "normalizeScreen",
+            "playerTurns",
+            "renderCoverageLine",
+            "turnStateKey"
+          ],
+          "hash": "7e965cd232b1c75865ef5e5204ac932a141509d462a660d8736d826002c4a486",
+          "importsFiles": [
+            "src/player.ts"
+          ],
+          "path": "src/coverage.ts"
+        },
+        {
+          "hash": "ba7c7e626dff37d47f68389e051063f81ffafa7628842936180390333f77df49",
+          "importsFiles": [
+            "src/critic.ts",
+            "src/openrouter.ts"
+          ],
+          "path": "src/critic.test.ts"
+        },
+        {
+          "exports": [
+            "buildCriticPrompt",
+            "criticMaxTokens",
+            "critique",
+            "fenceTranscript",
+            "parseCritique",
+            "renderTranscript"
+          ],
+          "hash": "0b3876f69b8a66864988329da2fdd311623c3ffcbe04cbcc6fb9d0b3b48bf14b",
+          "importsFiles": [
+            "src/config.ts",
+            "src/openrouter.ts",
+            "src/player.ts"
+          ],
+          "path": "src/critic.ts"
+        },
+        {
+          "hash": "a99c1becd1cd27fd181eec232d522a52db53259ed30e153b66e192e636d67087",
+          "importsFiles": [
+            "src/driver.ts"
+          ],
+          "path": "src/driver.test.ts"
+        },
+        {
+          "exports": [
+            "actionFromInput",
+            "actionToLine",
+            "describeActions",
+            "validateAction"
+          ],
+          "hash": "203830e1f6469d1695c600a14e9c469bbaf9cde7954923279388b205d2d850bc",
+          "path": "src/driver.ts"
+        },
+        {
+          "hash": "c0340aac8742933d060a51724e2016a9ac4b25acb92cb2c96c08286a30870070",
+          "importsFiles": [
+            "src/config.ts",
+            "src/coverage.ts",
+            "src/critic.ts",
+            "src/driver.ts",
+            "src/openrouter.ts",
+            "src/panel.ts",
+            "src/player.ts",
+            "src/pty-driver.ts",
+            "src/report.ts",
+            "src/rpc-driver.ts",
+            "src/run.ts",
+            "src/stats.ts",
+            "src/stdio-driver.ts",
+            "src/stdio-game.ts",
+            "src/verifiers.ts"
+          ],
+          "path": "src/index.ts",
+          "reexportsOnly": true
+        },
+        {
+          "hash": "a641021ca4968deb23c6ff810a97f56d8956566391c68831f2501d9ad37272cf",
+          "importsFiles": [
+            "src/openrouter.ts"
+          ],
+          "path": "src/openrouter.test.ts"
+        },
+        {
+          "exports": [
+            "createOpenRouterClient"
+          ],
+          "hash": "6bda7f69d076be97942c08871413a0fc9acb572e07ebc3f96bed64a7c9e4a986",
+          "path": "src/openrouter.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 76,
+                  "name": "addEventListener",
+                  "target": null
+                },
+                {
+                  "line": 77,
+                  "name": "removeEventListener",
+                  "target": null
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "raceAbort"
+            }
+          ]
+        },
+        {
+          "hash": "b532de450754a158488937cb16af1d57e55aa4fcb1ebdee6e9db551bb266c223",
+          "importsFiles": [
+            "src/config.ts",
+            "src/critic.ts",
+            "src/panel.ts"
+          ],
+          "path": "src/panel.test.ts"
+        },
+        {
+          "exports": [
+            "aggregatePanel",
+            "pickJurors"
+          ],
+          "hash": "3f109bd593aeb0ee1d72e4120780d68f21e9e9993ee751565f790daf465ac0ce",
+          "importsFiles": [
+            "src/config.ts",
+            "src/critic.ts",
+            "src/stats.ts"
+          ],
+          "path": "src/panel.ts"
+        },
+        {
+          "hash": "28dc09dc520134f6fcc72e4f45aeb96fd462e6bc9d94830a0bb9ca074040fd4b",
+          "importsFiles": [
+            "src/openrouter.ts",
+            "src/player.ts"
+          ],
+          "path": "src/player.test.ts"
+        },
+        {
+          "exports": [
+            "buildPlayerMessages",
+            "chooseInput",
+            "cleanInput",
+            "nextFallback",
+            "sanitizeInput"
+          ],
+          "hash": "6afecb0d851aa7746cadd1919b1a1958336437aa989fe0d2c8473465ef301b3f",
+          "importsFiles": [
+            "src/openrouter.ts"
+          ],
+          "path": "src/player.ts"
+        },
+        {
+          "exports": [
+            "createPtyDriver"
+          ],
+          "hash": "43dddff1e0782c68aa9a684c7bb661bd46337221f8276b9fb7cb87682549770a",
+          "importsFiles": [
+            "src/driver.ts",
+            "src/stdio-game.ts"
+          ],
+          "path": "src/pty-driver.ts"
+        },
+        {
+          "entry": "renderReport",
+          "entryRule": 4,
+          "exports": [
+            "criterionMetBySeats",
+            "isAggregateDir",
+            "isAggregateMarkdown",
+            "isEmptyDegradedPanel",
+            "listRunSiblings",
+            "readRun",
+            "renderAggregateReport",
+            "renderReport",
+            "renderReportJson",
+            "writeAggregateFromRuns",
+            "writeAggregateReport",
+            "writeReport"
+          ],
+          "hash": "fabe64a71b7260ac695ac11ea80a72f240f248819f3d869288741ab9586c6d04",
+          "importsFiles": [
+            "src/config.ts",
+            "src/coverage.ts",
+            "src/critic.ts",
+            "src/panel.ts",
+            "src/stats.ts",
+            "src/verifiers.ts"
+          ],
+          "path": "src/report.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 364,
+                  "name": "renderCoverageLine",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 391,
+                  "name": "renderAbsorbingLine",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "renderReport"
+            },
+            {
+              "calls": [
+                {
+                  "line": 364,
+                  "name": "renderCoverageLine",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "renderReport"
+                },
+                {
+                  "line": 391,
+                  "name": "renderAbsorbingLine",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "renderReport"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "writeReport"
+            },
+            {
+              "calls": [
+                {
+                  "line": 671,
+                  "name": "summarizeRuns",
+                  "target": {
+                    "file": "src/stats.ts"
+                  },
+                  "via": "renderAggregateReport"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "writeAggregateFromRuns"
+            },
+            {
+              "calls": [
+                {
+                  "line": 671,
+                  "name": "summarizeRuns",
+                  "target": {
+                    "file": "src/stats.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "renderAggregateReport"
+            },
+            {
+              "calls": [
+                {
+                  "line": 671,
+                  "name": "summarizeRuns",
+                  "target": {
+                    "file": "src/stats.ts"
+                  },
+                  "via": "renderAggregateReport"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "writeAggregateReport"
+            }
+          ]
+        },
+        {
+          "exports": [
+            "createRpcDriver"
+          ],
+          "hash": "a891798856ac5c4491acc9b89b7f767c46912e2313749b5e84cc22b34fc75bed",
+          "importsFiles": [
+            "src/driver.ts"
+          ],
+          "path": "src/rpc-driver.ts"
+        },
+        {
+          "entry": "runAll",
+          "entryRule": 4,
+          "exports": [
+            "createDriver",
+            "runAll",
+            "runSeat",
+            "seatDir",
+            "toAction"
+          ],
+          "hash": "e48d8f6375311087cab85db6d15439b6418042e5df7a6b1aa04e7b09110cac20",
+          "importsFiles": [
+            "src/config.ts",
+            "src/coverage.ts",
+            "src/critic.ts",
+            "src/driver.ts",
+            "src/openrouter.ts",
+            "src/panel.ts",
+            "src/player.ts",
+            "src/pty-driver.ts",
+            "src/rpc-driver.ts",
+            "src/stdio-driver.ts",
+            "src/stdio-game.ts",
+            "src/verifiers.ts"
+          ],
+          "path": "src/run.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 176,
+                  "name": "createPtyDriver",
+                  "target": {
+                    "file": "src/pty-driver.ts"
+                  }
+                },
+                {
+                  "line": 193,
+                  "name": "createRpcDriver",
+                  "target": {
+                    "file": "src/rpc-driver.ts"
+                  }
+                },
+                {
+                  "line": 201,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "createDriver"
+            },
+            {
+              "calls": [
+                {
+                  "line": 219,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "once"
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "critiqueJuror"
+            },
+            {
+              "calls": [
+                {
+                  "line": 253,
+                  "name": "resolveEnv",
+                  "target": {
+                    "file": "src/config.ts"
+                  }
+                },
+                {
+                  "line": 255,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  },
+                  "via": "makeDriver"
+                },
+                {
+                  "line": 274,
+                  "name": "start",
+                  "target": null
+                },
+                {
+                  "line": 280,
+                  "name": "step",
+                  "target": null
+                },
+                {
+                  "line": 293,
+                  "name": "onTurn",
+                  "target": null
+                },
+                {
+                  "line": 294,
+                  "name": "step",
+                  "target": null
+                },
+                {
+                  "line": 313,
+                  "name": "describeActions",
+                  "target": {
+                    "file": "src/driver.ts"
+                  }
+                },
+                {
+                  "line": 309,
+                  "name": "chooseInput",
+                  "target": {
+                    "file": "src/player.ts"
+                  }
+                },
+                {
+                  "line": 318,
+                  "name": "onRetry",
+                  "target": null
+                },
+                {
+                  "line": 321,
+                  "name": "onTurn",
+                  "target": null
+                },
+                {
+                  "line": 363,
+                  "name": "step",
+                  "target": null
+                },
+                {
+                  "line": 412,
+                  "name": "playerTurns",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 426,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  }
+                },
+                {
+                  "line": 435,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  }
+                },
+                {
+                  "line": 439,
+                  "name": "pickJurors",
+                  "target": {
+                    "file": "src/panel.ts"
+                  }
+                },
+                {
+                  "line": 219,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "once"
+                },
+                {
+                  "line": 442,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  }
+                },
+                {
+                  "line": 455,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 456,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                },
+                {
+                  "line": 466,
+                  "name": "onSeatDone",
+                  "target": null
+                },
+                {
+                  "line": 471,
+                  "name": "playerTurns",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 474,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 475,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "runSeat"
+            },
+            {
+              "calls": [
+                {
+                  "line": 538,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 539,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "failedSeat"
+            },
+            {
+              "calls": [
+                {
+                  "line": 562,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  }
+                },
+                {
+                  "line": 563,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "settleRejectedSeat"
+            },
+            {
+              "calls": [
+                {
+                  "line": 581,
+                  "name": "resolveEnv",
+                  "target": {
+                    "file": "src/config.ts"
+                  }
+                },
+                {
+                  "line": 583,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  },
+                  "via": "makeDriver"
+                },
+                {
+                  "line": 538,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "failedSeat"
+                },
+                {
+                  "line": 539,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "failedSeat"
+                },
+                {
+                  "line": 253,
+                  "name": "resolveEnv",
+                  "target": {
+                    "file": "src/config.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 255,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  },
+                  "via": "makeDriver"
+                },
+                {
+                  "line": 274,
+                  "name": "start",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 280,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 293,
+                  "name": "onTurn",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 294,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 313,
+                  "name": "describeActions",
+                  "target": {
+                    "file": "src/driver.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 309,
+                  "name": "chooseInput",
+                  "target": {
+                    "file": "src/player.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 318,
+                  "name": "onRetry",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 321,
+                  "name": "onTurn",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 363,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "line": 412,
+                  "name": "playerTurns",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 426,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 435,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 439,
+                  "name": "pickJurors",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 219,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "once"
+                },
+                {
+                  "line": 442,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 455,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 456,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "line": 466,
+                  "name": "onSeatDone",
+                  "target": null,
+                  "via": "runSeat"
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "runSerialRpc",
+              "truncated": true
+            },
+            {
+              "calls": [
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 581,
+                  "name": "resolveEnv",
+                  "target": {
+                    "file": "src/config.ts"
+                  },
+                  "via": "runSerialRpc"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 583,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  },
+                  "via": "makeDriver"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 538,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "failedSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 539,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "failedSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 253,
+                  "name": "resolveEnv",
+                  "target": {
+                    "file": "src/config.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 255,
+                  "name": "createStdioDriver",
+                  "target": {
+                    "file": "src/stdio-driver.ts"
+                  },
+                  "via": "makeDriver"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 274,
+                  "name": "start",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 280,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 293,
+                  "name": "onTurn",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 294,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 313,
+                  "name": "describeActions",
+                  "target": {
+                    "file": "src/driver.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 309,
+                  "name": "chooseInput",
+                  "target": {
+                    "file": "src/player.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 318,
+                  "name": "onRetry",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 321,
+                  "name": "onTurn",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 363,
+                  "name": "step",
+                  "target": null,
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 412,
+                  "name": "playerTurns",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 426,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 435,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 439,
+                  "name": "pickJurors",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 219,
+                  "name": "critique",
+                  "target": {
+                    "file": "src/critic.ts"
+                  },
+                  "via": "once"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 442,
+                  "name": "aggregatePanel",
+                  "target": {
+                    "file": "src/panel.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 455,
+                  "name": "computeCoverage",
+                  "target": {
+                    "file": "src/coverage.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 456,
+                  "name": "runVerifiers",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "runSeat"
+                },
+                {
+                  "branch": "cfg.driver.kind === 'rpc'",
+                  "line": 466,
+                  "name": "onSeatDone",
+                  "target": null,
+                  "via": "runSeat"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "runAll",
+              "truncated": true
+            }
+          ]
+        },
+        {
+          "hash": "2874a1646df04f14cc6048ffb98db190a6a44f66b8011af8f53770e2247e6dbe",
+          "importsFiles": [
+            "src/stats.ts"
+          ],
+          "path": "src/stats.test.ts"
+        },
+        {
+          "exports": [
+            "betaCi",
+            "betaMean",
+            "invBetaCdf",
+            "juryNEff",
+            "meanPairwisePhi",
+            "minSignFlipP",
+            "phiCoeff",
+            "posteriorFor",
+            "regularizedIncompleteBeta",
+            "stability",
+            "summarizeRuns"
+          ],
+          "hash": "fc79254f3b9049a0aeb9d9d0e879873a795c7dc153469ef8c487b16d707c55a9",
+          "path": "src/stats.ts"
+        },
+        {
+          "exports": [
+            "createStdioDriver"
+          ],
+          "hash": "3c305fefaaa4508f82111a565d18064348ea30fc5c292fd19502b95597f6a762",
+          "importsFiles": [
+            "src/config.ts",
+            "src/driver.ts",
+            "src/stdio-game.ts"
+          ],
+          "path": "src/stdio-driver.ts"
+        },
+        {
+          "hash": "5f86c1ee4ec07337fb91ff2e9af5bffe28b9dd931474d7851c9e89d0b24c4960",
+          "importsFiles": [
+            "src/config.ts",
+            "src/stdio-game.ts"
+          ],
+          "path": "src/stdio-game.test.ts"
+        },
+        {
+          "exports": [
+            "buildChildEnv",
+            "spawnGame",
+            "stripAnsi"
+          ],
+          "hash": "31124f1f096c1877faa679568b9b55a16955d279dd5d52f665789171cddc1dc5",
+          "importsFiles": [
+            "src/config.ts"
+          ],
+          "path": "src/stdio-game.ts"
+        },
+        {
+          "hash": "406525984b8118f1dafd01d417608990d9377b1461dfa3b0202216914a207760",
+          "importsFiles": [
+            "src/player.ts",
+            "src/verifiers.ts"
+          ],
+          "path": "src/verifiers.test.ts"
+        },
+        {
+          "exports": [
+            "classifyIgnored",
+            "classifyParser",
+            "detectAbsorbing",
+            "detectNoProgress",
+            "detectStateInvariants",
+            "detectTerminal",
+            "entityAppearanceGrid",
+            "renderAbsorbingLine",
+            "runVerifiers",
+            "tarjanScc"
+          ],
+          "hash": "ecd52cf851dbf947494dffd2276abecbb851b74a0654732cba72239f041c0188",
+          "importsFiles": [
+            "src/coverage.ts",
+            "src/player.ts"
+          ],
+          "path": "src/verifiers.ts"
+        }
+      ],
+      "globs": [
+        "src/**"
+      ],
+      "importConfidence": "full",
+      "name": "src",
+      "origin": "authored",
+      "outsidePlaces": [
+        {
+          "reads": 8,
+          "where": [
+            "caller"
+          ],
+          "writes": 11
+        }
+      ],
+      "outsideReads": 8,
+      "outsideWrites": 11,
+      "role": "code",
+      "testedBy": 14,
+      "unresolvedSites": 0
+    },
+    {
+      "dynamicReads": 0,
+      "dynamicSpawns": 0,
+      "dynamicSpawnsInTests": 0,
+      "dynamicWrites": 0,
+      "entryPoints": [],
+      "externals": 0,
+      "files": [
+        {
+          "hash": "34042f0434bc91832ce803951e3c913209e761e1f1eb460995da80faf4e83dde",
+          "path": "test/fixtures/echo-game.mjs"
+        },
+        {
+          "hash": "155b4712f4ff9aeaf9593b69b17af33012ff7c61b9d06b1ccb0e570bf20758cc",
+          "path": "test/fixtures/rpc-game.mjs"
+        },
+        {
+          "hash": "817bbf809b3728e7a10794ba978cd0dcc1f01cb2f933b35251605b985e86be2c",
+          "path": "test/fixtures/tui-game.mjs"
+        },
+        {
+          "hash": "164255b3436efda6a65ee79030735d5d13eb3a5f9156a75fabd71e8c26602d90",
+          "importsFiles": [
+            "src/pty-driver.ts",
+            "src/stdio-game.ts"
+          ],
+          "path": "test/pty-driver.test.ts"
+        },
+        {
+          "hash": "97cb2deb1af4d367f91a6e0e91cdde7c291ac3baa24b9794f938c228ac006886",
+          "importsFiles": [
+            "src/pty-driver.ts"
+          ],
+          "path": "test/pty-unavailable.test.ts"
+        },
+        {
+          "hash": "7f41662625bfebf2421c57acfc2a32624d1a195f66e081e6388cc8ce9cee60fa",
+          "importsFiles": [
+            "src/config.ts",
+            "src/rpc-driver.ts",
+            "src/run.ts"
+          ],
+          "path": "test/rpc-driver.test.ts"
+        },
+        {
+          "hash": "61e4a0871f133d6a1939f262bce6ab68648a0d4cf60c4aed8e79cee9cd0e549d",
+          "importsFiles": [
+            "src/config.ts",
+            "src/driver.ts",
+            "src/openrouter.ts",
+            "src/pty-driver.ts",
+            "src/report.ts",
+            "src/run.ts",
+            "src/stdio-driver.ts",
+            "src/stdio-game.ts"
+          ],
+          "path": "test/run.test.ts"
+        }
+      ],
+      "globs": [
+        "test/**"
+      ],
+      "importConfidence": "full",
+      "name": "test",
+      "origin": "authored",
+      "role": "test",
+      "testedBy": 0,
+      "unresolvedSites": 0
+    }
+  ],
+  "doors": [
+    {
+      "checksCount": 3,
+      "commands": [
+        {
+          "job": "verify",
+          "step": "Atlas check",
+          "text": "npx --yes @dogfood-lab/atlas@1.20.0 check"
+        },
+        {
+          "job": "verify",
+          "step": "4",
+          "text": "npm ci"
+        },
+        {
+          "job": "verify",
+          "step": "Verify (typecheck + tests)",
+          "text": "npm run verify"
+        },
+        {
+          "job": "verify",
+          "step": "Build emit + pack shape",
+          "text": "set -euo pipefail\nnpm run build\nfor f in dist/cli.js dist/index.js dist/index.d.ts dist/cli.js.map dist/index.js.map dist/index.d.ts.map; do\n  if [ ! -f \"$f\" ]; then\n    echo \"::error::missing $f after npm run build\"\n    exit 1\n  fi\ndone\nnpm pack --dry-run --json > \"${RUNNER_TEMP}/pack.json\"\ncat \"${RUNNER_TEMP}/pack.json\"\nmissing=0\nfor req in LICENSE CHANGELOG.md; do\n  if ! jq -e --arg p \"$req\" '\n    (if type == \"array\" then .[0] else . end).files\n    | map(.path | gsub(\"\\\\\\\\\"; \"/\"))\n    | index($p)\n  ' \"${RUNNER_TEMP}/pack.json\" >/dev/null; then\n    echo \"::error::npm pack omits ${req} (Shipcheck D5)\"\n    missing=1\n  fi\ndone\nif [ \"$missing\" -ne 0 ]; then\n  exit 1\nfi\n"
+        },
+        {
+          "job": "verify",
+          "step": "Audit dependencies (consumer surface — blocking)",
+          "text": "npm audit --omit=dev --audit-level=high"
+        },
+        {
+          "job": "verify",
+          "step": "Audit dependencies (developer surface — advisory)",
+          "text": "npm audit --audit-level=high"
+        }
+      ],
+      "elsewhere": [],
+      "file": ".github/workflows/ci.yml",
+      "landings": [],
+      "mentions": [
+        {
+          "job": "verify",
+          "path": "tsconfig.json"
+        },
+        {
+          "job": "verify",
+          "path": "tsconfig.test.json"
+        }
+      ],
+      "name": "CI",
+      "permissions": [
+        "contents:read"
+      ],
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "root",
+          "depth": 0,
+          "files": 2
+        },
+        {
+          "boundary": "src",
+          "depth": 0,
+          "files": 27
+        },
+        {
+          "boundary": "test",
+          "depth": 0,
+          "files": 4
+        }
+      ],
+      "readers": [],
+      "runs": [
+        {
+          "job": "verify",
+          "path": "CHANGELOG.md",
+          "runKind": "checks"
+        },
+        {
+          "job": "verify",
+          "path": "LICENSE",
+          "runKind": "checks"
+        },
+        {
+          "directory": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/",
+          "runKind": "checks",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/cli.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/coverage.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/critic.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/driver.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/openrouter.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/panel.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/player.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/stats.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/stdio-game.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/verifiers.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "test/pty-driver.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "test/pty-unavailable.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "test/rpc-driver.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "test/run.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        }
+      ],
+      "runsCount": 17,
+      "secrets": [],
+      "sends": {
+        "deploysPages": false,
+        "dispatchesTo": [],
+        "opensIssues": false,
+        "opensIssuesOnFailure": false,
+        "opensPullRequests": false,
+        "publishes": false,
+        "publishesTo": [],
+        "releases": false
+      },
+      "stages": [],
+      "triggers": [
+        {
+          "event": "pull_request",
+          "paths": [
+            ".github/workflows/**",
+            "atlas/**",
+            "package-lock.json",
+            "package.json",
+            "src/**",
+            "test/**",
+            "tsconfig*.json",
+            "vitest.config.ts"
+          ]
+        },
+        {
+          "branches": [
+            "main"
+          ],
+          "event": "push",
+          "paths": [
+            ".github/workflows/**",
+            "atlas/**",
+            "package-lock.json",
+            "package.json",
+            "src/**",
+            "test/**",
+            "tsconfig*.json",
+            "vitest.config.ts"
+          ]
+        },
+        {
+          "event": "workflow_dispatch"
+        }
+      ],
+      "uses": [
+        "actions/checkout",
+        "actions/setup-node"
+      ],
+      "usesWorkflowToken": false
+    },
+    {
+      "checksCount": 0,
+      "commands": [
+        {
+          "job": "build",
+          "step": "Install site dependencies",
+          "text": "npm ci --ignore-scripts"
+        },
+        {
+          "job": "build",
+          "step": "Build site",
+          "text": "npm run build"
+        }
+      ],
+      "elsewhere": [],
+      "file": ".github/workflows/pages.yml",
+      "landings": [],
+      "mentions": [],
+      "name": "Deploy site to GitHub Pages",
+      "permissions": [
+        "contents:read",
+        "id-token:write",
+        "pages:write"
+      ],
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "site",
+          "depth": 0,
+          "files": 3
+        }
+      ],
+      "readers": [],
+      "runs": [
+        {
+          "job": "build",
+          "matched": true,
+          "path": "site/astro.config.mjs",
+          "runKind": "executes",
+          "via": "astro build"
+        },
+        {
+          "directory": true,
+          "job": "build",
+          "matched": true,
+          "path": "site/src/",
+          "runKind": "executes",
+          "via": "astro build"
+        }
+      ],
+      "runsCount": 2,
+      "secrets": [],
+      "sends": {
+        "deploysPages": true,
+        "dispatchesTo": [],
+        "opensIssues": false,
+        "opensIssuesOnFailure": false,
+        "opensPullRequests": false,
+        "publishes": false,
+        "publishesTo": [],
+        "releases": false
+      },
+      "stages": [],
+      "triggers": [
+        {
+          "branches": [
+            "main"
+          ],
+          "event": "push",
+          "paths": [
+            ".github/workflows/pages.yml",
+            "site/**"
+          ]
+        },
+        {
+          "event": "workflow_dispatch"
+        }
+      ],
+      "uses": [
+        "actions/checkout",
+        "actions/deploy-pages",
+        "actions/setup-node",
+        "actions/upload-pages-artifact"
+      ],
+      "usesWorkflowToken": false
+    },
+    {
+      "checksCount": 0,
+      "commands": [],
+      "elsewhere": [],
+      "file": "package.json",
+      "kind": "command",
+      "landings": [],
+      "mentions": [],
+      "name": "ai-playtest",
+      "permissions": [],
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "src",
+          "depth": 0,
+          "files": 16
+        }
+      ],
+      "readers": [],
+      "runs": [
+        {
+          "path": "src/cli.ts",
+          "runKind": "executes"
+        }
+      ],
+      "runsCount": 1,
+      "secrets": [],
+      "sends": {
+        "deploysPages": false,
+        "dispatchesTo": [],
+        "opensIssues": false,
+        "opensIssuesOnFailure": false,
+        "opensPullRequests": false,
+        "publishes": false,
+        "publishesTo": [],
+        "releases": false
+      },
+      "stages": [],
+      "triggers": [],
+      "uses": [],
+      "usesWorkflowToken": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "test",
+      "fromTests": true,
+      "kind": "file",
+      "to": "src"
+    }
+  ],
+  "generatedFrom": {
+    "commit": "e794ed948b7521688a3f31ab775a8773b8e52880",
+    "tracked": 77
+  },
+  "landings": [
+    {
+      "readers": [
+        {
+          "by": "site/astro.config.mjs",
+          "call": "content-collection",
+          "confidence": "ast"
+        }
+      ],
+      "target": "site/src/content/docs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "site/astro.config.mjs",
+          "call": "autogenerate",
+          "confidence": "ast"
+        }
+      ],
+      "target": "site/src/content/docs/handbook",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "test/run.test.ts",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "test/fixtures/echo-game.mjs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "test/rpc-driver.test.ts",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "test/fixtures/rpc-game.mjs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "test/pty-driver.test.ts",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "test/fixtures/tui-game.mjs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": ".github/workflows/ci.yml"
+        },
+        {
+          "by": "tsconfig.test.json",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "tsconfig.json",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": ".github/workflows/ci.yml"
+        }
+      ],
+      "target": "tsconfig.test.json",
+      "writers": []
+    }
+  ],
+  "overlaps": [],
+  "submodules": [],
+  "symlinks": [],
+  "testFiles": 18,
+  "unassigned": []
+}
