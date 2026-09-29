@@ -49,7 +49,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "root",
-      "qualifyingSourceCommits": 1,
+      "qualifyingSourceCommits": 2,
       "rebaseline": null
     },
     {
@@ -107,8 +107,8 @@
     "definition": "commits is how many commits in the window touch the file, including merges and commits dropped from coupling. lines is added plus deleted in those commits.",
     "files": [
       {
-        "commits": 3,
-        "lines": 250,
+        "commits": 4,
+        "lines": 263,
         "path": ".github/workflows/ci.yml"
       },
       {
@@ -187,6 +187,31 @@
         "path": "SHIP_GATE.md"
       },
       {
+        "commits": 1,
+        "lines": 77,
+        "path": "atlas/README.md"
+      },
+      {
+        "commits": 1,
+        "lines": 26,
+        "path": "atlas/boundaries.yaml"
+      },
+      {
+        "commits": 1,
+        "lines": 190,
+        "path": "atlas/page.json"
+      },
+      {
+        "commits": 1,
+        "lines": 545,
+        "path": "atlas/statistics.json"
+      },
+      {
+        "commits": 1,
+        "lines": 2385,
+        "path": "atlas/structure.json"
+      },
+      {
         "commits": 10,
         "lines": 592,
         "path": "docs/engine-bridge.md"
@@ -207,13 +232,13 @@
         "path": "docs/research.md"
       },
       {
-        "commits": 2,
-        "lines": 1737,
+        "commits": 3,
+        "lines": 2577,
         "path": "package-lock.json"
       },
       {
-        "commits": 4,
-        "lines": 55,
+        "commits": 5,
+        "lines": 56,
         "path": "package.json"
       },
       {
@@ -487,23 +512,23 @@
         "path": "tsconfig.test.json"
       },
       {
-        "commits": 3,
-        "lines": 68,
+        "commits": 4,
+        "lines": 81,
         "path": "vitest.config.ts"
       }
     ]
   },
   "confidence": {
     "level": "low",
-    "reason": "fewer than 30 qualifying commits in the window, and fewer than 20 source files reach 10 revisions"
+    "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
   },
-  "generatedAt": "2026-09-25T02:12:54.230Z",
+  "generatedAt": "2026-09-29T21:59:32.672Z",
   "generatedFrom": {
-    "commit": "e794ed948b7521688a3f31ab775a8773b8e52880"
+    "commit": "47f5e7a2f8fec94ecd071053684a15ebf421153e"
   },
   "pairs": [],
   "parameters": {
-    "appliedChangesetLimit": 19.25,
+    "appliedChangesetLimit": 20.75,
     "changeset": 50,
     "changesetFraction": 0.25,
     "cohesionDrop": 0.2,
@@ -512,16 +537,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "both",
-    "headDate": "2026-09-15T02:23:05-04:00",
-    "inScopeFiles": 77,
+    "headDate": "2026-09-29T17:59:24-04:00",
+    "inScopeFiles": 83,
     "pinnedStart": null,
-    "priorFloor": null,
-    "qualifyingCommits": 13,
+    "priorFloor": "fallen",
+    "qualifyingCommits": 15,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-03-19T06:23:05.000Z",
+    "since": "2026-04-02T21:59:24.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

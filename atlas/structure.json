@@ -9,7 +9,7 @@
       "externals": 0,
       "files": [
         {
-          "hash": "4df6ef4548249156d2665c9757cee448cb860484379af62fc8ed1deec2ec1f2f",
+          "hash": "b0537401c500740ee8a8fe28f34797eb7363c6704f2aaa1c4f61058ca989dfd3",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -127,11 +127,15 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "4f3a0430a6127d9dffc2f8036a9b5b6c232895f7d37b94cff7877432cb6e2dc1",
+          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "path": "codecov.yml"
+        },
+        {
+          "hash": "58b37aa68cdfdff88bcfa3e966380c266322b2b2ea07f7033c1688fa523ff82a",
           "path": "package-lock.json"
         },
         {
-          "hash": "b2f8b4c0ce2981e1f36af1a4a33d85d27ff078e2bd05055f31e88cd1ca63080e",
+          "hash": "d2d730e5fd743d1b8510ed283246fa243121f4c62c6432cd9d07a2510a11b8f0",
           "path": "package.json"
         },
         {
@@ -143,7 +147,7 @@
           "path": "tsconfig.test.json"
         },
         {
-          "hash": "f1f647636cb73197cfc4a447578962e02957d92c78ad8558d847c88d899ed19e",
+          "hash": "16f346b2dc19ca06e93c5622fe99eb9fe6314f7e2f2770b2e6aa03c92a35c445",
           "path": "vitest.config.ts"
         }
       ],
@@ -155,7 +159,7 @@
       "origin": "authored",
       "role": "config",
       "testedBy": 1,
-      "unresolvedSites": 1
+      "unresolvedSites": 0
     },
     {
       "dynamicReads": 0,
@@ -1961,7 +1965,8 @@
       ],
       "name": "CI",
       "permissions": [
-        "contents:read"
+        "contents:read",
+        "id-token:write"
       ],
       "pushes": false,
       "reach": [
@@ -2119,6 +2124,7 @@
           "paths": [
             ".github/workflows/**",
             "atlas/**",
+            "codecov.yml",
             "package-lock.json",
             "package.json",
             "src/**",
@@ -2135,6 +2141,7 @@
           "paths": [
             ".github/workflows/**",
             "atlas/**",
+            "codecov.yml",
             "package-lock.json",
             "package.json",
             "src/**",
@@ -2149,7 +2156,10 @@
       ],
       "uses": [
         "actions/checkout",
-        "actions/setup-node"
+        "actions/download-artifact",
+        "actions/setup-node",
+        "actions/upload-artifact",
+        "codecov/codecov-action"
       ],
       "usesWorkflowToken": false
     },
@@ -2291,8 +2301,8 @@
     }
   ],
   "generatedFrom": {
-    "commit": "e794ed948b7521688a3f31ab775a8773b8e52880",
-    "tracked": 77
+    "commit": "47f5e7a2f8fec94ecd071053684a15ebf421153e",
+    "tracked": 78
   },
   "landings": [
     {
