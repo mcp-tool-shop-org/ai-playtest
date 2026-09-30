@@ -19,36 +19,46 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 1,
-      "changed": 4,
+      "added": 0,
+      "changed": 1,
       "moved": 0,
-      "parts": 2,
+      "parts": 1,
       "removed": 0
     },
     "items": [
       {
         "kind": "door",
-        "sentence": "CI's pull request trigger now also names `codecov.yml`.",
+        "sentence": "CI now also builds src/cli.ts, src/config.ts, src/coverage.ts and 14 more.",
         "subjects": [
-          ".github/workflows/ci.yml"
-        ]
-      },
-      {
-        "kind": "door",
-        "sentence": "CI's push trigger now also names `codecov.yml`.",
-        "subjects": [
-          ".github/workflows/ci.yml"
+          ".github/workflows/ci.yml",
+          "src/cli.ts",
+          "src/config.ts",
+          "src/coverage.ts",
+          "src/critic.ts",
+          "src/driver.ts",
+          "src/index.ts",
+          "src/openrouter.ts",
+          "src/panel.ts",
+          "src/player.ts",
+          "src/pty-driver.ts",
+          "src/report.ts",
+          "src/rpc-driver.ts",
+          "src/run.ts",
+          "src/stats.ts",
+          "src/stdio-driver.ts",
+          "src/stdio-game.ts",
+          "src/verifiers.ts"
         ]
       },
       {
         "kind": "counts",
-        "sentence": "1 file added and 4 changed content, across 2 parts.",
+        "sentence": "1 file changed content, across 1 part.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "e794ed948b7521688a3f31ab775a8773b8e52880",
-      "generatedAt": "2026-09-25T02:12:54.230Z"
+      "commit": "47f5e7a2f8fec94ecd071053684a15ebf421153e",
+      "generatedAt": "2026-09-29T21:59:32.672Z"
     },
     "unchanged": false
   },
@@ -57,11 +67,30 @@
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "47f5e7a2f8fec94ecd071053684a15ebf421153e",
+  "commit": "94e69fcb76b15b0d76c5d547224c06890b1f9912",
   "defaultBranch": "main",
-  "derived": "6 parts, mostly TypeScript (34 files) and JavaScript (4). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. People run ai-playtest.",
+  "derived": "6 parts, mostly TypeScript (34 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
     {
+      "builds": [
+        "src/cli.ts",
+        "src/config.ts",
+        "src/coverage.ts",
+        "src/critic.ts",
+        "src/driver.ts",
+        "src/index.ts",
+        "src/openrouter.ts",
+        "src/panel.ts",
+        "src/player.ts",
+        "src/pty-driver.ts",
+        "src/report.ts",
+        "src/rpc-driver.ts",
+        "src/run.ts",
+        "src/stats.ts",
+        "src/stdio-driver.ts",
+        "src/stdio-game.ts",
+        "src/verifiers.ts"
+      ],
       "checks": [
         "CHANGELOG.md",
         "LICENSE",
@@ -109,7 +138,9 @@
       ],
       "runsCount": 14,
       "runsMore": 11,
-      "sends": [],
+      "sends": [
+        "uploads coverage to Codecov"
+      ],
       "stages": [],
       "triggers": [
         "on a pull request touching 9 paths",
@@ -130,7 +161,7 @@
         {
           "boundary": "site",
           "depth": 0,
-          "files": 3
+          "files": 5
         }
       ],
       "runs": [
@@ -149,6 +180,7 @@
       ]
     },
     {
+      "builtFrom": "the repository root",
       "checks": [],
       "checksCount": 0,
       "checksMore": 0,
@@ -157,6 +189,7 @@
       "kind": "command",
       "landings": [],
       "name": "ai-playtest",
+      "privatePackage": true,
       "pushes": false,
       "reach": [
         {
@@ -172,15 +205,17 @@
       "runsMore": 0,
       "sends": [],
       "stages": [],
-      "triggers": []
+      "triggers": [],
+      "unshipped": true
     }
   ],
   "duplicates": [],
   "duplicatesLead": null,
   "duplicatesNote": [],
   "edges": [],
+  "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-09-29T21:59:32.672Z",
+  "generatedAt": "2026-09-30T20:06:42.779Z",
   "limits": [
     "2 writes and 1 read use paths built at run time and are not named here.",
     "11 writes and 8 reads go to a path their caller passes, not to this repository.",
@@ -200,11 +235,16 @@
   "readers": [],
   "repo": "mcp-tool-shop-org/ai-playtest",
   "sequences": [],
-  "startDoor": "package.json#ai-playtest",
+  "startDoor": ".github/workflows/ci.yml",
   "startHere": [
-    "src/cli.ts"
+    ".github/workflows/ci.yml",
+    "src/cli.ts",
+    "src/config.ts",
+    "src/openrouter.ts",
+    "src/stats.ts",
+    "src/run.ts",
+    "src/report.ts"
   ],
-  "startReason": "This path follows ai-playtest (a command people run) from its entry, since CI runs only tests.",
   "summary": null,
   "summaryFrom": null,
   "testFiles": 18,

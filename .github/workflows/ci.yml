@@ -86,7 +86,7 @@ jobs:
           node-version: '22'
 
       - name: Atlas check
-        run: npx --yes @dogfood-lab/atlas@1.20.0 check
+        run: npx --yes @dogfood-lab/atlas@1.24.0 check
 
       # Node 20 is the floor declared in package.json engines. One cell holds
       # that floor honestly; the author develops on 22, so this is the version

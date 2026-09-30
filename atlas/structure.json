@@ -9,7 +9,7 @@
       "externals": 0,
       "files": [
         {
-          "hash": "b0537401c500740ee8a8fe28f34797eb7363c6704f2aaa1c4f61058ca989dfd3",
+          "hash": "8ff3be542f1081e2a8af779f3dae0b9869f17faf1029bff5ab1ba824c2fdc127",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -147,6 +147,12 @@
           "path": "tsconfig.test.json"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "catch",
+              "line": 30
+            }
+          ],
           "hash": "16f346b2dc19ca06e93c5622fe99eb9fe6314f7e2f2770b2e6aa03c92a35c445",
           "path": "vitest.config.ts"
         }
@@ -190,6 +196,7 @@
           "path": "site/src/assets/logo.png"
         },
         {
+          "constantOnly": true,
           "hash": "ee756dfba4122d2acc94a39b2555d9f200fff56a87a8c0b10f9cd01df26a8b62",
           "path": "site/src/content.config.ts"
         },
@@ -223,9 +230,18 @@
         },
         {
           "hash": "4fb84a646c4d833c33f4058e1ed1775849e855c65e5adb7e45d2a633674bd603",
+          "importOrder": [
+            "site/src/styles/global.css",
+            "site/src/site-config.ts"
+          ],
+          "importsFiles": [
+            "site/src/site-config.ts",
+            "site/src/styles/global.css"
+          ],
           "path": "site/src/pages/index.astro"
         },
         {
+          "constantOnly": true,
           "hash": "9afde3f3868ffd8e5806f29a23a698916da3a5cf6c561f5997b6d8aa7f42e692",
           "path": "site/src/site-config.ts"
         },
@@ -267,7 +283,8 @@
           "importsFiles": [
             "src/cli.ts"
           ],
-          "path": "src/cli.test.ts"
+          "path": "src/cli.test.ts",
+          "testFramework": "vitest"
         },
         {
           "entry": "main",
@@ -278,6 +295,33 @@
             "parseRuns",
             "parseTurns",
             "usage"
+          ],
+          "failurePaths": [
+            {
+              "in": "main",
+              "kind": "catch",
+              "line": 211
+            },
+            {
+              "in": "main",
+              "kind": "throw",
+              "line": 213
+            },
+            {
+              "in": "main",
+              "kind": "catch",
+              "line": 250
+            },
+            {
+              "in": "main",
+              "kind": "catch",
+              "line": 315
+            },
+            {
+              "in": "runningAsCli",
+              "kind": "catch",
+              "line": 325
+            }
           ],
           "hash": "37a75d01f077320c9e75e22633731bbe9a46e5bf3ca783cddd71cfe465b18d79",
           "importsFiles": [
@@ -754,6 +798,258 @@
             "validateDriver",
             "validateVerifiers"
           ],
+          "failurePaths": [
+            {
+              "in": "readOwnVersion",
+              "kind": "catch",
+              "line": 20
+            },
+            {
+              "in": "rejectUnknown",
+              "kind": "throw",
+              "line": 165
+            },
+            {
+              "in": "asPositiveInt",
+              "kind": "throw",
+              "line": 174
+            },
+            {
+              "in": "asNonNegInt",
+              "kind": "throw",
+              "line": 182
+            },
+            {
+              "in": "asFiniteNumber",
+              "kind": "throw",
+              "line": 190
+            },
+            {
+              "in": "asStringArray",
+              "kind": "throw",
+              "line": 198
+            },
+            {
+              "in": "asRecord",
+              "kind": "throw",
+              "line": 205
+            },
+            {
+              "in": "resolveEnv",
+              "kind": "throw",
+              "line": 216
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 232
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 238
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 255
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 267
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 270
+            },
+            {
+              "in": "validateDriver",
+              "kind": "throw",
+              "line": 280
+            },
+            {
+              "in": "readSchemaVersion",
+              "kind": "throw",
+              "line": 296
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 303
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 308
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 312
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 321
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 323
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 328
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 331
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 337
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 343
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 345
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 351
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 356
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 357
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 362
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 363
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 368
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 373
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 374
+            },
+            {
+              "in": "validateConfig",
+              "kind": "catch",
+              "line": 379
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 379
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 382
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 386
+            },
+            {
+              "in": "validateConfig",
+              "kind": "catch",
+              "line": 387
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 387
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 390
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 393
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 399
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 404
+            },
+            {
+              "in": "validateVerifiers",
+              "kind": "throw",
+              "line": 454
+            },
+            {
+              "in": "validateVerifiers",
+              "kind": "catch",
+              "line": 460
+            },
+            {
+              "in": "validateVerifiers",
+              "kind": "throw",
+              "line": 460
+            },
+            {
+              "in": "loadConfig",
+              "kind": "catch",
+              "line": 481
+            },
+            {
+              "in": "loadConfig",
+              "kind": "throw",
+              "line": 482
+            },
+            {
+              "in": "loadConfig",
+              "kind": "catch",
+              "line": 487
+            },
+            {
+              "in": "loadConfig",
+              "kind": "throw",
+              "line": 488
+            }
+          ],
           "hash": "654d6d2afe93fc270451ee7ec212e60593ab8b5b56a903657347f0a64e4d76c7",
           "importsFiles": [
             "src/verifiers.ts"
@@ -767,7 +1063,8 @@
             "src/coverage.ts",
             "src/player.ts"
           ],
-          "path": "src/coverage.test.ts"
+          "path": "src/coverage.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -781,6 +1078,13 @@
             "renderCoverageLine",
             "turnStateKey"
           ],
+          "failurePaths": [
+            {
+              "in": "turnStateKey",
+              "kind": "catch",
+              "line": 70
+            }
+          ],
           "hash": "7e965cd232b1c75865ef5e5204ac932a141509d462a660d8736d826002c4a486",
           "importsFiles": [
             "src/player.ts"
@@ -793,7 +1097,8 @@
             "src/critic.ts",
             "src/openrouter.ts"
           ],
-          "path": "src/critic.test.ts"
+          "path": "src/critic.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -804,7 +1109,69 @@
             "parseCritique",
             "renderTranscript"
           ],
+          "failurePaths": [
+            {
+              "in": "clipState",
+              "kind": "catch",
+              "line": 35
+            },
+            {
+              "in": "strictBool",
+              "kind": "throw",
+              "line": 158
+            },
+            {
+              "in": "parseCritique",
+              "kind": "throw",
+              "line": 177
+            },
+            {
+              "in": "parseCritique",
+              "kind": "catch",
+              "line": 181
+            },
+            {
+              "in": "parseCritique",
+              "kind": "throw",
+              "line": 182
+            },
+            {
+              "in": "parseCritique",
+              "kind": "throw",
+              "line": 188
+            },
+            {
+              "in": "parseCritique",
+              "kind": "throw",
+              "line": 206
+            },
+            {
+              "in": "critique",
+              "kind": "catch",
+              "line": 268
+            },
+            {
+              "in": "critique",
+              "kind": "throw",
+              "line": 277
+            },
+            {
+              "in": "critique",
+              "kind": "catch",
+              "line": 285
+            },
+            {
+              "in": "critique",
+              "kind": "throw",
+              "line": 289
+            }
+          ],
           "hash": "0b3876f69b8a66864988329da2fdd311623c3ffcbe04cbcc6fb9d0b3b48bf14b",
+          "importOrder": [
+            "src/openrouter.ts",
+            "src/config.ts",
+            "src/player.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -817,7 +1184,8 @@
           "importsFiles": [
             "src/driver.ts"
           ],
-          "path": "src/driver.test.ts"
+          "path": "src/driver.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -826,11 +1194,50 @@
             "describeActions",
             "validateAction"
           ],
+          "failurePaths": [
+            {
+              "in": "actionToLine",
+              "kind": "throw",
+              "line": 130
+            },
+            {
+              "in": "validateAction",
+              "kind": "throw",
+              "line": 176
+            },
+            {
+              "in": "validateAction",
+              "kind": "throw",
+              "line": 185
+            },
+            {
+              "in": "validateAction",
+              "kind": "throw",
+              "line": 193
+            }
+          ],
           "hash": "203830e1f6469d1695c600a14e9c469bbaf9cde7954923279388b205d2d850bc",
           "path": "src/driver.ts"
         },
         {
           "hash": "c0340aac8742933d060a51724e2016a9ac4b25acb92cb2c96c08286a30870070",
+          "importOrder": [
+            "src/config.ts",
+            "src/openrouter.ts",
+            "src/stdio-game.ts",
+            "src/player.ts",
+            "src/critic.ts",
+            "src/run.ts",
+            "src/report.ts",
+            "src/verifiers.ts",
+            "src/stats.ts",
+            "src/driver.ts",
+            "src/pty-driver.ts",
+            "src/coverage.ts",
+            "src/rpc-driver.ts",
+            "src/stdio-driver.ts",
+            "src/panel.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/coverage.ts",
@@ -856,11 +1263,49 @@
           "importsFiles": [
             "src/openrouter.ts"
           ],
-          "path": "src/openrouter.test.ts"
+          "path": "src/openrouter.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
             "createOpenRouterClient"
+          ],
+          "failurePaths": [
+            {
+              "in": "createOpenRouterClient",
+              "kind": "throw",
+              "line": 164
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "throw",
+              "line": 189
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "catch",
+              "line": 240
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "catch",
+              "line": 262
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "throw",
+              "line": 278
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "throw",
+              "line": 295
+            },
+            {
+              "in": "createOpenRouterClient",
+              "kind": "throw",
+              "line": 312
+            }
           ],
           "hash": "6bda7f69d076be97942c08871413a0fc9acb572e07ebc3f96bed64a7c9e4a986",
           "path": "src/openrouter.ts",
@@ -887,17 +1332,30 @@
         },
         {
           "hash": "b532de450754a158488937cb16af1d57e55aa4fcb1ebdee6e9db551bb266c223",
+          "importOrder": [
+            "src/panel.ts",
+            "src/config.ts",
+            "src/critic.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/critic.ts",
             "src/panel.ts"
           ],
-          "path": "src/panel.test.ts"
+          "path": "src/panel.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
             "aggregatePanel",
             "pickJurors"
+          ],
+          "failurePaths": [
+            {
+              "in": "majority",
+              "kind": "throw",
+              "line": 84
+            }
           ],
           "hash": "3f109bd593aeb0ee1d72e4120780d68f21e9e9993ee751565f790daf465ac0ce",
           "importsFiles": [
@@ -909,11 +1367,16 @@
         },
         {
           "hash": "28dc09dc520134f6fcc72e4f45aeb96fd462e6bc9d94830a0bb9ca074040fd4b",
+          "importOrder": [
+            "src/player.ts",
+            "src/openrouter.ts"
+          ],
           "importsFiles": [
             "src/openrouter.ts",
             "src/player.ts"
           ],
-          "path": "src/player.test.ts"
+          "path": "src/player.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -932,6 +1395,38 @@
         {
           "exports": [
             "createPtyDriver"
+          ],
+          "failurePaths": [
+            {
+              "in": "loadPty",
+              "kind": "throw",
+              "line": 120
+            },
+            {
+              "in": "loadPty",
+              "kind": "catch",
+              "line": 122
+            },
+            {
+              "in": "loadPty",
+              "kind": "throw",
+              "line": 123
+            },
+            {
+              "in": "createPtyDriver",
+              "kind": "catch",
+              "line": 188
+            },
+            {
+              "in": "createPtyDriver",
+              "kind": "throw",
+              "line": 191
+            },
+            {
+              "in": "stop",
+              "kind": "catch",
+              "line": 292
+            }
           ],
           "hash": "43dddff1e0782c68aa9a684c7bb661bd46337221f8276b9fb7cb87682549770a",
           "importsFiles": [
@@ -956,6 +1451,88 @@
             "writeAggregateFromRuns",
             "writeAggregateReport",
             "writeReport"
+          ],
+          "failurePaths": [
+            {
+              "in": "readRun",
+              "kind": "catch",
+              "line": 57
+            },
+            {
+              "in": "readRun",
+              "kind": "throw",
+              "line": 60
+            },
+            {
+              "in": "readRun",
+              "kind": "catch",
+              "line": 70
+            },
+            {
+              "in": "readRun",
+              "kind": "catch",
+              "line": 77
+            },
+            {
+              "in": "readRun",
+              "kind": "catch",
+              "line": 113
+            },
+            {
+              "in": "assertReadableFormat",
+              "kind": "throw",
+              "line": 174
+            },
+            {
+              "in": "readOptional",
+              "kind": "catch",
+              "line": 496
+            },
+            {
+              "in": "sidecarIsAggregate",
+              "kind": "catch",
+              "line": 507
+            },
+            {
+              "in": "listRunSiblings",
+              "kind": "catch",
+              "line": 530
+            },
+            {
+              "in": "listRunSiblings",
+              "kind": "catch",
+              "line": 538
+            },
+            {
+              "in": "assertExistingSidecarReadable",
+              "kind": "catch",
+              "line": 597
+            },
+            {
+              "in": "assertExistingSidecarReadable",
+              "kind": "throw",
+              "line": 598
+            },
+            {
+              "in": "writeReport",
+              "kind": "throw",
+              "line": 605
+            },
+            {
+              "in": "writeReport",
+              "kind": "throw",
+              "line": 615
+            },
+            {
+              "in": "writeReport",
+              "kind": "throw",
+              "line": 622
+            },
+            {
+              "in": "writeReport",
+              "kind": "throw",
+              "line": 627
+            }
           ],
           "hash": "fabe64a71b7260ac695ac11ea80a72f240f248819f3d869288741ab9586c6d04",
           "importsFiles": [
@@ -1067,6 +1644,38 @@
           "exports": [
             "createRpcDriver"
           ],
+          "failurePaths": [
+            {
+              "in": "createRpcDriver",
+              "kind": "catch",
+              "line": 140
+            },
+            {
+              "in": "createRpcDriver",
+              "kind": "throw",
+              "line": 229
+            },
+            {
+              "in": "createRpcDriver",
+              "kind": "catch",
+              "line": 234
+            },
+            {
+              "in": "createRpcDriver",
+              "kind": "throw",
+              "line": 237
+            },
+            {
+              "in": "createRpcDriver",
+              "kind": "throw",
+              "line": 238
+            },
+            {
+              "in": "stop",
+              "kind": "catch",
+              "line": 252
+            }
+          ],
           "hash": "a891798856ac5c4491acc9b89b7f767c46912e2313749b5e84cc22b34fc75bed",
           "importsFiles": [
             "src/driver.ts"
@@ -1082,6 +1691,123 @@
             "runSeat",
             "seatDir",
             "toAction"
+          ],
+          "failurePaths": [
+            {
+              "in": "toAction",
+              "kind": "throw",
+              "line": 94
+            },
+            {
+              "in": "toAction",
+              "kind": "throw",
+              "line": 103
+            },
+            {
+              "in": "withTurnRetries",
+              "kind": "catch",
+              "line": 140
+            },
+            {
+              "in": "withTurnRetries",
+              "kind": "throw",
+              "line": 145
+            },
+            {
+              "in": "safeSegment",
+              "kind": "throw",
+              "line": 155
+            },
+            {
+              "in": "createDriver",
+              "kind": "throw",
+              "line": 204
+            },
+            {
+              "in": "critiqueJuror",
+              "kind": "catch",
+              "line": 222
+            },
+            {
+              "in": "critiqueJuror",
+              "kind": "catch",
+              "line": 225
+            },
+            {
+              "in": "trySeatDir",
+              "kind": "catch",
+              "line": 234
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 336
+            },
+            {
+              "in": "runSeat",
+              "kind": "throw",
+              "line": 337
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 390
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 399
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 427
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 462
+            },
+            {
+              "in": "runSeat",
+              "kind": "catch",
+              "line": 468
+            },
+            {
+              "in": "runSeat",
+              "kind": "throw",
+              "line": 479
+            },
+            {
+              "in": "runSeat",
+              "kind": "throw",
+              "line": 480
+            },
+            {
+              "in": "runSerialRpc",
+              "kind": "catch",
+              "line": 592
+            },
+            {
+              "in": "runSerialRpc",
+              "kind": "catch",
+              "line": 599
+            },
+            {
+              "in": "runSerialRpc",
+              "kind": "catch",
+              "line": 620
+            },
+            {
+              "in": "runSerialRpc",
+              "kind": "catch",
+              "line": 632
+            },
+            {
+              "in": "runSerialRpc",
+              "kind": "catch",
+              "line": 641
+            }
           ],
           "hash": "e48d8f6375311087cab85db6d15439b6418042e5df7a6b1aa04e7b09110cac20",
           "importsFiles": [
@@ -1744,7 +2470,8 @@
           "importsFiles": [
             "src/stats.ts"
           ],
-          "path": "src/stats.test.ts"
+          "path": "src/stats.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -1767,7 +2494,19 @@
           "exports": [
             "createStdioDriver"
           ],
+          "failurePaths": [
+            {
+              "in": "start",
+              "kind": "throw",
+              "line": 65
+            }
+          ],
           "hash": "3c305fefaaa4508f82111a565d18064348ea30fc5c292fd19502b95597f6a762",
+          "importOrder": [
+            "src/config.ts",
+            "src/stdio-game.ts",
+            "src/driver.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/driver.ts",
@@ -1777,17 +2516,29 @@
         },
         {
           "hash": "5f86c1ee4ec07337fb91ff2e9af5bffe28b9dd931474d7851c9e89d0b24c4960",
+          "importOrder": [
+            "src/stdio-game.ts",
+            "src/config.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/stdio-game.ts"
           ],
-          "path": "src/stdio-game.test.ts"
+          "path": "src/stdio-game.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
             "buildChildEnv",
             "spawnGame",
             "stripAnsi"
+          ],
+          "failurePaths": [
+            {
+              "in": "send",
+              "kind": "catch",
+              "line": 187
+            }
           ],
           "hash": "31124f1f096c1877faa679568b9b55a16955d279dd5d52f665789171cddc1dc5",
           "importsFiles": [
@@ -1797,11 +2548,16 @@
         },
         {
           "hash": "406525984b8118f1dafd01d417608990d9377b1461dfa3b0202216914a207760",
+          "importOrder": [
+            "src/verifiers.ts",
+            "src/player.ts"
+          ],
           "importsFiles": [
             "src/player.ts",
             "src/verifiers.ts"
           ],
-          "path": "src/verifiers.test.ts"
+          "path": "src/verifiers.test.ts",
+          "testFramework": "vitest"
         },
         {
           "exports": [
@@ -1815,6 +2571,18 @@
             "renderAbsorbingLine",
             "runVerifiers",
             "tarjanScc"
+          ],
+          "failurePaths": [
+            {
+              "in": "entityAppearanceGrid",
+              "kind": "catch",
+              "line": 352
+            },
+            {
+              "in": "entityAppearanceGrid",
+              "kind": "catch",
+              "line": 372
+            }
           ],
           "hash": "ecd52cf851dbf947494dffd2276abecbb851b74a0654732cba72239f041c0188",
           "importsFiles": [
@@ -1842,6 +2610,9 @@
       "outsideReads": 8,
       "outsideWrites": 11,
       "role": "code",
+      "testRunners": [
+        "vitest"
+      ],
       "testedBy": 14,
       "unresolvedSites": 0
     },
@@ -1871,26 +2642,47 @@
             "src/pty-driver.ts",
             "src/stdio-game.ts"
           ],
-          "path": "test/pty-driver.test.ts"
+          "path": "test/pty-driver.test.ts",
+          "testFramework": "vitest"
         },
         {
           "hash": "97cb2deb1af4d367f91a6e0e91cdde7c291ac3baa24b9794f938c228ac006886",
           "importsFiles": [
             "src/pty-driver.ts"
           ],
-          "path": "test/pty-unavailable.test.ts"
+          "path": "test/pty-unavailable.test.ts",
+          "testFramework": "vitest"
         },
         {
           "hash": "7f41662625bfebf2421c57acfc2a32624d1a195f66e081e6388cc8ce9cee60fa",
+          "importOrder": [
+            "src/rpc-driver.ts",
+            "src/config.ts",
+            "src/run.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/rpc-driver.ts",
             "src/run.ts"
           ],
-          "path": "test/rpc-driver.test.ts"
+          "path": "test/rpc-driver.test.ts",
+          "spawns": [
+            "test/fixtures/rpc-game.mjs"
+          ],
+          "testFramework": "vitest"
         },
         {
           "hash": "61e4a0871f133d6a1939f262bce6ab68648a0d4cf60c4aed8e79cee9cd0e549d",
+          "importOrder": [
+            "src/config.ts",
+            "src/run.ts",
+            "src/report.ts",
+            "src/driver.ts",
+            "src/openrouter.ts",
+            "src/stdio-game.ts",
+            "src/stdio-driver.ts",
+            "src/pty-driver.ts"
+          ],
           "importsFiles": [
             "src/config.ts",
             "src/driver.ts",
@@ -1901,7 +2693,8 @@
             "src/stdio-driver.ts",
             "src/stdio-game.ts"
           ],
-          "path": "test/run.test.ts"
+          "path": "test/run.test.ts",
+          "testFramework": "vitest"
         }
       ],
       "globs": [
@@ -1911,6 +2704,9 @@
       "name": "test",
       "origin": "authored",
       "role": "test",
+      "testRunners": [
+        "vitest"
+      ],
       "testedBy": 0,
       "unresolvedSites": 0
     }
@@ -1920,38 +2716,117 @@
       "checksCount": 3,
       "commands": [
         {
+          "dir": "",
           "job": "verify",
-          "step": "Atlas check",
-          "text": "npx --yes @dogfood-lab/atlas@1.20.0 check"
+          "programs": [
+            "npx"
+          ],
+          "step": "Atlas check"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "4",
-          "text": "npm ci"
+          "programs": [
+            "npm"
+          ],
+          "step": "4"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Verify (typecheck + tests)",
-          "text": "npm run verify"
+          "programs": [
+            "npm"
+          ],
+          "step": "Verify (typecheck + tests)"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Build emit + pack shape",
-          "text": "set -euo pipefail\nnpm run build\nfor f in dist/cli.js dist/index.js dist/index.d.ts dist/cli.js.map dist/index.js.map dist/index.d.ts.map; do\n  if [ ! -f \"$f\" ]; then\n    echo \"::error::missing $f after npm run build\"\n    exit 1\n  fi\ndone\nnpm pack --dry-run --json > \"${RUNNER_TEMP}/pack.json\"\ncat \"${RUNNER_TEMP}/pack.json\"\nmissing=0\nfor req in LICENSE CHANGELOG.md; do\n  if ! jq -e --arg p \"$req\" '\n    (if type == \"array\" then .[0] else . end).files\n    | map(.path | gsub(\"\\\\\\\\\"; \"/\"))\n    | index($p)\n  ' \"${RUNNER_TEMP}/pack.json\" >/dev/null; then\n    echo \"::error::npm pack omits ${req} (Shipcheck D5)\"\n    missing=1\n  fi\ndone\nif [ \"$missing\" -ne 0 ]; then\n  exit 1\nfi\n"
+          "programs": [
+            "cat",
+            "echo",
+            "jq",
+            "npm"
+          ],
+          "step": "Build emit + pack shape"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Audit dependencies (consumer surface — blocking)",
-          "text": "npm audit --omit=dev --audit-level=high"
+          "programs": [
+            "npm"
+          ],
+          "step": "Audit dependencies (consumer surface — blocking)"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Audit dependencies (developer surface — advisory)",
-          "text": "npm audit --audit-level=high"
+          "programs": [
+            "npm"
+          ],
+          "step": "Audit dependencies (developer surface — advisory)"
         }
       ],
       "elsewhere": [],
       "file": ".github/workflows/ci.yml",
+      "jobs": [
+        {
+          "basis": "declared",
+          "name": "verify",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ],
+          "setup": [
+            {
+              "ranges": [
+                {
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
+                }
+              ],
+              "step": "Set up Node for the Atlas check",
+              "uses": "actions/setup-node",
+              "version": "22"
+            },
+            {
+              "ranges": [
+                {
+                  "from": "20",
+                  "range": ">=20.0.0 <21.0.0-0"
+                }
+              ],
+              "step": "3",
+              "uses": "actions/setup-node",
+              "version": "20"
+            }
+          ]
+        },
+        {
+          "basis": "declared",
+          "name": "codecov",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ]
+        }
+      ],
       "landings": [],
       "mentions": [
         {
@@ -2014,11 +2889,35 @@
           "via": "vitest vitest.config.ts"
         },
         {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/cli.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/config.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
           "job": "verify",
           "matched": true,
           "path": "src/coverage.test.ts",
           "runKind": "executes",
           "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/coverage.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -2028,11 +2927,35 @@
           "via": "vitest vitest.config.ts"
         },
         {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/critic.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
           "job": "verify",
           "matched": true,
           "path": "src/driver.test.ts",
           "runKind": "executes",
           "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/driver.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/index.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -2042,11 +2965,27 @@
           "via": "vitest vitest.config.ts"
         },
         {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/openrouter.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
           "job": "verify",
           "matched": true,
           "path": "src/panel.test.ts",
           "runKind": "executes",
           "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/panel.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -2056,11 +2995,67 @@
           "via": "vitest vitest.config.ts"
         },
         {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/player.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/pty-driver.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/report.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/rpc-driver.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/run.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
           "job": "verify",
           "matched": true,
           "path": "src/stats.test.ts",
           "runKind": "executes",
           "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/stats.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/stdio-driver.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -2070,11 +3065,27 @@
           "via": "vitest vitest.config.ts"
         },
         {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/stdio-game.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
           "job": "verify",
           "matched": true,
           "path": "src/verifiers.test.ts",
           "runKind": "executes",
           "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/verifiers.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -2105,7 +3116,7 @@
           "via": "tsc tsconfig.test.json"
         }
       ],
-      "runsCount": 17,
+      "runsCount": 34,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -2118,6 +3129,19 @@
         "releases": false
       },
       "stages": [],
+      "tests": [
+        {
+          "config": "vitest.config.ts",
+          "files": 14,
+          "job": "verify",
+          "runner": "vitest",
+          "step": "Verify (typecheck + tests)",
+          "through": [
+            "npm run verify",
+            "npm test"
+          ]
+        }
+      ],
       "triggers": [
         {
           "event": "pull_request",
@@ -2167,18 +3191,74 @@
       "checksCount": 0,
       "commands": [
         {
+          "dir": "site",
           "job": "build",
-          "step": "Install site dependencies",
-          "text": "npm ci --ignore-scripts"
+          "programs": [
+            "npm"
+          ],
+          "step": "Install site dependencies"
         },
         {
+          "dir": "site",
           "job": "build",
-          "step": "Build site",
-          "text": "npm run build"
+          "programs": [
+            "npm"
+          ],
+          "step": "Build site"
         }
       ],
       "elsewhere": [],
       "file": ".github/workflows/pages.yml",
+      "jobs": [
+        {
+          "basis": "declared",
+          "name": "build",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ],
+          "setup": [
+            {
+              "ranges": [
+                {
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
+                }
+              ],
+              "step": "1",
+              "uses": "actions/setup-node",
+              "version": "22"
+            }
+          ]
+        },
+        {
+          "basis": "declared",
+          "environment": {
+            "name": "github-pages"
+          },
+          "name": "deploy",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ]
+        }
+      ],
       "landings": [],
       "mentions": [],
       "name": "Deploy site to GitHub Pages",
@@ -2192,7 +3272,7 @@
         {
           "boundary": "site",
           "depth": 0,
-          "files": 3
+          "files": 5
         }
       ],
       "readers": [],
@@ -2259,6 +3339,7 @@
       "mentions": [],
       "name": "ai-playtest",
       "permissions": [],
+      "privatePackage": true,
       "pushes": false,
       "reach": [
         {
@@ -2288,6 +3369,7 @@
       },
       "stages": [],
       "triggers": [],
+      "unshipped": true,
       "uses": [],
       "usesWorkflowToken": false
     }
@@ -2300,8 +3382,9 @@
       "to": "src"
     }
   ],
+  "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "47f5e7a2f8fec94ecd071053684a15ebf421153e",
+    "commit": "94e69fcb76b15b0d76c5d547224c06890b1f9912",
     "tracked": 78
   },
   "landings": [
@@ -2366,7 +3449,8 @@
     {
       "readers": [
         {
-          "by": ".github/workflows/ci.yml"
+          "by": ".github/workflows/ci.yml",
+          "confidence": "config"
         },
         {
           "by": "tsconfig.test.json",
@@ -2380,7 +3464,8 @@
     {
       "readers": [
         {
-          "by": ".github/workflows/ci.yml"
+          "by": ".github/workflows/ci.yml",
+          "confidence": "config"
         }
       ],
       "target": "tsconfig.test.json",
