@@ -1,21 +1,74 @@
 {
-  "$comment": "Harrow Gate builds. 'baseline' is healthy on every switch; each mutant flips exactly one, so a judge's miss can be pinned to one variable. 'bleak' flips them all. Unlisted knobs keep game.mjs DEFAULT_KNOBS.",
+  "$comment": "Harrow Gate builds. 'baseline' is healthy on every switch; each mutant flips exactly one (refusal has two), so a judge's miss can be pinned to one variable. 'bleak' flips every switch except reacts: a build that ignores input would hide the rest, so 'deaf' covers it alone. Unlisted knobs keep game.mjs DEFAULT_KNOBS.",
   "variants": [
-    { "name": "baseline", "knobs": {} },
-    { "name": "still-world", "knobs": { "worldMoves": false } },
-    { "name": "system-refusal", "knobs": { "refusal": "system" } },
-    { "name": "open-gate", "knobs": { "refusal": "none" } },
-    { "name": "bare-prompt", "knobs": { "prompt": "bare" } },
-    { "name": "deaf", "knobs": { "reacts": false } },
-    { "name": "no-cost", "knobs": { "choiceCost": false } },
-    { "name": "no-goal", "knobs": { "goal": "none" } },
-    { "name": "same-text", "knobs": { "descriptions": "repeats" } },
-    { "name": "trapdoor", "knobs": { "deadEnd": true } },
+    {
+      "name": "baseline",
+      "knobs": {}
+    },
+    {
+      "name": "still-world",
+      "knobs": {
+        "worldMoves": false
+      }
+    },
+    {
+      "name": "system-refusal",
+      "knobs": {
+        "refusal": "system"
+      }
+    },
+    {
+      "name": "open-gate",
+      "knobs": {
+        "refusal": "none"
+      }
+    },
+    {
+      "name": "bare-prompt",
+      "knobs": {
+        "prompt": "bare"
+      }
+    },
+    {
+      "name": "deaf",
+      "knobs": {
+        "reacts": false
+      }
+    },
+    {
+      "name": "no-cost",
+      "knobs": {
+        "choiceCost": false
+      }
+    },
+    {
+      "name": "no-goal",
+      "knobs": {
+        "goal": "none"
+      }
+    },
+    {
+      "name": "same-text",
+      "knobs": {
+        "descriptions": "repeats"
+      }
+    },
+    {
+      "name": "trapdoor",
+      "knobs": {
+        "deadEnd": true
+      }
+    },
     {
       "name": "bleak",
       "knobs": {
-        "worldMoves": false, "refusal": "system", "prompt": "bare", "choiceCost": false,
-        "goal": "none", "descriptions": "repeats", "deadEnd": true
+        "worldMoves": false,
+        "refusal": "system",
+        "prompt": "bare",
+        "choiceCost": false,
+        "goal": "none",
+        "descriptions": "repeats",
+        "deadEnd": true
       }
     }
   ]

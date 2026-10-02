@@ -40,7 +40,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   lists what you can type, whether the game reacts, whether a choice spends a
   visible resource, whether a goal is stated, whether places change on a return
   visit, and whether a trapdoor soft-locks the player. Eleven builds: healthy, one
-  mutant per switch, and all flipped. The game writes a per-turn truth log on
+  mutant per switch (two for refusal), and `bleak`, with every switch flipped
+  except `reacts`, which would hide the rest. The game writes a per-turn truth log on
   stderr, which the stdio driver keeps from every model, so the answer key is
   exact per transcript.
 - **`src/calibration.ts`**: game-agnostic grading against any `{"cal":1}` truth log

@@ -1,30 +1,34 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit 733e148 by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 5e6bf56 by Atlas 1.24.0.
 
 ## What this is
 
-6 parts, mostly TypeScript (42 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
+6 parts, mostly TypeScript (44 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (0cd8e69)
+## What changed since 2026-10-02 (733e148)
 
-- CI now also runs src/decisions.test.ts and src/scorers.test.ts.
-- CI now also builds src/decisions.ts, src/rescore.ts and src/scorers.ts.
-- In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `rescoreRun`.
-- In src/cli.ts, `main` gained a step, `rescoreRun`, before `writeReport`.
-- In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `summarizeRuns`.
-- And 12 more changes to the order of work.
-- 6 files added and 4 changed content, across 3 parts.
+- CI now also runs test/calibration.test.ts.
+- CI now also builds src/calibration.ts.
+- calibration/configs is now written by calibration/calibrate.mjs.
+- calibration/runs is now written by calibration/calibrate.mjs.
+- calibration/answer-key.json is now read by calibration/calibrate.mjs and test/calibration.test.ts.
+- And 6 more new writers and readers of places.
+- calibration/README.md is new and belongs to no part, so atlas check fails on it against the previous map.
+- calibration/answer-key.json is new and belongs to no part, so atlas check fails on it against the previous map.
+- calibration/calibrate.mjs is new and belongs to no part, so atlas check fails on it against the previous map.
+- And 4 more new files that belong to no part.
+- 9 files added and 1 changed content, across 3 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 14 more; builds src/cli.ts, src/config.ts, src/coverage.ts and 19 more; checks CHANGELOG.md, LICENSE and src/.
+1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 15 more; builds src/calibration.ts, src/cli.ts, src/config.ts and 20 more; checks CHANGELOG.md, LICENSE and src/.
 2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 3. **ai-playtest** (a command of a private package, which nothing ships). Runs src/cli.ts.
 
 ## What happens through CI
 
-1. The workflow runs 13 files in src and 4 files in test; it builds 22 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
+1. The workflow runs 13 files in src and 5 files in test; it builds 23 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
 2. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -43,11 +47,11 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **src/cli.ts** and **src/index.ts** changed together in 5 of 6 commits, inside the src part.
-- **src/index.ts** and **src/report.ts** changed together in 5 of 6 commits, inside the src part.
-- **src/cli.ts** and **src/config.ts** changed together in 4 of 6 commits, inside the src part.
-- **src/cli.ts** and **src/report.ts** changed together in 4 of 6 commits, inside the src part.
-- **src/report.ts** and **test/run.test.ts** changed together in 4 of 6 commits, and the test part imports the src part.
+- **src/index.ts** and **src/report.ts** changed together in 6 of 8 commits, inside the src part.
+- **src/report.ts** and **test/run.test.ts** changed together in 5 of 7 commits, and the test part imports the src part.
+- **src/cli.ts** and **src/index.ts** changed together in 6 of 9 commits, inside the src part.
+- **src/cli.ts** and **src/config.ts** changed together in 5 of 8 commits, inside the src part.
+- **src/cli.ts** and **src/report.ts** changed together in 5 of 8 commits, inside the src part.
 
 1 file changed together with its own test, as expected.
 
@@ -83,11 +87,11 @@ Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 2 imports could not be resolved: `src/index.ts` imports `./calibration.js`, which is not in this repository, twice.
 - 2 writes and 2 reads use paths built at run time and are not named here.
-- 12 writes and 15 reads go to a path their caller passes, not to this repository.
+- 2 writes go to places this repository does not track, so they are not listed as generated.
+- 12 writes and 19 reads go to a path their caller passes, not to this repository.
 - 1 command is built at run time and not followed.
-- 1 file belongs to no part: examples/local-smoke.playtest.json.
+- 8 files belong to no part: calibration/README.md, calibration/answer-key.json, calibration/calibrate.mjs and 5 more.
 - Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.
 
 Regenerate with `npx --yes @dogfood-lab/atlas map`.

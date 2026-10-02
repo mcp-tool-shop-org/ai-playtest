@@ -19,8 +19,8 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 6,
-      "changed": 4,
+      "added": 9,
+      "changed": 1,
       "moved": 0,
       "parts": 3,
       "removed": 0
@@ -28,81 +28,93 @@
     "items": [
       {
         "kind": "door",
-        "sentence": "CI now also runs src/decisions.test.ts and src/scorers.test.ts.",
+        "sentence": "CI now also runs test/calibration.test.ts.",
         "subjects": [
           ".github/workflows/ci.yml",
-          "src/decisions.test.ts",
-          "src/scorers.test.ts"
+          "test/calibration.test.ts"
         ]
       },
       {
         "kind": "door",
-        "sentence": "CI now also builds src/decisions.ts, src/rescore.ts and src/scorers.ts.",
+        "sentence": "CI now also builds src/calibration.ts.",
         "subjects": [
           ".github/workflows/ci.yml",
-          "src/decisions.ts",
-          "src/rescore.ts",
-          "src/scorers.ts"
+          "src/calibration.ts"
         ]
       },
       {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `rescoreRun`.",
+        "kind": "landing",
+        "sentence": "calibration/configs is now written by calibration/calibrate.mjs.",
         "subjects": [
-          "src/cli.ts"
+          "calibration/configs",
+          "calibration/calibrate.mjs"
         ]
       },
       {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `rescoreRun`, before `writeReport`.",
+        "kind": "landing",
+        "sentence": "calibration/runs is now written by calibration/calibrate.mjs.",
         "subjects": [
-          "src/cli.ts"
+          "calibration/runs",
+          "calibration/calibrate.mjs"
         ]
       },
       {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `summarizeRuns`.",
+        "kind": "landing",
+        "sentence": "calibration/answer-key.json is now read by calibration/calibrate.mjs and test/calibration.test.ts.",
         "subjects": [
-          "src/cli.ts"
+          "calibration/answer-key.json",
+          "calibration/calibrate.mjs",
+          "test/calibration.test.ts"
         ]
       },
       {
-        "kind": "sequence",
-        "sentence": "And 12 more changes to the order of work.",
+        "kind": "landing",
+        "sentence": "And 6 more new writers and readers of places.",
+        "subjects": []
+      },
+      {
+        "kind": "unassigned",
+        "sentence": "calibration/README.md is new and belongs to no part, so atlas check fails on it against the previous map.",
+        "subjects": [
+          "calibration/README.md"
+        ]
+      },
+      {
+        "kind": "unassigned",
+        "sentence": "calibration/answer-key.json is new and belongs to no part, so atlas check fails on it against the previous map.",
+        "subjects": [
+          "calibration/answer-key.json"
+        ]
+      },
+      {
+        "kind": "unassigned",
+        "sentence": "calibration/calibrate.mjs is new and belongs to no part, so atlas check fails on it against the previous map.",
+        "subjects": [
+          "calibration/calibrate.mjs"
+        ]
+      },
+      {
+        "kind": "unassigned",
+        "sentence": "And 4 more new files that belong to no part.",
         "subjects": []
       },
       {
         "kind": "counts",
-        "sentence": "6 files added and 4 changed content, across 3 parts.",
+        "sentence": "9 files added and 1 changed content, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "0cd8e697dda07ae85663259fb5cf7fa51a508219",
-      "generatedAt": "2026-10-02T14:37:01.830Z"
+      "commit": "733e148a744b1d09921708c6e4b0af715826a976",
+      "generatedAt": "2026-10-02T14:44:09.407Z"
     },
     "unchanged": false
   },
   "changesTogether": [
     {
-      "a": "src/cli.ts",
-      "b": "src/index.ts",
-      "either": 6,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 5
-    },
-    {
       "a": "src/index.ts",
       "b": "src/report.ts",
-      "either": 6,
+      "either": 8,
       "partLabels": [
         "src",
         "src"
@@ -112,42 +124,12 @@
         "src"
       ],
       "relation": "inside",
-      "shared": 5
-    },
-    {
-      "a": "src/cli.ts",
-      "b": "src/config.ts",
-      "either": 6,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 4
-    },
-    {
-      "a": "src/cli.ts",
-      "b": "src/report.ts",
-      "either": 6,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 4
+      "shared": 6
     },
     {
       "a": "src/report.ts",
       "b": "test/run.test.ts",
-      "either": 6,
+      "either": 7,
       "partLabels": [
         "src",
         "test"
@@ -157,7 +139,52 @@
         "test"
       ],
       "relation": "b-imports-a",
-      "shared": 4
+      "shared": 5
+    },
+    {
+      "a": "src/cli.ts",
+      "b": "src/index.ts",
+      "either": 9,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 6
+    },
+    {
+      "a": "src/cli.ts",
+      "b": "src/config.ts",
+      "either": 8,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 5
+    },
+    {
+      "a": "src/cli.ts",
+      "b": "src/report.ts",
+      "either": 8,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 5
     }
   ],
   "changesTogetherNote": [
@@ -166,12 +193,13 @@
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "733e148a744b1d09921708c6e4b0af715826a976",
+  "commit": "5e6bf567a28bf743f39ba45c3f8598cfb4bccd0c",
   "defaultBranch": "main",
-  "derived": "6 parts, mostly TypeScript (42 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
+  "derived": "6 parts, mostly TypeScript (44 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
     {
       "builds": [
+        "src/calibration.ts",
         "src/cli.ts",
         "src/config.ts",
         "src/coverage.ts",
@@ -216,12 +244,12 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 35
+          "files": 36
         },
         {
           "boundary": "test",
           "depth": 0,
-          "files": 4
+          "files": 5
         }
       ],
       "runs": [
@@ -238,13 +266,14 @@
         "src/stats.test.ts",
         "src/stdio-game.test.ts",
         "src/verifiers.test.ts",
+        "test/calibration.test.ts",
         "test/pty-driver.test.ts",
         "test/pty-unavailable.test.ts",
         "test/rpc-driver.test.ts",
         "test/run.test.ts"
       ],
-      "runsCount": 17,
-      "runsMore": 14,
+      "runsCount": 18,
+      "runsMore": 15,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -322,13 +351,13 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-10-02T14:44:09.407Z",
+  "generatedAt": "2026-10-02T15:15:11.455Z",
   "limits": [
-    "2 imports could not be resolved: `src/index.ts` imports `./calibration.js`, which is not in this repository, twice.",
     "2 writes and 2 reads use paths built at run time and are not named here.",
-    "12 writes and 15 reads go to a path their caller passes, not to this repository.",
+    "2 writes go to places this repository does not track, so they are not listed as generated.",
+    "12 writes and 19 reads go to a path their caller passes, not to this repository.",
     "1 command is built at run time and not followed.",
-    "1 file belongs to no part: examples/local-smoke.playtest.json.",
+    "8 files belong to no part: calibration/README.md, calibration/answer-key.json, calibration/calibrate.mjs and 5 more.",
     "Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions."
   ],
   "mainDoor": ".github/workflows/ci.yml",
@@ -357,9 +386,9 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 21,
+  "testFiles": 22,
   "testedBy": {
-    "src": 17
+    "src": 18
   },
   "unnamedWrites": 2,
   "unread": [],

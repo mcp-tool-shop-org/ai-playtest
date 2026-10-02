@@ -29,9 +29,15 @@ variable is a switch:
 | `descriptions` | a place reads differently when you come back | it never changes |
 | `deadEnd` | the cellar has stairs | the trapdoor locks you in |
 
-[`variants.json`](variants.json) has eleven builds: `baseline` (healthy
-everywhere), one mutant per switch, and `bleak`, with every switch flipped. Each
-mutant changes one thing, so a judge's miss points at one variable.
+[`variants.json`](variants.json) has eleven builds:
+
+- `baseline`, healthy everywhere.
+- One mutant per switch. Refusal has two (`system-refusal`, `open-gate`), which
+  is why eight switches make ten mutants.
+- `bleak`, with every switch flipped except `reacts`. A build that ignores every
+  input would hide all the others, so ignored input has its own build, `deaf`.
+
+Each mutant changes one thing, so a judge's miss points at one variable.
 
 The game is deterministic: no randomness and no clock, so the same inputs always
 give the same game.

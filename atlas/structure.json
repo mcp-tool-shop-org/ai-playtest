@@ -79,7 +79,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "9386a6fb00a71696251293c9a1b582e006836e274dfb2b1fcb8e5226a87cf09f",
+          "hash": "6270d5018069bab0b5eb9e8db96afb33682ec537e49a0d4399d49f9ce5dd2575",
           "path": "CHANGELOG.md"
         },
         {
@@ -282,6 +282,44 @@
       ],
       "externals": 0,
       "files": [
+        {
+          "exports": [
+            "gradeRuns",
+            "parseTruthLog",
+            "renderCalibration",
+            "summarize",
+            "truthFor"
+          ],
+          "failurePaths": [
+            {
+              "in": "parseTruthLog",
+              "kind": "catch",
+              "line": 47
+            },
+            {
+              "in": "gradeRuns",
+              "kind": "catch",
+              "line": 93
+            },
+            {
+              "in": "isDir",
+              "kind": "catch",
+              "line": 118
+            }
+          ],
+          "hash": "b0bede6ec698301f7dafaa3ca488474312e37a2ca84d52005bf292c16fa4445f",
+          "importOrder": [
+            "src/panel.ts",
+            "src/verifiers.ts",
+            "src/scorers.ts"
+          ],
+          "importsFiles": [
+            "src/panel.ts",
+            "src/scorers.ts",
+            "src/verifiers.ts"
+          ],
+          "path": "src/calibration.ts"
+        },
         {
           "hash": "9f0e89dd0447890adb697e991a12c5ab4aa882504e5212083fc617a2f844a80b",
           "importsFiles": [
@@ -1588,6 +1626,7 @@
             "src/decisions.ts",
             "src/scorers.ts",
             "src/rescore.ts",
+            "src/calibration.ts",
             "src/stdio-game.ts",
             "src/player.ts",
             "src/critic.ts",
@@ -1603,6 +1642,7 @@
             "src/panel.ts"
           ],
           "importsFiles": [
+            "src/calibration.ts",
             "src/config.ts",
             "src/coverage.ts",
             "src/critic.ts",
@@ -3287,33 +3327,21 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 15,
+          "reads": 19,
           "where": [
             "caller"
           ],
           "writes": 12
         }
       ],
-      "outsideReads": 15,
+      "outsideReads": 19,
       "outsideWrites": 12,
       "role": "code",
       "testRunners": [
         "vitest"
       ],
-      "testedBy": 17,
-      "unresolvedNamed": [
-        {
-          "path": "src/index.ts",
-          "specifier": "./calibration.js",
-          "why": "missing"
-        },
-        {
-          "path": "src/index.ts",
-          "specifier": "./calibration.js",
-          "why": "missing"
-        }
-      ],
-      "unresolvedSites": 2
+      "testedBy": 18,
+      "unresolvedSites": 0
     },
     {
       "dynamicReads": 0,
@@ -3323,6 +3351,26 @@
       "entryPoints": [],
       "externals": 0,
       "files": [
+        {
+          "hash": "42d84b0e53e4758f9c869606bd2e0a533be41c15f9221d762cfddc8e12941d7c",
+          "importOrder": [
+            "src/calibration.ts",
+            "src/config.ts",
+            "src/run.ts",
+            "src/openrouter.ts"
+          ],
+          "importsFiles": [
+            "src/calibration.ts",
+            "src/config.ts",
+            "src/openrouter.ts",
+            "src/run.ts"
+          ],
+          "path": "test/calibration.test.ts",
+          "spawns": [
+            "calibration/game.mjs"
+          ],
+          "testFramework": "vitest"
+        },
         {
           "hash": "34042f0434bc91832ce803951e3c913209e761e1f1eb460995da80faf4e83dde",
           "path": "test/fixtures/echo-game.mjs"
@@ -3552,12 +3600,12 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 35
+          "files": 36
         },
         {
           "boundary": "test",
           "depth": 0,
-          "files": 4
+          "files": 5
         }
       ],
       "readers": [],
@@ -3579,6 +3627,14 @@
           "path": "src/",
           "runKind": "checks",
           "via": "tsc tsconfig.test.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/calibration.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
         },
         {
           "job": "verify",
@@ -3850,6 +3906,13 @@
         {
           "job": "verify",
           "matched": true,
+          "path": "test/calibration.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
           "path": "test/pty-driver.test.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.test.json"
@@ -3876,7 +3939,7 @@
           "via": "tsc tsconfig.test.json"
         }
       ],
-      "runsCount": 42,
+      "runsCount": 44,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -3892,7 +3955,7 @@
       "tests": [
         {
           "config": "vitest.config.ts",
-          "files": 17,
+          "files": 18,
           "job": "verify",
           "runner": "vitest",
           "step": "Verify (typecheck + tests)",
@@ -4144,10 +4207,142 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "733e148a744b1d09921708c6e4b0af715826a976",
-    "tracked": 88
+    "commit": "5e6bf567a28bf743f39ba45c3f8598cfb4bccd0c",
+    "tracked": 97
   },
   "landings": [
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "readFileSync",
+          "confidence": "ast"
+        },
+        {
+          "by": "test/calibration.test.ts",
+          "call": "readFileSync",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "calibration/answer-key.json",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "existsSync",
+          "confidence": "ast"
+        },
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "readdirSync",
+          "confidence": "ast"
+        }
+      ],
+      "target": "calibration/configs",
+      "tracked": false,
+      "writers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "confidence": "ast"
+        }
+      ]
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "readFileSync",
+          "confidence": "ast"
+        },
+        {
+          "by": "test/calibration.test.ts",
+          "call": "readFileSync",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "calibration/criteria.json",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
+          "by": "test/calibration.test.ts",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "calibration/game.mjs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "existsSync",
+          "confidence": "ast"
+        }
+      ],
+      "target": "calibration/runs",
+      "tracked": false,
+      "writers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "confidence": "ast"
+        }
+      ]
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/README.md",
+          "call": "--seats",
+          "confidence": "text"
+        }
+      ],
+      "target": "calibration/seats.example.json",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
+          "by": "calibration/calibrate.mjs",
+          "call": "readFileSync",
+          "confidence": "ast"
+        },
+        {
+          "by": "calibration/game.mjs",
+          "call": "readFileSync",
+          "confidence": "ast"
+        }
+      ],
+      "target": "calibration/variants.json",
+      "writers": []
+    },
     {
       "readers": [
         {
@@ -4235,8 +4430,42 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 21,
+  "testFiles": 22,
   "unassigned": [
+    {
+      "hash": "c129ecffad48d686697166c48617cbd6e3721c7d59643b5de3428f996a3cb6cd",
+      "path": "calibration/README.md"
+    },
+    {
+      "hash": "10dc61ba122b3a46db646280b9569f1c9457ad13ac38caeab6eed083312675cf",
+      "path": "calibration/answer-key.json"
+    },
+    {
+      "hash": "f121e14552a2a719ea6ca5fee88bbbc2b43981e1d5af978890b05f3296fc8763",
+      "importsFiles": [
+        "src/index.ts"
+      ],
+      "path": "calibration/calibrate.mjs"
+    },
+    {
+      "hash": "1dbd9f78e73151fa4eb196b1610d8c928895cd89e6e60f7be59531c9deef6950",
+      "path": "calibration/criteria.json"
+    },
+    {
+      "exports": [
+        "createGame"
+      ],
+      "hash": "669e029bae13c24ff2296c3642b7099d0d1d0d49986aa24394972c4206548413",
+      "path": "calibration/game.mjs"
+    },
+    {
+      "hash": "8e620ab0b1135e955509d13dbf690f5b0f33af78fc03e91c84acf86d474bc012",
+      "path": "calibration/seats.example.json"
+    },
+    {
+      "hash": "c25b3e3869d03d323eb4b33489588066a2a652681adf8fb66704e61bf744fab8",
+      "path": "calibration/variants.json"
+    },
     {
       "hash": "69126346bb485b4026180983bfa6129c5b3017e41a6b3322b9d70041a1ec54c9",
       "path": "examples/local-smoke.playtest.json"
