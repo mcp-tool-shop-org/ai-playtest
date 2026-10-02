@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
 import { isCloudTag } from './ollama.js';
+import { SCORER_DEFAULTS, type ScorerConfig, type ScorerKind } from './scorers.js';
 
 /** Current playtest config schema. Unknown versions fail closed with a migration hint. */
 export const SCHEMA_VERSION = 1;
@@ -143,6 +144,12 @@ export type PlaytestConfig = {
   panelSize: number;
   /** Deterministic transcript checks. Empty regex lists mean "do not guess". */
   verifiers: VerifierConfig;
+  /**
+   * Probability judges that score each criterion as P(met) beside the jury
+   * (scorers.ts). Empty by default. `{ "kind": "jev" }` adds TypeSafe's decision
+   * model through OpenRouter; it needs OPENROUTER_API_KEY.
+   */
+  scorers: ScorerConfig[];
 };
 
 export class ConfigError extends Error {
@@ -319,8 +326,44 @@ export function validateDriver(raw: unknown): DriverConfig {
 const CONFIG_KEYS = [
   'name', 'schemaVersion', '$schema', 'game', 'driver', 'seats', 'turns', 'setup',
   'persona', 'criteria', 'screenChars', 'playerMemoryTurns', 'runsDir',
-  'playerTemperature', 'panelSize', 'verifiers',
+  'playerTemperature', 'panelSize', 'verifiers', 'scorers',
 ] as const;
+
+const SCORER_KINDS = Object.keys(SCORER_DEFAULTS) as ScorerKind[];
+
+/** `scorers[]`: probability judges. Defaults come from SCORER_DEFAULTS per kind. */
+export function validateScorers(raw: unknown): ScorerConfig[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) throw new ConfigError('scorers must be an array', 'e.g. "scorers": [{ "kind": "jev" }]');
+  const ids = new Set<string>();
+  return raw.map((s, i) => {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) throw new ConfigError(`scorers[${i}] must be an object`, 'e.g. { "kind": "jev" }');
+    const r = s as Record<string, unknown>;
+    const kind = r.kind as ScorerKind;
+    if (!SCORER_KINDS.includes(kind)) throw new ConfigError(`scorers[${i}] has unknown kind ${JSON.stringify(r.kind)}`, `use one of: ${SCORER_KINDS.join(', ')}`);
+    rejectUnknown(r, ['kind', 'id', 'model', 'maxStateTokens', 'band'] as const, `scorers[${i}]`);
+    const d = SCORER_DEFAULTS[kind];
+    const id = asNonEmptyString(r.id) ?? kind;
+    if (!isSafeSegment(id)) throw new ConfigError(`scorers[${i}] id "${id}" is not usable`, 'letters, digits, dot, dash or underscore');
+    if (ids.has(id)) throw new ConfigError(`scorer id ${id} used twice`, 'give each scorer its own id');
+    ids.add(id);
+    let band = d.band;
+    if (r.band !== undefined) {
+      const b = r.band;
+      if (!Array.isArray(b) || b.length !== 2 || !b.every((x) => typeof x === 'number' && x >= 0 && x <= 1) || (b[0] as number) > (b[1] as number)) {
+        throw new ConfigError(`scorers[${i}].band must be [low, high] with 0 <= low <= high <= 1`, 'e.g. [0.35, 0.65]: probabilities inside are reported as uncertain');
+      }
+      band = [b[0] as number, b[1] as number];
+    }
+    return {
+      id,
+      kind,
+      model: asNonEmptyString(r.model) ?? d.model,
+      maxStateTokens: asPositiveInt(r.maxStateTokens, `scorers[${i}].maxStateTokens`) ?? d.maxStateTokens,
+      band,
+    };
+  });
+}
 const GAME_KEYS = [
   'command', 'args', 'cwd', 'env', 'inheritEnv', 'promptPatterns',
   'promptQuietMs', 'idleQuietMs', 'screenTimeoutMs', 'quitInputs',
@@ -333,6 +376,28 @@ function readSchemaVersion(c: Record<string, unknown>): number {
     `unsupported schemaVersion ${JSON.stringify(c.schemaVersion)}`,
     `this tool reads schemaVersion ${SCHEMA_VERSION}; migrate the config (panelSize default is 1, not 3)`,
   );
+}
+
+export type CriterionLint = { id: string; why: string };
+
+/**
+ * Criteria that probably bundle two claims. A judge asked "X, so Y" answers the
+ * easier half: on 2026-10-02 every judge, LLM and decision model alike, passed
+ * "shooting and holding have different consequences, so there is a reason not to
+ * shoot everything" in a game where shooting everything cost nothing. Checklist
+ * research agrees (CheckEval 2025; Autorubric 2026: one construct per criterion).
+ * A heuristic, so a warning and never an error.
+ */
+export function lintCriteria(criteria: Criterion[]): CriterionLint[] {
+  const out: CriterionLint[] = [];
+  for (const c of criteria) {
+    const text = ` ${c.check.trim()} `;
+    const sentences = c.check.split(/[.!?](\s|$)/).filter((s) => s && s.trim().length > 3);
+    const joiner = /\s(so|because|therefore|which means|but)\s|;/i.exec(text);
+    if (joiner) out.push({ id: c.id, why: `joins claims with "${joiner[1] ?? ';'}"` });
+    else if (sentences.length > 1) out.push({ id: c.id, why: `${sentences.length} sentences` });
+  }
+  return out;
 }
 
 export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
@@ -482,6 +547,7 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     playerTemperature: asFiniteNumber(c.playerTemperature, 'playerTemperature') ?? DEFAULTS.playerTemperature,
     panelSize: asNonNegInt(c.panelSize, 'panelSize') ?? DEFAULTS.panelSize,
     verifiers: validateVerifiers(c.verifiers),
+    scorers: validateScorers(c.scorers),
   };
 }
 

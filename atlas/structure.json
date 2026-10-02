@@ -75,7 +75,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "3d01e6a92e214122db535179693ba6f21c3ee7a96d2f91699fe3ff753c784e9e",
+          "hash": "4774aae0261daa8b826785a84516d85b64a2d85798b5ab7f69f52c7631a03a6c",
           "path": "CHANGELOG.md"
         },
         {
@@ -103,7 +103,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "1cb5a6abc9c46c8606b34e344e89744cb3e1d96ddf6070f4d5c82ee72b470d28",
+          "hash": "27f6ba79412bdfd3efc739a7edd566cf237e96f61d15f62b0fd1582eb21eeaf3",
           "path": "README.md"
         },
         {
@@ -269,7 +269,7 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 1,
+      "dynamicReads": 2,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 2,
@@ -300,30 +300,35 @@
             {
               "in": "main",
               "kind": "catch",
-              "line": 214
+              "line": 220
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 216
+              "line": 222
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 253
+              "line": 259
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 327
+              "line": 292
+            },
+            {
+              "in": "main",
+              "kind": "catch",
+              "line": 370
             },
             {
               "in": "runningAsCli",
               "kind": "catch",
-              "line": 337
+              "line": 380
             }
           ],
-          "hash": "9a2ae6cff70bd918db5d43032548fa6f8ddb207d32e9e5d1e31213c377b88747",
+          "hash": "9f7952fd62fb6f03c7f0b6479b65798b77b743df0c778d579e516402b1117262",
           "importsFiles": [
             "src/config.ts",
             "src/ollama.ts",
@@ -339,7 +344,7 @@
             {
               "calls": [
                 {
-                  "line": 143,
+                  "line": 149,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -354,7 +359,7 @@
             {
               "calls": [
                 {
-                  "line": 175,
+                  "line": 181,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -362,14 +367,14 @@
                 },
                 {
                   "branch": "r.critique",
-                  "line": 185,
+                  "line": 191,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 188,
+                  "line": 194,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -386,7 +391,7 @@
                 {
                   "inner": [
                     {
-                      "line": 398,
+                      "line": 463,
                       "name": "isCloudTag",
                       "target": {
                         "file": "src/ollama.ts"
@@ -394,15 +399,48 @@
                       "via": "validateConfig"
                     }
                   ],
-                  "line": 213,
+                  "line": 219,
                   "name": "loadConfig",
                   "target": {
                     "file": "src/config.ts"
                   }
                 },
                 {
+                  "line": 225,
+                  "name": "lintCriteria",
+                  "target": {
+                    "file": "src/config.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'score'",
+                  "inner": [
+                    {
+                      "line": 428,
+                      "name": "renderCoverageLine",
+                      "target": {
+                        "file": "src/coverage.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 455,
+                      "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    }
+                  ],
+                  "line": 257,
+                  "name": "writeReport",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
                   "branch": "verb === 'report'",
-                  "line": 234,
+                  "line": 273,
                   "name": "listRunSiblings",
                   "target": {
                     "file": "src/report.ts"
@@ -410,7 +448,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 235,
+                  "line": 274,
                   "name": "isAggregateDir",
                   "target": {
                     "file": "src/report.ts"
@@ -418,7 +456,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 241,
+                  "line": 280,
                   "name": "readRun",
                   "target": {
                     "file": "src/report.ts"
@@ -428,7 +466,7 @@
                   "branch": "rebuildFromSiblings",
                   "inner": [
                     {
-                      "line": 671,
+                      "line": 735,
                       "name": "summarizeRuns",
                       "target": {
                         "file": "src/stats.ts"
@@ -436,7 +474,7 @@
                       "via": "renderAggregateReport"
                     }
                   ],
-                  "line": 245,
+                  "line": 284,
                   "name": "writeAggregateFromRuns",
                   "target": {
                     "file": "src/report.ts"
@@ -446,7 +484,7 @@
                   "branch": "verb === 'report'",
                   "inner": [
                     {
-                      "line": 364,
+                      "line": 428,
                       "name": "renderCoverageLine",
                       "target": {
                         "file": "src/coverage.ts"
@@ -454,7 +492,7 @@
                       "via": "renderReport"
                     },
                     {
-                      "line": 391,
+                      "line": 455,
                       "name": "renderAbsorbingLine",
                       "target": {
                         "file": "src/verifiers.ts"
@@ -462,7 +500,7 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 251,
+                  "line": 290,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
@@ -478,35 +516,35 @@
                       }
                     }
                   ],
-                  "line": 264,
+                  "line": 303,
                   "name": "providersInUse",
                   "target": {
                     "file": "src/providers.ts"
                   }
                 },
                 {
-                  "line": 270,
+                  "line": 312,
                   "name": "createOpenRouterClient",
                   "target": {
                     "file": "src/openrouter.ts"
                   }
                 },
                 {
-                  "line": 271,
+                  "line": 313,
                   "name": "createOllamaClient",
                   "target": {
                     "file": "src/ollama.ts"
                   }
                 },
                 {
-                  "line": 269,
+                  "line": 311,
                   "name": "createRoutedClient",
                   "target": {
                     "file": "src/providers.ts"
                   }
                 },
                 {
-                  "line": 278,
+                  "line": 321,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -516,7 +554,7 @@
                   "inner": [
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 587,
+                      "line": 605,
                       "name": "resolveEnv",
                       "target": {
                         "file": "src/config.ts"
@@ -525,7 +563,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 589,
+                      "line": 607,
                       "name": "createStdioDriver",
                       "target": {
                         "file": "src/stdio-driver.ts"
@@ -534,7 +572,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 544,
+                      "line": 562,
                       "name": "computeCoverage",
                       "target": {
                         "file": "src/coverage.ts"
@@ -543,7 +581,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 545,
+                      "line": 563,
                       "name": "runVerifiers",
                       "target": {
                         "file": "src/verifiers.ts"
@@ -552,7 +590,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 259,
+                      "line": 268,
                       "name": "resolveEnv",
                       "target": {
                         "file": "src/config.ts"
@@ -561,7 +599,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 261,
+                      "line": 270,
                       "name": "createStdioDriver",
                       "target": {
                         "file": "src/stdio-driver.ts"
@@ -570,35 +608,35 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 280,
+                      "line": 289,
                       "name": "start",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 286,
+                      "line": 295,
                       "name": "step",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 299,
+                      "line": 308,
                       "name": "onTurn",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 300,
+                      "line": 309,
                       "name": "step",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 319,
+                      "line": 328,
                       "name": "describeActions",
                       "target": {
                         "file": "src/driver.ts"
@@ -607,7 +645,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 315,
+                      "line": 324,
                       "name": "chooseInput",
                       "target": {
                         "file": "src/player.ts"
@@ -616,7 +654,7 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 285,
+                  "line": 328,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
@@ -625,7 +663,7 @@
                 {
                   "inner": [
                     {
-                      "line": 364,
+                      "line": 428,
                       "name": "renderCoverageLine",
                       "target": {
                         "file": "src/coverage.ts"
@@ -633,7 +671,7 @@
                       "via": "renderReport"
                     },
                     {
-                      "line": 391,
+                      "line": 455,
                       "name": "renderAbsorbingLine",
                       "target": {
                         "file": "src/verifiers.ts"
@@ -641,14 +679,14 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 289,
+                  "line": 332,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 143,
+                  "line": 149,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -659,7 +697,7 @@
                   "inner": [
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 587,
+                      "line": 605,
                       "name": "resolveEnv",
                       "target": {
                         "file": "src/config.ts"
@@ -668,7 +706,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 589,
+                      "line": 607,
                       "name": "createStdioDriver",
                       "target": {
                         "file": "src/stdio-driver.ts"
@@ -677,7 +715,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 544,
+                      "line": 562,
                       "name": "computeCoverage",
                       "target": {
                         "file": "src/coverage.ts"
@@ -686,7 +724,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 545,
+                      "line": 563,
                       "name": "runVerifiers",
                       "target": {
                         "file": "src/verifiers.ts"
@@ -695,7 +733,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 259,
+                      "line": 268,
                       "name": "resolveEnv",
                       "target": {
                         "file": "src/config.ts"
@@ -704,7 +742,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 261,
+                      "line": 270,
                       "name": "createStdioDriver",
                       "target": {
                         "file": "src/stdio-driver.ts"
@@ -713,35 +751,35 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 280,
+                      "line": 289,
                       "name": "start",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 286,
+                      "line": 295,
                       "name": "step",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 299,
+                      "line": 308,
                       "name": "onTurn",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 300,
+                      "line": 309,
                       "name": "step",
                       "target": null,
                       "via": "runSeat"
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 319,
+                      "line": 328,
                       "name": "describeActions",
                       "target": {
                         "file": "src/driver.ts"
@@ -750,7 +788,7 @@
                     },
                     {
                       "branch": "cfg.driver.kind === 'rpc'",
-                      "line": 315,
+                      "line": 324,
                       "name": "chooseInput",
                       "target": {
                         "file": "src/player.ts"
@@ -759,7 +797,7 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 303,
+                  "line": 346,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
@@ -768,7 +806,7 @@
                 {
                   "inner": [
                     {
-                      "line": 364,
+                      "line": 428,
                       "name": "renderCoverageLine",
                       "target": {
                         "file": "src/coverage.ts"
@@ -776,7 +814,7 @@
                       "via": "renderReport"
                     },
                     {
-                      "line": 391,
+                      "line": 455,
                       "name": "renderAbsorbingLine",
                       "target": {
                         "file": "src/verifiers.ts"
@@ -784,21 +822,21 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 306,
+                  "line": 349,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 311,
+                  "line": 354,
                   "name": "criterionMetBySeats",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 313,
+                  "line": 356,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -807,7 +845,7 @@
                 {
                   "inner": [
                     {
-                      "line": 671,
+                      "line": 735,
                       "name": "summarizeRuns",
                       "target": {
                         "file": "src/stats.ts"
@@ -815,7 +853,7 @@
                       "via": "renderAggregateReport"
                     }
                   ],
-                  "line": 318,
+                  "line": 361,
                   "name": "writeAggregateReport",
                   "target": {
                     "file": "src/report.ts"
@@ -834,197 +872,149 @@
           "entryRule": 1,
           "exports": [
             "isSafeSegment",
+            "lintCriteria",
             "loadConfig",
             "resolveEnv",
             "validateConfig",
             "validateDriver",
+            "validateScorers",
             "validateVerifiers"
           ],
           "failurePaths": [
             {
               "in": "readOwnVersion",
               "kind": "catch",
-              "line": 21
+              "line": 22
             },
             {
               "in": "rejectUnknown",
               "kind": "throw",
-              "line": 184
+              "line": 191
             },
             {
               "in": "asPositiveInt",
               "kind": "throw",
-              "line": 193
+              "line": 200
             },
             {
               "in": "asNonNegInt",
               "kind": "throw",
-              "line": 201
+              "line": 208
             },
             {
               "in": "asFiniteNumber",
               "kind": "throw",
-              "line": 209
+              "line": 216
             },
             {
               "in": "asStringArray",
               "kind": "throw",
-              "line": 217
+              "line": 224
             },
             {
               "in": "asRecord",
               "kind": "throw",
-              "line": 224
+              "line": 231
             },
             {
               "in": "resolveEnv",
               "kind": "throw",
-              "line": 235
+              "line": 242
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 251
+              "line": 258
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 257
+              "line": 264
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 274
+              "line": 281
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 279
+              "line": 286
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 284
+              "line": 291
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 287
+              "line": 294
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 303
+              "line": 310
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 306
+              "line": 313
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 316
+              "line": 323
             },
             {
-              "in": "readSchemaVersion",
+              "in": "validateScorers",
               "kind": "throw",
-              "line": 332
+              "line": 337
             },
             {
-              "in": "validateConfig",
+              "in": "validateScorers",
               "kind": "throw",
-              "line": 339
+              "line": 340
             },
             {
-              "in": "validateConfig",
+              "in": "validateScorers",
               "kind": "throw",
-              "line": 344
+              "line": 343
             },
             {
-              "in": "validateConfig",
+              "in": "validateScorers",
+              "kind": "throw",
+              "line": 347
+            },
+            {
+              "in": "validateScorers",
               "kind": "throw",
               "line": 348
             },
             {
-              "in": "validateConfig",
+              "in": "validateScorers",
               "kind": "throw",
-              "line": 357
+              "line": 354
+            },
+            {
+              "in": "readSchemaVersion",
+              "kind": "throw",
+              "line": 375
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 359
+              "line": 404
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 364
+              "line": 409
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 367
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 373
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 379
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 381
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 387
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 392
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 393
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 396
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 399
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 405
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 411
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 412
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 417
+              "line": 413
             },
             {
               "in": "validateConfig",
@@ -1034,95 +1024,175 @@
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 423
+              "line": 424
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 429
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 432
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 438
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 444
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 446
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 452
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 457
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 458
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 461
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 464
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 470
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 476
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 477
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 482
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 487
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 488
             },
             {
               "in": "validateConfig",
               "kind": "catch",
-              "line": 428
+              "line": 493
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 428
+              "line": 493
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 431
+              "line": 496
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 435
+              "line": 500
             },
             {
               "in": "validateConfig",
               "kind": "catch",
-              "line": 436
+              "line": 501
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 436
+              "line": 501
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 439
+              "line": 504
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 442
+              "line": 507
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 448
+              "line": 513
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 453
+              "line": 518
             },
             {
               "in": "validateVerifiers",
               "kind": "throw",
-              "line": 503
+              "line": 569
             },
             {
               "in": "validateVerifiers",
               "kind": "catch",
-              "line": 509
+              "line": 575
             },
             {
               "in": "validateVerifiers",
               "kind": "throw",
-              "line": 509
+              "line": 575
             },
             {
               "in": "loadConfig",
               "kind": "catch",
-              "line": 530
+              "line": 596
             },
             {
               "in": "loadConfig",
               "kind": "throw",
-              "line": 531
+              "line": 597
             },
             {
               "in": "loadConfig",
               "kind": "catch",
-              "line": 536
+              "line": 602
             },
             {
               "in": "loadConfig",
               "kind": "throw",
-              "line": 537
+              "line": 603
             }
           ],
-          "hash": "0b8ed1515e4f3b9e084ef1c25576981b5d459c7a3ce41c31f3edcefd8636b59b",
+          "hash": "c3dbbc7ff6681f0043d696659c598aa9af5b5ba75f136b46cc4d22b64cfee518",
           "importOrder": [
             "src/verifiers.ts",
             "src/ollama.ts"
@@ -1136,7 +1206,7 @@
             {
               "calls": [
                 {
-                  "line": 398,
+                  "line": 463,
                   "name": "isCloudTag",
                   "target": {
                     "file": "src/ollama.ts"
@@ -1151,7 +1221,7 @@
             {
               "calls": [
                 {
-                  "line": 398,
+                  "line": 463,
                   "name": "isCloudTag",
                   "target": {
                     "file": "src/ollama.ts"
@@ -1330,7 +1400,7 @@
           "path": "src/driver.ts"
         },
         {
-          "hash": "168170e2e2738c7e4907b7fccce6fe69c96541c78dad519214c7b5d25ffcbcbe",
+          "hash": "9221f4fe4e8dd2a305aabf2cee78d6abb2664f12bdee0be2c4dca7c3fbbda20e",
           "importOrder": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -1373,7 +1443,7 @@
           "reexportsOnly": true
         },
         {
-          "hash": "58e4653b1a0e0b56f78cb21df20e2e3c849c44dac25cceceec3733e400b55094",
+          "hash": "5cbe221b70ee96661f016100a8fa0a6a2b73d31141a5f573332abc9cb22a6666",
           "importOrder": [
             "src/ollama.ts",
             "src/providers.ts",
@@ -1393,6 +1463,7 @@
           "exports": [
             "contextFor",
             "createOllamaClient",
+            "estimateTokens",
             "isCloudTag",
             "resolveOllamaHost",
             "thinkValueFor"
@@ -1401,52 +1472,42 @@
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 100
+              "line": 116
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 111
+              "line": 127
             },
             {
               "in": "createOllamaClient",
               "kind": "catch",
-              "line": 119
+              "line": 135
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 120
+              "line": 136
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 134
+              "line": 150
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 139
+              "line": 155
             },
             {
               "in": "send",
               "kind": "throw",
-              "line": 170
+              "line": 186
             },
             {
               "in": "send",
               "kind": "throw",
-              "line": 173
-            },
-            {
-              "in": "send",
-              "kind": "catch",
-              "line": 176
-            },
-            {
-              "in": "send",
-              "kind": "throw",
-              "line": 177
+              "line": 189
             },
             {
               "in": "send",
@@ -1456,25 +1517,35 @@
             {
               "in": "send",
               "kind": "throw",
-              "line": 196
+              "line": 193
+            },
+            {
+              "in": "send",
+              "kind": "catch",
+              "line": 208
             },
             {
               "in": "send",
               "kind": "throw",
-              "line": 198
+              "line": 212
             },
             {
               "in": "send",
               "kind": "throw",
-              "line": 210
+              "line": 214
             },
             {
               "in": "send",
               "kind": "throw",
-              "line": 225
+              "line": 226
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 241
             }
           ],
-          "hash": "63db3108cf6d105ae9abca75bdd8ab646e268d9a361593f6454505142784f737",
+          "hash": "8b189a22623ac3d6a22cb29645e36018cb2c726e8909bc7a02c301627fe35dca",
           "importsFiles": [
             "src/openrouter.ts"
           ],
@@ -1710,85 +1781,85 @@
             {
               "in": "readRun",
               "kind": "catch",
-              "line": 57
-            },
-            {
-              "in": "readRun",
-              "kind": "throw",
               "line": 60
             },
             {
               "in": "readRun",
-              "kind": "catch",
-              "line": 70
+              "kind": "throw",
+              "line": 63
             },
             {
               "in": "readRun",
               "kind": "catch",
-              "line": 77
+              "line": 73
             },
             {
               "in": "readRun",
               "kind": "catch",
-              "line": 113
+              "line": 80
+            },
+            {
+              "in": "readRun",
+              "kind": "catch",
+              "line": 117
             },
             {
               "in": "assertReadableFormat",
               "kind": "throw",
-              "line": 174
+              "line": 182
             },
             {
               "in": "readOptional",
               "kind": "catch",
-              "line": 496
+              "line": 560
             },
             {
               "in": "sidecarIsAggregate",
               "kind": "catch",
-              "line": 507
+              "line": 571
             },
             {
               "in": "listRunSiblings",
               "kind": "catch",
-              "line": 530
+              "line": 594
             },
             {
               "in": "listRunSiblings",
               "kind": "catch",
-              "line": 538
+              "line": 602
             },
             {
               "in": "assertExistingSidecarReadable",
               "kind": "catch",
-              "line": 597
+              "line": 661
             },
             {
               "in": "assertExistingSidecarReadable",
               "kind": "throw",
-              "line": 598
+              "line": 662
             },
             {
               "in": "writeReport",
               "kind": "throw",
-              "line": 605
+              "line": 669
             },
             {
               "in": "writeReport",
               "kind": "throw",
-              "line": 615
+              "line": 679
             },
             {
               "in": "writeReport",
               "kind": "throw",
-              "line": 622
+              "line": 686
             },
             {
               "in": "writeReport",
               "kind": "throw",
-              "line": 627
+              "line": 691
             }
           ],
-          "hash": "fabe64a71b7260ac695ac11ea80a72f240f248819f3d869288741ab9586c6d04",
+          "hash": "20aa8e7aec458f6e86281ce1c6f305c0a80e7e3235ef447dec927801a4572392",
           "importsFiles": [
             "src/config.ts",
             "src/coverage.ts",
@@ -1802,14 +1873,14 @@
             {
               "calls": [
                 {
-                  "line": 364,
+                  "line": 428,
                   "name": "renderCoverageLine",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 391,
+                  "line": 455,
                   "name": "renderAbsorbingLine",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -1824,7 +1895,7 @@
             {
               "calls": [
                 {
-                  "line": 364,
+                  "line": 428,
                   "name": "renderCoverageLine",
                   "target": {
                     "file": "src/coverage.ts"
@@ -1832,7 +1903,7 @@
                   "via": "renderReport"
                 },
                 {
-                  "line": 391,
+                  "line": 455,
                   "name": "renderAbsorbingLine",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -1848,7 +1919,7 @@
             {
               "calls": [
                 {
-                  "line": 671,
+                  "line": 735,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -1864,7 +1935,7 @@
             {
               "calls": [
                 {
-                  "line": 671,
+                  "line": 735,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -1879,7 +1950,7 @@
             {
               "calls": [
                 {
-                  "line": 671,
+                  "line": 735,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -1950,62 +2021,57 @@
             {
               "in": "toAction",
               "kind": "throw",
-              "line": 97
+              "line": 106
             },
             {
               "in": "toAction",
               "kind": "throw",
-              "line": 106
+              "line": 115
             },
             {
               "in": "withTurnRetries",
               "kind": "catch",
-              "line": 143
+              "line": 152
             },
             {
               "in": "withTurnRetries",
               "kind": "throw",
-              "line": 148
+              "line": 157
             },
             {
               "in": "safeSegment",
               "kind": "throw",
-              "line": 158
+              "line": 167
             },
             {
               "in": "createDriver",
               "kind": "throw",
-              "line": 210
+              "line": 219
             },
             {
               "in": "critiqueJuror",
               "kind": "catch",
-              "line": 228
+              "line": 237
             },
             {
               "in": "critiqueJuror",
-              "kind": "catch",
-              "line": 231
-            },
-            {
-              "in": "trySeatDir",
               "kind": "catch",
               "line": 240
             },
             {
+              "in": "trySeatDir",
+              "kind": "catch",
+              "line": 249
+            },
+            {
               "in": "runSeat",
               "kind": "catch",
-              "line": 342
+              "line": 351
             },
             {
               "in": "runSeat",
               "kind": "throw",
-              "line": 343
-            },
-            {
-              "in": "runSeat",
-              "kind": "catch",
-              "line": 396
+              "line": 352
             },
             {
               "in": "runSeat",
@@ -2015,55 +2081,60 @@
             {
               "in": "runSeat",
               "kind": "catch",
-              "line": 433
+              "line": 414
             },
             {
               "in": "runSeat",
               "kind": "catch",
-              "line": 468
+              "line": 443
             },
             {
               "in": "runSeat",
               "kind": "catch",
-              "line": 474
-            },
-            {
-              "in": "runSeat",
-              "kind": "throw",
               "line": 485
             },
             {
               "in": "runSeat",
+              "kind": "catch",
+              "line": 491
+            },
+            {
+              "in": "runSeat",
               "kind": "throw",
-              "line": 486
+              "line": 502
+            },
+            {
+              "in": "runSeat",
+              "kind": "throw",
+              "line": 503
             },
             {
               "in": "runSerialRpc",
               "kind": "catch",
-              "line": 598
+              "line": 616
             },
             {
               "in": "runSerialRpc",
               "kind": "catch",
-              "line": 605
+              "line": 623
             },
             {
               "in": "runSerialRpc",
               "kind": "catch",
-              "line": 626
+              "line": 644
             },
             {
               "in": "runSerialRpc",
               "kind": "catch",
-              "line": 638
+              "line": 656
             },
             {
               "in": "runSerialRpc",
               "kind": "catch",
-              "line": 647
+              "line": 665
             }
           ],
-          "hash": "4d3818b2348f31bef136f154b204fbb4137f1f96665b3943c4fc17cfd59f3acf",
+          "hash": "6926da25caf049496ffa14527ece48e102db784ff93b31a9d87dd03be6d36d3d",
           "importsFiles": [
             "src/config.ts",
             "src/coverage.ts",
@@ -2084,7 +2155,7 @@
               "calls": [
                 {
                   "branch": "space.kind === 'choice'",
-                  "line": 95,
+                  "line": 104,
                   "name": "looseChoice",
                   "target": {
                     "file": "src/driver.ts"
@@ -2099,21 +2170,21 @@
             {
               "calls": [
                 {
-                  "line": 179,
+                  "line": 188,
                   "name": "createPtyDriver",
                   "target": {
                     "file": "src/pty-driver.ts"
                   }
                 },
                 {
-                  "line": 199,
+                  "line": 208,
                   "name": "createRpcDriver",
                   "target": {
                     "file": "src/rpc-driver.ts"
                   }
                 },
                 {
-                  "line": 207,
+                  "line": 216,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2128,7 +2199,7 @@
             {
               "calls": [
                 {
-                  "line": 225,
+                  "line": 234,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2144,14 +2215,14 @@
             {
               "calls": [
                 {
-                  "line": 259,
+                  "line": 268,
                   "name": "resolveEnv",
                   "target": {
                     "file": "src/config.ts"
                   }
                 },
                 {
-                  "line": 261,
+                  "line": 270,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2159,52 +2230,52 @@
                   "via": "makeDriver"
                 },
                 {
-                  "line": 280,
+                  "line": 289,
                   "name": "start",
                   "target": null
                 },
                 {
-                  "line": 286,
+                  "line": 295,
                   "name": "step",
                   "target": null
                 },
                 {
-                  "line": 299,
+                  "line": 308,
                   "name": "onTurn",
                   "target": null
                 },
                 {
-                  "line": 300,
+                  "line": 309,
                   "name": "step",
                   "target": null
                 },
                 {
-                  "line": 319,
+                  "line": 328,
                   "name": "describeActions",
                   "target": {
                     "file": "src/driver.ts"
                   }
                 },
                 {
-                  "line": 315,
+                  "line": 324,
                   "name": "chooseInput",
                   "target": {
                     "file": "src/player.ts"
                   }
                 },
                 {
-                  "line": 324,
+                  "line": 333,
                   "name": "onRetry",
                   "target": null
                 },
                 {
-                  "line": 327,
+                  "line": 336,
                   "name": "onTurn",
                   "target": null
                 },
                 {
                   "branch": "space.kind === 'choice'",
-                  "line": 95,
+                  "line": 104,
                   "name": "looseChoice",
                   "target": {
                     "file": "src/driver.ts"
@@ -2212,45 +2283,45 @@
                   "via": "toAction"
                 },
                 {
-                  "line": 353,
+                  "line": 362,
                   "name": "onTurn",
                   "target": null
                 },
                 {
-                  "line": 369,
+                  "line": 378,
                   "name": "step",
                   "target": null
                 },
                 {
-                  "line": 418,
+                  "line": 427,
                   "name": "playerTurns",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 432,
+                  "line": 442,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
                   }
                 },
                 {
-                  "line": 441,
+                  "line": 451,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
                   }
                 },
                 {
-                  "line": 445,
+                  "line": 455,
                   "name": "pickJurors",
                   "target": {
                     "file": "src/panel.ts"
                   }
                 },
                 {
-                  "line": 225,
+                  "line": 234,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2258,40 +2329,40 @@
                   "via": "once"
                 },
                 {
-                  "line": 448,
+                  "line": 458,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
                   }
                 },
                 {
-                  "line": 461,
+                  "line": 477,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 462,
+                  "line": 478,
                   "name": "runVerifiers",
                   "target": {
                     "file": "src/verifiers.ts"
                   }
                 },
                 {
-                  "line": 472,
+                  "line": 489,
                   "name": "onSeatDone",
                   "target": null
                 },
                 {
-                  "line": 477,
+                  "line": 494,
                   "name": "playerTurns",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 480,
+                  "line": 497,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2307,14 +2378,14 @@
             {
               "calls": [
                 {
-                  "line": 544,
+                  "line": 562,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 545,
+                  "line": 563,
                   "name": "runVerifiers",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -2329,14 +2400,14 @@
             {
               "calls": [
                 {
-                  "line": 568,
+                  "line": 586,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
                   }
                 },
                 {
-                  "line": 569,
+                  "line": 587,
                   "name": "runVerifiers",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -2351,14 +2422,14 @@
             {
               "calls": [
                 {
-                  "line": 587,
+                  "line": 605,
                   "name": "resolveEnv",
                   "target": {
                     "file": "src/config.ts"
                   }
                 },
                 {
-                  "line": 589,
+                  "line": 607,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2366,7 +2437,7 @@
                   "via": "makeDriver"
                 },
                 {
-                  "line": 544,
+                  "line": 562,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2374,7 +2445,7 @@
                   "via": "failedSeat"
                 },
                 {
-                  "line": 545,
+                  "line": 563,
                   "name": "runVerifiers",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -2382,7 +2453,7 @@
                   "via": "failedSeat"
                 },
                 {
-                  "line": 259,
+                  "line": 268,
                   "name": "resolveEnv",
                   "target": {
                     "file": "src/config.ts"
@@ -2390,7 +2461,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 261,
+                  "line": 270,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2398,31 +2469,31 @@
                   "via": "makeDriver"
                 },
                 {
-                  "line": 280,
+                  "line": 289,
                   "name": "start",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 286,
+                  "line": 295,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 299,
+                  "line": 308,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 300,
+                  "line": 309,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 319,
+                  "line": 328,
                   "name": "describeActions",
                   "target": {
                     "file": "src/driver.ts"
@@ -2430,7 +2501,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 315,
+                  "line": 324,
                   "name": "chooseInput",
                   "target": {
                     "file": "src/player.ts"
@@ -2438,20 +2509,20 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 324,
+                  "line": 333,
                   "name": "onRetry",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 327,
+                  "line": 336,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "space.kind === 'choice'",
-                  "line": 95,
+                  "line": 104,
                   "name": "looseChoice",
                   "target": {
                     "file": "src/driver.ts"
@@ -2459,19 +2530,19 @@
                   "via": "toAction"
                 },
                 {
-                  "line": 353,
+                  "line": 362,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 369,
+                  "line": 378,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
-                  "line": 418,
+                  "line": 427,
                   "name": "playerTurns",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2479,7 +2550,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 432,
+                  "line": 442,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2487,7 +2558,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 441,
+                  "line": 451,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
@@ -2495,7 +2566,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 445,
+                  "line": 455,
                   "name": "pickJurors",
                   "target": {
                     "file": "src/panel.ts"
@@ -2503,7 +2574,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 225,
+                  "line": 234,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2511,7 +2582,7 @@
                   "via": "once"
                 },
                 {
-                  "line": 448,
+                  "line": 458,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
@@ -2519,7 +2590,7 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 461,
+                  "line": 477,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2537,7 +2608,7 @@
               "calls": [
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 587,
+                  "line": 605,
                   "name": "resolveEnv",
                   "target": {
                     "file": "src/config.ts"
@@ -2546,7 +2617,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 589,
+                  "line": 607,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2555,7 +2626,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 544,
+                  "line": 562,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2564,7 +2635,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 545,
+                  "line": 563,
                   "name": "runVerifiers",
                   "target": {
                     "file": "src/verifiers.ts"
@@ -2573,7 +2644,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 259,
+                  "line": 268,
                   "name": "resolveEnv",
                   "target": {
                     "file": "src/config.ts"
@@ -2582,7 +2653,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 261,
+                  "line": 270,
                   "name": "createStdioDriver",
                   "target": {
                     "file": "src/stdio-driver.ts"
@@ -2591,35 +2662,35 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 280,
+                  "line": 289,
                   "name": "start",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 286,
+                  "line": 295,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 299,
+                  "line": 308,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 300,
+                  "line": 309,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 319,
+                  "line": 328,
                   "name": "describeActions",
                   "target": {
                     "file": "src/driver.ts"
@@ -2628,7 +2699,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 315,
+                  "line": 324,
                   "name": "chooseInput",
                   "target": {
                     "file": "src/player.ts"
@@ -2637,21 +2708,21 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 324,
+                  "line": 333,
                   "name": "onRetry",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 327,
+                  "line": 336,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 95,
+                  "line": 104,
                   "name": "looseChoice",
                   "target": {
                     "file": "src/driver.ts"
@@ -2660,21 +2731,21 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 353,
+                  "line": 362,
                   "name": "onTurn",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 369,
+                  "line": 378,
                   "name": "step",
                   "target": null,
                   "via": "runSeat"
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 418,
+                  "line": 427,
                   "name": "playerTurns",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2683,7 +2754,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 432,
+                  "line": 442,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2692,7 +2763,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 441,
+                  "line": 451,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
@@ -2701,7 +2772,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 445,
+                  "line": 455,
                   "name": "pickJurors",
                   "target": {
                     "file": "src/panel.ts"
@@ -2710,7 +2781,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 225,
+                  "line": 234,
                   "name": "critique",
                   "target": {
                     "file": "src/critic.ts"
@@ -2719,7 +2790,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 448,
+                  "line": 458,
                   "name": "aggregatePanel",
                   "target": {
                     "file": "src/panel.ts"
@@ -2728,7 +2799,7 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 461,
+                  "line": 477,
                   "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
@@ -2893,7 +2964,24 @@
         "vitest"
       ],
       "testedBy": 15,
-      "unresolvedSites": 0
+      "unresolvedNamed": [
+        {
+          "path": "src/cli.ts",
+          "specifier": "./decisions.js",
+          "why": "missing"
+        },
+        {
+          "path": "src/cli.ts",
+          "specifier": "./rescore.js",
+          "why": "missing"
+        },
+        {
+          "path": "src/config.ts",
+          "specifier": "./scorers.js",
+          "why": "missing"
+        }
+      ],
+      "unresolvedSites": 11
     },
     {
       "dynamicReads": 0,
@@ -2951,7 +3039,7 @@
           "testFramework": "vitest"
         },
         {
-          "hash": "b8fb01378a5eb18d6d0eddd3040960209a44ed614677ca2f88e138a36abbb0b4",
+          "hash": "5b3f9f78fdd2b4f66d748a58972ee822b5a9eaaa7f8df0ac4603144704a56fe1",
           "importOrder": [
             "src/config.ts",
             "src/run.ts",
@@ -3686,7 +3774,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "7270e21e0dcbddcb6cc73b5fd7d69d7cd3f1f249",
+    "commit": "0cd8e697dda07ae85663259fb5cf7fa51a508219",
     "tracked": 82
   },
   "landings": [

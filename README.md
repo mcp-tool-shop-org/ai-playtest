@@ -153,6 +153,46 @@ and competence only. The tool's central premise — that a model's confusions
 resemble a player's — is therefore untested in the literature either way. Treat
 dead spots and confusions as leads to check, not as findings.
 
+### A second opinion as a probability
+
+The jury writes verdicts with evidence. A **probability judge** answers the same
+criteria as P(met) and writes nothing else, and the report shows both side by
+side. Where the probability is confidently on the other side of the jury's
+verdict, the cell is flagged `⚠`: read that transcript.
+
+```json
+"scorers": [{ "kind": "jev" }]
+```
+
+`jev` is TypeSafe's decision model (`typesafe/jev-1.13`) on OpenRouter's
+Decisions API. It needs `OPENROUTER_API_KEY` and costs a fraction of a cent per
+seat: every criterion goes in one request, and the transcript is sent once. On 14
+transcripts with a known answer, it separated true from false on an observable
+criterion with wide margins (true ≥ 0.92, false ≤ 0.18, 8 of 8) where the LLM
+judges used in that run got 6 of 8. It has no evidence to offer, so it sits beside
+the jury, never instead of it. Probabilities inside the uncertain band (0.35–0.65
+by default, `band` to change it) are reported as too close to call. Its
+calibration is still being measured, so read a P(met) as a strong signal rather
+than a measured frequency. See [`docs/research-4.md`](docs/research-4.md).
+
+To score a finished run again without replaying the game, against the config's
+current criteria:
+
+```bash
+node dist/cli.js score path/to/game.playtest.json --label phase9
+```
+
+That is also how to check a rewritten criterion against old transcripts.
+
+### Write each criterion as one observable claim
+
+A judge asked "X, so Y" answers the easier half. Every judge we tested, LLM and
+decision model alike, passed "shooting and holding have different consequences,
+*so* there is a reason not to shoot everything" in a game where shooting
+everything cost nothing. `check` and `run` warn about criteria that join claims
+with *so*, *because*, *therefore*, *but*, a semicolon, or more than one sentence.
+Split them, one claim per criterion.
+
 ## How it works
 
 1. **Observe.** The driver produces an `Observation`: always `text`, optionally a
@@ -202,6 +242,7 @@ node dist/cli.js run path/to/game.playtest.json --label smoke --seats mistral --
 node dist/cli.js run path/to/game.playtest.json --label compare --runs 3   # descriptive; cannot reach p<0.05
 node dist/cli.js run path/to/game.playtest.json --label rpc --serial       # one game, several seats; needed for RPC until you multiplex
 node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md + REPORT.json from disk
+node dist/cli.js score path/to/game.playtest.json --label phase9    # re-run config.scorers over the saved transcripts
 ```
 
 `--serial` runs seats one after another. On the RPC driver it reuses one TCP
@@ -260,6 +301,7 @@ answer. `OLLAMA_HOST` points at another daemon.
 | `game.quitInputs` | lines sent after the last turn (default `["quit"]`) |
 | `seats[]` | `{ id, family, model, provider? }` — one seat per family. `provider` is `openrouter` (default; `model` is an OpenRouter slug) or `ollama` (`model` is a local tag) |
 | `panelSize` | author-off jurors per transcript (default **1**; raise to flag disagreement, not to average a stronger score) |
+| `scorers[]` | probability judges beside the jury: `{ "kind": "jev", "id"?, "model"?, "band"?, "maxStateTokens"? }` (defaults `typesafe/jev-1.13`, band `[0.35, 0.65]`, 26,000 tokens). Needs `OPENROUTER_API_KEY` |
 | `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`; empty = do not guess). Occupancy: `absorbingMinTurns` (default 4), `noProgressWindow` (default 5), `noOpVerbs` |
 | `setup[]` | `{ match, answer }` scripted answers for setup prompts |
 | `turns` | play inputs per seat (setup answers and quit inputs do not count; default 40) |
@@ -301,9 +343,10 @@ you set `game.inheritEnv: true`. Nothing is written outside `runsDir`.
 
 **Permissions:** `game.command` is `child_process.spawn` — a playtest
 config is executable-equivalent. Review it as you would a shell script.
-Network calls go only to the OpenRouter base URL (HTTPS) and, for local
-seats, the Ollama daemon at `OLLAMA_HOST` (default `127.0.0.1:11434`). There is
-no sandbox.
+Network calls go only to the OpenRouter base URL (HTTPS: chat completions for
+seats, the Decisions API for `scorers`) and, for local seats, the Ollama daemon at
+`OLLAMA_HOST` (default `127.0.0.1:11434`). A scorer sends the transcript text to
+OpenRouter, the same text a cloud juror would read. There is no sandbox.
 
 ## Telemetry
 
@@ -324,9 +367,9 @@ call is the one you configured for the models.
   outside the runner's control — which is exactly why a playtest config is
   treated as executable-equivalent.
 - **DECOMPOSE_BY_SECRETS — 3.** `driver.ts` is the observation seam,
-  `openrouter.ts` and `ollama.ts` the only network seams (one per provider,
-  behind `providers.ts`), `panel.ts` the judging seam; each has its own tests
-  and a fake on the other side.
+  `openrouter.ts`, `ollama.ts` and `decisions.ts` the only network seams (the
+  chat providers behind `providers.ts`, the decision model behind `scorers.ts`),
+  `panel.ts` the judging seam; each has its own tests and a fake on the other side.
 - **UNCERTAINTY_GATED_HUMANS — 3.** The report aggregates but never rules, and it
   states its own uncertainty: split verdicts, thin coverage, a sample-of-one
   warning, and criteria no judge answered are all surfaced rather than smoothed.
@@ -345,7 +388,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-211 tests. `tsconfig.test.json` exists because the build config excludes test
+228 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 

@@ -1,14 +1,16 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit 7270e21 by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 0cd8e69 by Atlas 1.24.0.
 
 ## What this is
 
 6 parts, mostly TypeScript (37 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (493e65e)
+## What changed since 2026-10-02 (7270e21)
 
-Nothing structural changed since 2026-10-02; 4 files changed content.
+- In src/cli.ts, `main` gained a step, `lintCriteria`, before `writeReport`.
+- In src/cli.ts, `main` gained a step, `writeReport`, before `listRunSiblings`.
+- 10 files changed content, across 3 parts.
 
 ## What comes in
 
@@ -69,7 +71,8 @@ Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 2 writes and 1 read use paths built at run time and are not named here.
+- 11 imports could not be resolved: `src/cli.ts` imports `./decisions.js`, which is not in this repository; `src/cli.ts` imports `./rescore.js`, which is not in this repository; `src/config.ts` imports `./scorers.js`, which is not in this repository; and 8 more.
+- 2 writes and 2 reads use paths built at run time and are not named here.
 - 11 writes and 11 reads go to a path their caller passes, not to this repository.
 - 1 command is built at run time and not followed.
 - 1 file belongs to no part: examples/local-smoke.playtest.json.

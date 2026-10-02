@@ -9,6 +9,32 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Probability judges (`scorers`).** A second opinion beside the jury: each
+  criterion scored as P(met), shown per criterion and seat in a new report section
+  with an uncertain band (`?`, default 0.35–0.65) and a `⚠` where the probability
+  is confidently on the other side of the jury's verdict. Scores land in each
+  seat's `meta.json` and REPORT.json, so `report` rebuilds keep them. A scorer
+  failure is recorded on the seat and never fails it.
+- **`{ "kind": "jev" }`**, the first scorer: TypeSafe's decision model
+  (`typesafe/jev-1.13`) on OpenRouter's Decisions API. Every criterion goes in one
+  request, so the transcript is sent once (about $0.0001 per seat). The transcript
+  is fitted to a 26,000-token state by trimming the middle and keeping both ends.
+  On 14 transcripts with a known answer it scored an observable criterion 8 of 8
+  with wide margins, where the run's own LLM judges scored 6 of 8
+  (`docs/research-4.md`).
+- **`decisions.ts`**, a general client for the Decisions API: noul, choice and
+  score questions, answers validated against the question (the API is alpha), and
+  cost reported. Future decision-model features build on it.
+- **`ai-playtest score <config> --label <run>`** re-runs the configured scorers
+  over a finished run's saved transcripts, against the config's current criteria,
+  without replaying the game. It rewrites each seat's scores and the report.
+- **Compound-criterion lint.** `check`, `run` and `score` warn about criteria that
+  probably bundle two claims ("so", "because", "therefore", "but", a semicolon, more
+  than one sentence). Every judge tested passed such a criterion on its easier half.
+- **`docs/research-4.md`**: the judge check with its answer key, research on
+  criteria and calibration, and the search for a test bed with known answers
+  (none exists for the variables ai-playtest judges).
+
 - **Local seats through Ollama.** A seat with `"provider": "ollama"` runs on a
   local Ollama daemon (`OLLAMA_HOST`, default `http://127.0.0.1:11434`). An
   all-local run needs no `OPENROUTER_API_KEY`: the key is demanded only when a

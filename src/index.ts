@@ -5,6 +5,16 @@ export { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 export { createOllamaClient, OllamaError, isCloudTag, contextFor, resolveOllamaHost } from './ollama.js';
 export type { OllamaOptions } from './ollama.js';
 export { createRoutedClient, providersInUse } from './providers.js';
+export { createDecisionsClient, validateAnswer, DecisionsError } from './decisions.js';
+export type {
+  DecisionsClient, DecisionsOptions, DecisionRequest, DecisionResult, DecisionQuestion, DecisionAnswer,
+  NoulQuestion, ChoiceQuestion, ScoreQuestion, NoulAnswer, ChoiceAnswer, ScoreAnswer,
+} from './decisions.js';
+export { createScorer, criterionQuestions, stateForWindow, fitText, readProbability, disagreement, SCORER_DEFAULTS } from './scorers.js';
+export type { Scorer, ScorerConfig, ScorerKind, ScorerResult, CriterionScore, ScoreInput } from './scorers.js';
+export { rescoreRun } from './rescore.js';
+export { validateScorers, lintCriteria } from './config.js';
+export type { CriterionLint } from './config.js';
 export type { SeatProvider } from './config.js';
 export type { ChatClient, ChatMessage, ChatRequest } from './openrouter.js';
 export { spawnGame, stripAnsi } from './stdio-game.js';

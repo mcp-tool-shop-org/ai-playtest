@@ -782,6 +782,39 @@ describe('run safety', () => {
   });
 });
 
+describe('probability judges (config.scorers)', () => {
+  it('score each transcript beside the jury, land in meta.json, and flag where they disagree in the report', async () => {
+    const cfg = { ...config(2), scorers: [{ id: 'jev', kind: 'jev' as const, model: 'typesafe/jev-1.13', maxStateTokens: 26_000, band: [0.35, 0.65] as [number, number] }] };
+    const asked: any[] = [];
+    const decisions = async (req: any) => {
+      asked.push(req);
+      // The fake jury says both criteria are met; this judge is confident 'heat' is not.
+      return { model: req.model, answers: { ambush: { type: 'noul' as const, noul: 0.91 }, heat: { type: 'noul' as const, noul: 0.08 } }, cost: 0.0001 };
+    };
+    const results = await play(cfg, { label: 'scored', client: fakeClient(['look', 'attack']), decisions, parallel: false });
+    expect(asked).toHaveLength(2); // one request per seat, every criterion inside it
+    for (const r of results) {
+      expect(r.scores?.[0].scores).toEqual([{ id: 'ambush', p: 0.91 }, { id: 'heat', p: 0.08 }]);
+      const meta = JSON.parse(await readFile(join(r.dir, 'meta.json'), 'utf8'));
+      expect(meta.scores[0]).toMatchObject({ scorer: 'jev', model: 'typesafe/jev-1.13' });
+    }
+    // The report is rebuilt from disk, so the scores survive a `report` rebuild too.
+    const path = await writeReport('echo', join(runsDir, 'scored'), 'scored');
+    const md = await readFile(path, 'utf8');
+    expect(md).toContain('## Probability judges');
+    expect(md).toMatch(/\| ambush \| 0\.91 \| 0\.91 \|/);
+    expect(md).toMatch(/\| heat \| 0\.08 ⚠ \| 0\.08 ⚠ \|/);
+    expect(md).toContain('where this judge and the jury disagree');
+  }, 30000);
+
+  it('leave a run without scorers exactly as it was', async () => {
+    const results = await play(config(1), { label: 'plain', client: fakeClient(['look']), parallel: false });
+    expect(results[0].scores).toBeUndefined();
+    const md = await readFile(await writeReport('echo', join(runsDir, 'plain'), 'plain'), 'utf8');
+    expect(md).not.toContain('Probability judges');
+  }, 30000);
+});
+
 describe('cross-family jury', () => {
   it('never lets a seat score its own transcript', async () => {
     const cfg = config(3);

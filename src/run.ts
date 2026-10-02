@@ -15,6 +15,8 @@ import { critique, CritiqueError, type Critique } from './critic.js';
 import { computeCoverage, playerTurns as chosenTurns, type Coverage } from './coverage.js';
 import { pickJurors, aggregatePanel, type PanelVerdict } from './panel.js';
 import { runVerifiers, type VerifierReport } from './verifiers.js';
+import { createScorer, type ScorerResult } from './scorers.js';
+import type { DecisionsClient } from './decisions.js';
 
 export type SeatResult = {
   seat: Seat;
@@ -39,6 +41,11 @@ export type SeatResult = {
    * all there is and the report says so.
    */
   panel: PanelVerdict | null;
+  /**
+   * Probability judges' readings of the same transcript (config.scorers): P(met)
+   * per criterion, beside the jury, never instead of it. Absent when none are set.
+   */
+  scores?: ScorerResult[];
   durationMs: number;
   dir: string;
   /** True when scripted setup hit MAX_SETUP_ANSWERS and later matches were ignored. */
@@ -50,6 +57,8 @@ export type SeatResult = {
 export type RunOptions = {
   label: string;
   client: ChatClient;
+  /** Decision-model transport for config.scorers (decisions.ts). Absent: scorers report unscored. */
+  decisions?: DecisionsClient;
   /** Extra attempts per turn after the client's own retries are exhausted (default 3). */
   turnRetries?: number;
   /** Wait between those attempts (default 30s). */
@@ -421,6 +430,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
     // with no input made endings, stalls and crashes invisible to the verdict.
     const evidence = history.filter((h) => h.reason !== 'setup' && h.reason !== 'quit' && h.reason !== 'retry');
     let panel: PanelVerdict | null = null;
+    let scores: ScorerResult[] | undefined;
     const shouldJudge = playerTurns.length > 0
       || endedBy === 'timeout'
       || (endedBy === 'error' && evidence.length > 0);
@@ -447,6 +457,12 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
           critiqueJuror(opts.client, juror, cfg.criteria, evidence, outcome)));
         panel = aggregatePanel(jurors, critiques, cfg.criteria, { requested });
       }
+      // Probability judges read the same evidence. A failure is recorded on the
+      // result and never fails the seat: they are a second opinion.
+      if (cfg.scorers.length > 0) {
+        scores = await Promise.all(cfg.scorers.map((sc) =>
+          createScorer(sc, { decisions: opts.decisions }).score({ evidence, criteria: cfg.criteria, outcome })));
+      }
     } else {
       // A session where the player never moved used to produce a full, confident
       // verdict over a transcript containing only the runner's own quit input.
@@ -461,6 +477,7 @@ export async function runSeat(cfg: PlaytestConfig, seat: Seat, opts: RunOptions)
       coverage: computeCoverage(history),
       verifiers: runVerifiers(history, cfg.verifiers),
       panel,
+      ...(scores ? { scores } : {}),
       durationMs: Date.now() - started, dir,
     };
     try {
@@ -526,6 +543,7 @@ async function writeArtifacts(cfg: PlaytestConfig, r: SeatResult, stderr: string
     error: r.error ?? null, stopError: r.stopError ?? null, writeError: r.writeError ?? null,
     critiqueError: r.critiqueError ?? null, setupCapped: r.setupCapped ?? false,
     coverage: r.coverage, panel: r.panel, verifiers: r.verifiers,
+    ...(r.scores ? { scores: r.scores } : {}),
     durationMs: r.durationMs, finishedAt: new Date().toISOString(),
   }, null, 2) + '\n', 'utf8');
   if (stderr.trim().length > 0) await writeFile(join(r.dir, 'stderr.txt'), stderr, 'utf8');
