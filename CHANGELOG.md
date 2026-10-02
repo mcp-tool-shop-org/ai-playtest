@@ -28,11 +28,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `"low"` for gpt-oss, which can only be lowered) and 2,048 extra tokens, and the
   model is remembered for the rest of the run. A model that cannot think at all
   reports the original truncation.
-- **The context estimate counts UTF-8 bytes, not characters.** A box-drawn TUI
-  screen (│ ─ █, three bytes each) tokenises far worse than prose: an Escape the
-  Valley camp screen measured about 4,600 tokens against a 4,096 window sized
-  from characters. Should a prompt still fill the window, the call is retried
-  once at twice the size before it fails.
+- **The context estimate counts non-ASCII glyphs at about a token each.** A
+  box-drawn TUI screen (│ ─ █) tokenises far worse than prose: an Escape the
+  Valley camp screen measured about 4,600 tokens against a 4,096 window sized at
+  three characters a token. ASCII stays at three characters a token. Should a
+  prompt still fill the window, the call is retried once at twice the size before
+  it fails. The ceiling is 65,536 tokens (it was 32,768, and every judge of a
+  30-turn Escape the Valley transcript was refused), overridable with
+  `AI_PLAYTEST_OLLAMA_MAX_CTX`. The reasoning allowance is 4,096 tokens; 2,048
+  was not enough for qwen3-next.
 - Cloud-routed Ollama tags (`:cloud`, `-cloud`) are refused at config time and
   again at call time; they bill an ollama.com account.
 - `examples/local-smoke.playtest.json`: three local families against the

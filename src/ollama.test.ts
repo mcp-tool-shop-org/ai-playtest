@@ -106,7 +106,7 @@ describe('reasoning models and dense screens', () => {
     await expect(c({ ...req, model: 'llama3.3:70b' })).rejects.toThrow(/truncated at max_tokens/);
   });
 
-  it('sizes the window from UTF-8 bytes, so a box-drawn screen is not undersized', () => {
+  it('counts non-ASCII glyphs near a token each, so a box-drawn screen is not undersized', () => {
     const box = { ...req, messages: [{ role: 'user' as const, content: '│─█'.repeat(1600) }] };
     const prose = { ...req, messages: [{ role: 'user' as const, content: 'abc'.repeat(1600) }] };
     expect(contextFor(box, 32_768)!.promptTokens).toBeGreaterThan(contextFor(prose, 32_768)!.promptTokens * 2);

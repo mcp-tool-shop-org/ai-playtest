@@ -39,19 +39,28 @@ export type OllamaOptions = {
   attemptTimeoutMs?: number;
 };
 
-const DEFAULT_MAX_CONTEXT = 32_768;
+/**
+ * The largest window a request may ask for. 64K covers a judge reading a 40-turn
+ * transcript of box-drawn screens; current local models (llama3.3, qwen3, gpt-oss)
+ * support 128K. AI_PLAYTEST_OLLAMA_MAX_CTX overrides it for smaller cards.
+ */
+const DEFAULT_MAX_CONTEXT = Number(process.env.AI_PLAYTEST_OLLAMA_MAX_CTX) > 0
+  ? Number(process.env.AI_PLAYTEST_OLLAMA_MAX_CTX)
+  : 65_536;
 const DEFAULT_ATTEMPT_TIMEOUT_MS = 600_000;
 const MIN_CONTEXT = 4_096;
 const CONTEXT_STEP = 2_048;
 /**
- * Measured in UTF-8 BYTES, not characters, and deliberately pessimistic. English
- * runs near 4 bytes a token, but a TUI screen drawn in box characters (│ ─ █, 3
- * bytes each) tokenises far worse: an Escape the Valley camp screen measured
- * about 4,600 tokens against a characters/3 estimate that sized it at 4,096.
+ * ASCII is counted at 3 characters a token (deliberately pessimistic: English runs
+ * near 4) and every other character at about one token. A TUI screen drawn in box
+ * characters (│ ─ █) tokenises at roughly a token per glyph: an Escape the Valley
+ * camp screen measured about 4,600 tokens against a characters/3 estimate that
+ * sized it at 4,096.
  */
-const BYTES_PER_TOKEN = 2.5;
+const ASCII_PER_TOKEN = 3;
+const TOKENS_PER_OTHER = 1.1;
 /** Room for a reasoning model's thinking, on top of the reply budget, once one is detected. */
-const REASONING_BUDGET = 2_048;
+const REASONING_BUDGET = 4_096;
 
 /** `think` as Ollama takes it: off, on, or a level (gpt-oss cannot be switched off, only lowered). */
 export type Think = false | true | 'low';
@@ -76,8 +85,10 @@ export function resolveOllamaHost(host?: string): string {
 
 /** num_ctx for one request: prompt estimate plus the reply budget, rounded up, or undefined if it cannot fit. */
 export function contextFor(req: ChatRequest, maxContext: number, extraReply = 0): { numCtx: number; promptTokens: number } | undefined {
-  const bytes = req.messages.reduce((n, m) => n + Buffer.byteLength(m.content, 'utf8'), 0);
-  const promptTokens = Math.ceil(bytes / BYTES_PER_TOKEN) + 16 * req.messages.length;
+  let ascii = 0;
+  let other = 0;
+  for (const m of req.messages) for (const ch of m.content) (ch.charCodeAt(0) < 128 ? ascii++ : other++);
+  const promptTokens = Math.ceil(ascii / ASCII_PER_TOKEN + other * TOKENS_PER_OTHER) + 16 * req.messages.length;
   const need = promptTokens + req.maxTokens + extraReply + 256;
   const numCtx = Math.max(MIN_CONTEXT, Math.ceil(need / CONTEXT_STEP) * CONTEXT_STEP);
   return numCtx > maxContext ? undefined : { numCtx, promptTokens };
