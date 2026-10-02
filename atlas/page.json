@@ -19,86 +19,26 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 6,
-      "changed": 9,
+      "added": 0,
+      "changed": 5,
       "moved": 0,
-      "parts": 4,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
-        "kind": "door",
-        "sentence": "CI now also runs src/cli-verbs.test.ts, src/diff.test.ts, src/rescore.test.ts and 1 more.",
-        "subjects": [
-          ".github/workflows/ci.yml",
-          "src/cli-verbs.test.ts",
-          "src/diff.test.ts",
-          "src/rescore.test.ts",
-          "test/calibration-edges.test.ts"
-        ]
-      },
-      {
-        "kind": "door",
-        "sentence": "CI now also builds src/diff.ts.",
-        "subjects": [
-          ".github/workflows/ci.yml",
-          "src/diff.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `parseAcceptances`, before `diffRuns`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `diffRuns`, before `renderDiff`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `renderDiff`, before `openFindings`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "And 5 more changes to the order of work.",
-        "subjects": []
-      },
-      {
         "kind": "counts",
-        "sentence": "6 files added and 9 changed content, across 4 parts.",
+        "sentence": "Nothing structural changed since 2026-10-02; 5 files changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "5e6bf567a28bf743f39ba45c3f8598cfb4bccd0c",
-      "generatedAt": "2026-10-02T15:15:11.455Z"
+      "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf",
+      "generatedAt": "2026-10-02T15:29:26.349Z"
     },
-    "unchanged": false
+    "unchanged": true
   },
   "changesTogether": [
-    {
-      "a": "src/index.ts",
-      "b": "src/report.ts",
-      "either": 8,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 6
-    },
     {
       "a": "src/report.ts",
       "b": "test/run.test.ts",
@@ -117,6 +57,21 @@
     {
       "a": "src/cli.ts",
       "b": "src/index.ts",
+      "either": 10,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 7
+    },
+    {
+      "a": "src/index.ts",
+      "b": "src/report.ts",
       "either": 9,
       "partLabels": [
         "src",
@@ -130,8 +85,8 @@
       "shared": 6
     },
     {
-      "a": "src/cli.ts",
-      "b": "src/config.ts",
+      "a": "src/config.ts",
+      "b": "src/run.ts",
       "either": 8,
       "partLabels": [
         "src",
@@ -145,8 +100,8 @@
       "shared": 5
     },
     {
-      "a": "src/cli.ts",
-      "b": "src/report.ts",
+      "a": "src/report.ts",
+      "b": "src/run.ts",
       "either": 8,
       "partLabels": [
         "src",
@@ -166,7 +121,7 @@
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf",
+  "commit": "1e1853de24fa479ad2360754ad1a1b5855ca9a3b",
   "defaultBranch": "main",
   "derived": "6 parts, mostly TypeScript (49 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
@@ -329,7 +284,7 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-10-02T15:29:26.349Z",
+  "generatedAt": "2026-10-02T15:39:31.715Z",
   "limits": [
     "4 writes and 3 reads use paths built at run time and are not named here.",
     "2 writes go to places this repository does not track, so they are not listed as generated.",

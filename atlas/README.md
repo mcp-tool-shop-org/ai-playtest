@@ -1,20 +1,14 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit de93770 by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 1e1853d by Atlas 1.24.0.
 
 ## What this is
 
 6 parts, mostly TypeScript (49 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (5e6bf56)
+## What changed since 2026-10-02 (de93770)
 
-- CI now also runs src/cli-verbs.test.ts, src/diff.test.ts, src/rescore.test.ts and 1 more.
-- CI now also builds src/diff.ts.
-- In src/cli.ts, `main` gained a step, `parseAcceptances`, before `diffRuns`.
-- In src/cli.ts, `main` gained a step, `diffRuns`, before `renderDiff`.
-- In src/cli.ts, `main` gained a step, `renderDiff`, before `openFindings`.
-- And 5 more changes to the order of work.
-- 6 files added and 9 changed content, across 4 parts.
+Nothing structural changed since 2026-10-02; 5 files changed content.
 
 ## What comes in
 
@@ -43,11 +37,11 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **src/index.ts** and **src/report.ts** changed together in 6 of 8 commits, inside the src part.
 - **src/report.ts** and **test/run.test.ts** changed together in 5 of 7 commits, and the test part imports the src part.
-- **src/cli.ts** and **src/index.ts** changed together in 6 of 9 commits, inside the src part.
-- **src/cli.ts** and **src/config.ts** changed together in 5 of 8 commits, inside the src part.
-- **src/cli.ts** and **src/report.ts** changed together in 5 of 8 commits, inside the src part.
+- **src/cli.ts** and **src/index.ts** changed together in 7 of 10 commits, inside the src part.
+- **src/index.ts** and **src/report.ts** changed together in 6 of 9 commits, inside the src part.
+- **src/config.ts** and **src/run.ts** changed together in 5 of 8 commits, inside the src part.
+- **src/report.ts** and **src/run.ts** changed together in 5 of 8 commits, inside the src part.
 
 1 file changed together with its own test, as expected.
 

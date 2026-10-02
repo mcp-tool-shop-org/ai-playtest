@@ -91,12 +91,24 @@ describe('detectAbsorbing', () => {
   });
 });
 
+// A turn record is the screen the player saw plus the input typed in answer to
+// it, exactly as run.ts records it: the reply to turn N's input is turn N+1's
+// screen, and the last record (input '') is the final reply.
 describe('classifyIgnored', () => {
-  it('names identical-screen turns instead of only reporting a rate', () => {
-    const h = [t(1, 'Nave', 'look'), t(2, 'Nave', 'look'), t(3, 'Alcove', 'go alcove')];
+  it('names the input whose reply left the screen unchanged', () => {
+    const h = [t(1, 'Nave', 'frob'), t(2, 'Nave', 'go alcove'), t(3, 'Alcove', 'look'), t(4, '', '')];
     const rows = classifyIgnored(h);
-    expect(rows[1].kind).toBe('identical-screen');
-    expect(rows[2].kind).toBe('changed');
+    expect(rows.map((r) => [r.input, r.kind])).toEqual([
+      ['frob', 'identical-screen'],
+      ['go alcove', 'changed'],
+      ['look', 'no-output'],
+    ]);
+  });
+
+  it('leaves an input with no observed reply unflagged, and skips reply-only records', () => {
+    const rows = classifyIgnored([t(1, 'Nave', 'look')]);
+    expect(rows).toEqual([{ turn: 1, input: 'look', kind: 'changed' }]);
+    expect(classifyIgnored([t(1, 'The end.', '')])).toEqual([]);
   });
 });
 
@@ -112,14 +124,25 @@ describe('classifyParser', () => {
   it('splits unparsed from refused when the author supplied lists', () => {
     const cfg = { ...DEFAULT_VERIFIERS, unparsed: ['not understood', 'don.t know'], refused: ['cannot go that way'] };
     const h = [
-      t(1, 'I don\'t know the word "xyzzy".', 'xyzzy'),
-      t(2, 'You cannot go that way.', 'go north'),
-      t(3, 'You go north. The nave.', 'go north'),
+      t(1, 'The porch.', 'xyzzy'),
+      t(2, 'I don\'t know the word "xyzzy".', 'go west'),
+      t(3, 'You cannot go that way.', 'go north'),
+      t(4, 'You go north. The nave.', ''),
     ];
     const r = classifyParser(h, cfg);
     expect(r.listsEmpty).toBe(false);
-    expect(r.turns.map((x) => x.classification)).toEqual(['unparsed', 'refused', 'accepted']);
+    expect(r.turns.map((x) => [x.input, x.classification])).toEqual([
+      ['xyzzy', 'unparsed'],
+      ['go west', 'refused'],
+      ['go north', 'accepted'],
+    ]);
     expect(r.unknownRate).toBe(0);
+  });
+
+  it('cannot classify the last input when the game never replied', () => {
+    const cfg = { ...DEFAULT_VERIFIERS, unparsed: ['not understood'] };
+    const r = classifyParser([t(1, 'The porch.', 'look'), t(2, 'Not understood.', 'xyzzy')], cfg);
+    expect(r.turns.map((x) => x.classification)).toEqual(['unparsed', 'unknown']);
   });
 });
 

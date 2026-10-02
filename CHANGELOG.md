@@ -123,6 +123,21 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- **Ignored-input and parser checks named the wrong input.** A turn record holds
+  the screen the player saw and the input typed in answer to it, so the game's
+  reply to an input is the *next* record's screen. Both checks judged the record's
+  own screen, which pinned each "ignored" or "not understood" verdict on the
+  input after the one the game answered. They now judge the reply, and list only
+  turns that had an input. The tests had built records the other way round, which
+  is why they passed.
+- **Calibration graded the ignored-input check as firing on every transcript.**
+  The check holds a row for every input, and grading counted any row as a hit.
+  It now fires when at least 25% of inputs were ignored
+  (`IGNORED_FIRES_AT`).
+  - Re-derived from cal-01's transcripts, precision went from 9% to 50% and recall
+    stayed at 100%.
+  - Both remaining false positives are `bleak`, whose replies never change, so a
+    screen comparison cannot tell it from a deaf game.
 - **A closed-set answer in the harness's own list format was rejected.**
   `describeActions` prints `  id) label`, and models copy it: llama3.2:1b replied
   `weighing-floor)` on all fifteen turns against the Godot stage and took zero

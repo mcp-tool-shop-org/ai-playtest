@@ -83,7 +83,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "64fb0ff3529a8f6bf5da2a8af05fff30a568b6bc14f1c7fe23ad82787e8fc9d5",
+          "hash": "ad9e0720c630aae12c940c67a3dc039d8a1ce4be44cae079b19370b81a8b8f3f",
           "path": "CHANGELOG.md"
         },
         {
@@ -308,10 +308,10 @@
             {
               "in": "isDir",
               "kind": "catch",
-              "line": 111
+              "line": 123
             }
           ],
-          "hash": "742f65e01bd84fa04fbaba7c056b7f8a0d9d1c38dc47551b01ab8e7945d968d2",
+          "hash": "f73ead6bb612f0f29fc5fabafdc39bc58d1acd53f7b385e47ce599182f726302",
           "importOrder": [
             "src/panel.ts",
             "src/verifiers.ts",
@@ -3465,7 +3465,7 @@
           "path": "src/stdio-game.ts"
         },
         {
-          "hash": "406525984b8118f1dafd01d417608990d9377b1461dfa3b0202216914a207760",
+          "hash": "3e3b86385ee035e0b2bd1fef534184097f3841e6c2f6dc970eecc4570e36d060",
           "importOrder": [
             "src/verifiers.ts",
             "src/player.ts"
@@ -3494,15 +3494,15 @@
             {
               "in": "entityAppearanceGrid",
               "kind": "catch",
-              "line": 352
+              "line": 360
             },
             {
               "in": "entityAppearanceGrid",
               "kind": "catch",
-              "line": 372
+              "line": 380
             }
           ],
-          "hash": "ecd52cf851dbf947494dffd2276abecbb851b74a0654732cba72239f041c0188",
+          "hash": "e1c829633878315dfa29e18432cb604ee8eedf1d75ad619e89550b3673d0471a",
           "importsFiles": [
             "src/coverage.ts",
             "src/player.ts"
@@ -3543,7 +3543,7 @@
       "externals": 0,
       "files": [
         {
-          "hash": "300aea82ed09c656f09d0e8c763168c277535146054e72205d60ac6bdff83410",
+          "hash": "e473abb399c85ade811bb6d752228f6bc297df44f725c8f635014156434edf7e",
           "importsFiles": [
             "src/calibration.ts"
           ],
@@ -4442,7 +4442,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf",
+    "commit": "1e1853de24fa479ad2360754ad1a1b5855ca9a3b",
     "tracked": 103
   },
   "landings": [
