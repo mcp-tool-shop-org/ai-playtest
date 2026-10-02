@@ -38,6 +38,7 @@ afterEach(async () => {
 });
 
 async function exitCode(argv: string[]): Promise<number> {
+  firstExit = undefined;
   try {
     await main(argv);
     return 0;
@@ -192,4 +193,70 @@ describe('score verb', () => {
     expect(out).toContain('[a] jev: cost 0.88');
     expect(existsSync(join(root, 'runs', 'v1', 'REPORT.md'))).toBe(true);
   });
+});
+
+describe('persona profiles', () => {
+  const ECHO = join(process.cwd(), 'test', 'fixtures', 'echo-game.mjs');
+  const critique = JSON.stringify({ alive: true, summary: 'It answers.', criteria: [{ id: 'cost', met: false, evidence: 'none', turn: 1 }], highlights: [], deadSpots: [], confusions: [], wouldPlayAgain: true });
+
+  async function echoConfig(personas?: object): Promise<string> {
+    return config({
+      game: { command: process.execPath, args: [ECHO], promptPatterns: ['What do you do\\?\\s*$', 'Character name:\\s*$'], promptQuietMs: 150, idleQuietMs: 2000, screenTimeoutMs: 20000 },
+      setup: [{ match: 'Character name:\\s*$', answer: 'Wren' }],
+      turns: 3,
+      ...(personas ? { personas } : {}),
+    });
+  }
+
+  // Ollama, stubbed: the critic gets a critique; a player's input depends on its play style.
+  function stubOllama(): void {
+    vi.stubGlobal('fetch', async (_url: string, init: { body: string }) => {
+      const body = JSON.parse(init.body) as { messages: Array<{ role: string; content: string }> };
+      const all = body.messages.map((m) => m.content).join(' ');
+      let content = 'wait';
+      if (all.includes('"alive"')) content = critique;
+      else if (all.includes('Talk to everyone')) content = 'talk to the priest';
+      return { ok: true, status: 200, text: async () => JSON.stringify({ message: { content }, done_reason: 'stop', prompt_eval_count: 50 }) };
+    });
+  }
+
+  it('plays control and each persona as its own label, and writes PERSONAS.md', async () => {
+    stubOllama();
+    const cfg = await echoConfig();
+    expect(await exitCode(['run', cfg, '--label', 'p1', '--profile', 'player', '--personas', 'reader,tinkerer', '--serial', '--seats', 'a'])).toBe(0);
+    for (const l of ['p1--control', 'p1--reader', 'p1--tinkerer']) expect(existsSync(join(root, 'runs', l, 'REPORT.md')), l).toBe(true);
+    const md = await readFile(join(root, 'runs', 'p1', 'PERSONAS.md'), 'utf8');
+    expect(md).toContain('`player` profile');
+    expect(md, md).toContain('| reader | 1 | share:talk,examine ↑ | 100% | 0% | 10% | **distinct** |');
+    expect(md, md).toContain('| tinkerer | 1 | offPath ↑ | 0% | 0% | 10% | played like control |');
+    expect(out).toContain('personas: 1/2 played distinctly');
+    const saved = JSON.parse(await readFile(join(root, 'runs', 'p1', 'profile.json'), 'utf8'));
+    expect(saved.personas.map((p: { id: string }) => p.id)).toEqual(['control', 'reader', 'tinkerer']);
+  }, 60_000);
+
+  it('rebuilds PERSONAS.md with report, from the saved profile', async () => {
+    stubOllama();
+    const cfg = await echoConfig({ profile: 'player', only: ['reader'] });
+    expect(await exitCode(['run', cfg, '--label', 'p2', '--serial', '--seats', 'a'])).toBe(0);
+    await writeFile(join(root, 'runs', 'p2', 'PERSONAS.md'), 'stale');
+    out = '';
+    expect(await exitCode(['report', cfg, '--label', 'p2'])).toBe(0);
+    expect(out).toContain('PERSONAS.md');
+    expect(await readFile(join(root, 'runs', 'p2', 'PERSONAS.md'), 'utf8')).toContain('`player` profile');
+  }, 60_000);
+
+  it('refuses --runs with a profile, --personas without one, and an unknown profile', async () => {
+    const cfg = await echoConfig();
+    expect(await exitCode(['run', cfg, '--profile', 'player', '--runs', '2'])).toBe(1);
+    expect(await exitCode(['run', cfg, '--personas', 'reader'])).toBe(1);
+    expect(await exitCode(['run', cfg, '--profile', 'astrology'])).toBe(2);
+    expect(err).toMatch(/unknown persona profile/);
+  });
+
+  it('notes a persona left out for want of a briefing', async () => {
+    stubOllama();
+    const cfg = await echoConfig();
+    expect(await exitCode(['run', cfg, '--label', 'p3', '--profile', 'scientific', '--personas', 'briefed', '--serial', '--seats', 'a'])).toBe(0);
+    expect(out).toContain('note: briefed left out');
+  }, 60_000);
 });

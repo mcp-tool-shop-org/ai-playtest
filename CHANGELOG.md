@@ -9,6 +9,37 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Persona profiles.** `run --profile <name> [--personas a,b]`, or config
+  `personas`, plays a set of play styles chosen to answer one question:
+  - `scientific`: can these readings be trusted? (replicate, novice, briefed,
+    systematic)
+  - `bughunter`: what is broken? (cartographer, closer, boundary-pusher,
+    continuity-auditor)
+  - `player`: who gets what out of it? (runner, reader, completionist, grinder,
+    quitter, tinkerer)
+  - `gaming`: does it meet genre habits? (genre-veteran, speedrunner,
+    theorycrafter, returning-player)
+
+  How it runs:
+  - Each persona plays as `<label>--<persona>` beside a `control` that plays the
+    config's own persona.
+  - Each persona has one target signal from the turn log, such as the share of
+    talk and examine inputs, places seen, or inputs the game refused.
+  - A persona counts as distinct only if its signal beats control by the noise
+    floor and leads the profile. `replicate` measures the floor.
+
+  What it writes:
+  - `<label>/PERSONAS.md` / `.json` with the verdicts, every signal, and what
+    the game refused by kind of input.
+  - `report` rebuilds it from the saved `profile.json`.
+
+  Options: `custom` profiles, extra personas, game-specific action tags, and a
+  `briefing` for the briefed persona.
+- **`transcriptTurns`** reads a transcript's turn numbers and reasons.
+  `transcriptInputs` now returns only the inputs the player chose; it used to
+  count setup answers and the runner's own quit sequence. `diff` repros keep
+  setup answers, which the game needs, and drop the runner's quit inputs.
+
 - **`diff`, a regression gate between two runs.**
   `ai-playtest diff <config> --base <label> --head <label>` compares the two and
   lists what got worse:

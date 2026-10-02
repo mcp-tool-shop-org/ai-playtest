@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { readRun, isEmptyDegradedPanel, ReportError, type SeatSummary } from './report.js';
 import { readProbability } from './scorers.js';
+import { isHarnessReason } from './coverage.js';
 
 export type FindingKind =
   | 'criterion-lost'
@@ -91,33 +92,57 @@ function pct(x: number | null): string {
   return x === null ? 'n/a' : `${Math.round(x * 100)}%`;
 }
 
-/** Read the player's inputs from a transcript, one per turn, in order. */
-export function transcriptInputs(text: string): string[] {
-  const inputs: string[] = [];
-  for (const block of text.split(/^═══ turn \d+/m).slice(1)) {
-    const lines = block.split('\n');
-    let last: string | null = null;
-    for (const line of lines) {
-      const m = /^> (.+)$/.exec(line);
-      if (m) last = m[1];
+export type TranscriptTurn = {
+  /** Null for a scripted setup step, which the transcript writes without a number. */
+  turn: number | null;
+  reason: string;
+  input: string;
+};
+
+/** Read every turn of a transcript: its number, why the runner took it, and what was typed. */
+export function transcriptTurns(text: string): TranscriptTurn[] {
+  const out: TranscriptTurn[] = [];
+  let cur: TranscriptTurn | null = null;
+  for (const line of text.split(/\r?\n/)) {
+    const turn = /^═══ turn (\d+) ── screen \(([^,)]+)/.exec(line);
+    const setup = /^═══ setup ── screen/.test(line);
+    if (turn || setup) {
+      if (cur) out.push(cur);
+      cur = turn ? { turn: Number(turn[1]), reason: turn[2], input: '' } : { turn: null, reason: 'setup', input: '' };
+      continue;
     }
-    inputs.push(last ?? '');
+    const m = /^> (.+)$/.exec(line);
+    // The last "> " line of a block is the input; a quoted line in the screen comes before it.
+    if (cur && m) cur.input = m[1];
   }
-  return inputs;
+  if (cur) out.push(cur);
+  return out;
+}
+
+/**
+ * The inputs the player chose, in order. Setup answers, the runner's quit
+ * sequence, retries and rejected closed-set actions are the harness's, as in
+ * coverage.ts, so they never count toward a persona's signals.
+ */
+export function transcriptInputs(text: string): string[] {
+  return transcriptTurns(text).filter((t) => t.input !== '' && !isHarnessReason(t.reason)).map((t) => t.input);
 }
 
 async function reproFor(runDir: string, s: SeatSummary, turn: number | null, evidence: string): Promise<Repro> {
   const transcript = join(runDir, s.seat.id, 'transcript.txt');
-  let inputs: string[] = [];
+  let turns: TranscriptTurn[] = [];
   try {
-    inputs = transcriptInputs(await readFile(transcript, 'utf8'));
+    turns = transcriptTurns(await readFile(transcript, 'utf8'));
   } catch {
     // A missing transcript leaves the repro without inputs; the finding still stands.
   }
-  const upTo = turn === null ? inputs : inputs.slice(0, turn);
-  // The last screen of a finished game has no input after it.
-  while (upTo.length > 0 && upTo[upTo.length - 1] === '') upTo.pop();
-  return { seat: s.seat.id, transcript, turn, inputs: upTo, evidence };
+  // What reached the game up to that turn: setup answers included (the repro
+  // needs them), the runner's quit sequence and actions it never sent left out.
+  const inputs = turns
+    .filter((t) => t.input !== '' && (t.reason === 'setup' || !isHarnessReason(t.reason)))
+    .filter((t) => turn === null || t.turn === null || t.turn <= turn)
+    .map((t) => t.input);
+  return { seat: s.seat.id, transcript, turn, inputs, evidence };
 }
 
 function majority(votes: boolean[]): boolean {

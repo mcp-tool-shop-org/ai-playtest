@@ -83,7 +83,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "src",
-      "qualifyingSourceCommits": 17,
+      "qualifyingSourceCommits": 18,
       "rebaseline": null
     },
     {
@@ -101,7 +101,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "test",
-      "qualifyingSourceCommits": 9,
+      "qualifyingSourceCommits": 10,
       "rebaseline": null
     }
   ],
@@ -124,8 +124,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 26,
-        "lines": 537,
+        "commits": 27,
+        "lines": 552,
         "path": "CHANGELOG.md"
       },
       {
@@ -189,8 +189,8 @@
         "path": "SHIP_GATE.md"
       },
       {
-        "commits": 13,
-        "lines": 330,
+        "commits": 14,
+        "lines": 350,
         "path": "atlas/README.md"
       },
       {
@@ -199,18 +199,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 13,
-        "lines": 1115,
+        "commits": 14,
+        "lines": 1216,
         "path": "atlas/page.json"
       },
       {
-        "commits": 13,
-        "lines": 1625,
+        "commits": 14,
+        "lines": 1784,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 13,
-        "lines": 7904,
+        "commits": 14,
+        "lines": 7922,
         "path": "atlas/structure.json"
       },
       {
@@ -389,8 +389,8 @@
         "path": "site/tsconfig.json"
       },
       {
-        "commits": 2,
-        "lines": 271,
+        "commits": 3,
+        "lines": 285,
         "path": "src/calibration.ts"
       },
       {
@@ -579,18 +579,18 @@
         "path": "src/stdio-game.ts"
       },
       {
-        "commits": 5,
-        "lines": 434,
+        "commits": 6,
+        "lines": 473,
         "path": "src/verifiers.test.ts"
       },
       {
-        "commits": 6,
-        "lines": 1010,
+        "commits": 7,
+        "lines": 1040,
         "path": "src/verifiers.ts"
       },
       {
-        "commits": 1,
-        "lines": 149,
+        "commits": 2,
+        "lines": 162,
         "path": "test/calibration-edges.test.ts"
       },
       {
@@ -652,60 +652,60 @@
   },
   "confidence": {
     "level": "low",
-    "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
+    "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-10-02T15:39:31.715Z",
+  "generatedAt": "2026-10-02T15:51:11.436Z",
   "generatedFrom": {
-    "commit": "1e1853de24fa479ad2360754ad1a1b5855ca9a3b"
+    "commit": "e27228d2a93d0b7872368fba4fdb99a93d1176fe"
   },
   "pairs": [
     {
       "a": "CHANGELOG.md",
       "b": "README.md",
-      "either": 22,
+      "either": 23,
       "shared": 13,
-      "strength": 0.590909
+      "strength": 0.565217
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 11,
-      "shared": 11,
+      "either": 12,
+      "shared": 12,
       "strength": 1
     },
     {
@@ -794,7 +794,7 @@
     }
   ],
   "parameters": {
-    "appliedChangesetLimit": 27,
+    "appliedChangesetLimit": 27.75,
     "changeset": 50,
     "changesetFraction": 0.25,
     "cohesionDrop": 0.2,
@@ -802,17 +802,17 @@
     "fallenShared": 3,
     "floor": "fallen",
     "floorHeld": false,
-    "floorTrigger": "both",
-    "headDate": "2026-10-02T11:29:29-04:00",
-    "inScopeFiles": 108,
+    "floorTrigger": "revision-depth",
+    "headDate": "2026-10-02T11:39:35-04:00",
+    "inScopeFiles": 111,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 29,
+    "qualifyingCommits": 30,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-04-05T15:29:29.000Z",
+    "since": "2026-04-05T15:39:35.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
