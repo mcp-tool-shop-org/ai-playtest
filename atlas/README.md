@@ -1,26 +1,30 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit 0cd8e69 by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 733e148 by Atlas 1.24.0.
 
 ## What this is
 
-6 parts, mostly TypeScript (37 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
+6 parts, mostly TypeScript (42 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (7270e21)
+## What changed since 2026-10-02 (0cd8e69)
 
-- In src/cli.ts, `main` gained a step, `lintCriteria`, before `writeReport`.
-- In src/cli.ts, `main` gained a step, `writeReport`, before `listRunSiblings`.
-- 10 files changed content, across 3 parts.
+- CI now also runs src/decisions.test.ts and src/scorers.test.ts.
+- CI now also builds src/decisions.ts, src/rescore.ts and src/scorers.ts.
+- In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `rescoreRun`.
+- In src/cli.ts, `main` gained a step, `rescoreRun`, before `writeReport`.
+- In src/cli.ts, `main` gained a step, `createDecisionsClient`, before `summarizeRuns`.
+- And 12 more changes to the order of work.
+- 6 files added and 4 changed content, across 3 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 12 more; builds src/cli.ts, src/config.ts, src/coverage.ts and 16 more; checks CHANGELOG.md, LICENSE and src/.
+1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 14 more; builds src/cli.ts, src/config.ts, src/coverage.ts and 19 more; checks CHANGELOG.md, LICENSE and src/.
 2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 3. **ai-playtest** (a command of a private package, which nothing ships). Runs src/cli.ts.
 
 ## What happens through CI
 
-1. The workflow runs 11 files in src and 4 files in test; it builds 19 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
+1. The workflow runs 13 files in src and 4 files in test; it builds 22 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
 2. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -39,7 +43,15 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-No two source files changed together often enough to name.
+- **src/cli.ts** and **src/index.ts** changed together in 5 of 6 commits, inside the src part.
+- **src/index.ts** and **src/report.ts** changed together in 5 of 6 commits, inside the src part.
+- **src/cli.ts** and **src/config.ts** changed together in 4 of 6 commits, inside the src part.
+- **src/cli.ts** and **src/report.ts** changed together in 4 of 6 commits, inside the src part.
+- **src/report.ts** and **test/run.test.ts** changed together in 4 of 6 commits, and the test part imports the src part.
+
+1 file changed together with its own test, as expected.
+
+Confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.
 
 Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits.
 
@@ -65,15 +77,15 @@ People write .github/, docs/, the repository root and site/; 2 writes with paths
 
 ## Where to start
 
-.github/workflows/ci.yml → src/cli.ts → src/config.ts → src/providers.ts → src/openrouter.ts → src/ollama.ts → src/stats.ts → src/run.ts
+.github/workflows/ci.yml → src/cli.ts → src/config.ts → src/providers.ts → src/openrouter.ts → src/ollama.ts → src/decisions.ts → src/stats.ts
 
 Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 11 imports could not be resolved: `src/cli.ts` imports `./decisions.js`, which is not in this repository; `src/cli.ts` imports `./rescore.js`, which is not in this repository; `src/config.ts` imports `./scorers.js`, which is not in this repository; and 8 more.
+- 2 imports could not be resolved: `src/index.ts` imports `./calibration.js`, which is not in this repository, twice.
 - 2 writes and 2 reads use paths built at run time and are not named here.
-- 11 writes and 11 reads go to a path their caller passes, not to this repository.
+- 12 writes and 15 reads go to a path their caller passes, not to this repository.
 - 1 command is built at run time and not followed.
 - 1 file belongs to no part: examples/local-smoke.playtest.json.
 - Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.

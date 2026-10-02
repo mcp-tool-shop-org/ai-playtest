@@ -34,6 +34,22 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **`docs/research-4.md`**: the judge check with its answer key, research on
   criteria and calibration, and the search for a test bed with known answers
   (none exists for the variables ai-playtest judges).
+- **Harrow Gate, the calibration game (`calibration/`).** A deterministic text
+  adventure with eight playtest variables as switches: the world moves on its
+  own, who refuses at the gate (character, system, nobody), whether the prompt
+  lists what you can type, whether the game reacts, whether a choice spends a
+  visible resource, whether a goal is stated, whether places change on a return
+  visit, and whether a trapdoor soft-locks the player. Eleven builds: healthy, one
+  mutant per switch, and all flipped. The game writes a per-turn truth log on
+  stderr, which the stdio driver keeps from every model, so the answer key is
+  exact per transcript.
+- **`src/calibration.ts`**: game-agnostic grading against any `{"cal":1}` truth log
+  and a JSON answer key (event happened, never happened, switch set, at least N
+  times). Jury accuracy and confusion per criterion, each probability judge's
+  accuracy when confident, uncertain count, Brier score and expected calibration
+  error, and precision/recall for the soft-lock and ignored-input checks.
+  `calibration/calibrate.mjs make | run | grade` drives it. 228 → 242 tests,
+  including a real playtest run over the game graded from its saved stderr.
 
 - **Local seats through Ollama.** A seat with `"provider": "ollama"` runs on a
   local Ollama daemon (`OLLAMA_HOST`, default `http://127.0.0.1:11434`). An

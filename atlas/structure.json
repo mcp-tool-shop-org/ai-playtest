@@ -48,6 +48,10 @@
           "path": "docs/research-3.md"
         },
         {
+          "hash": "d39e74eccd40fb6fb8c024cb65f308410ab7dc84d46d8968383eb29c9c6da0c8",
+          "path": "docs/research-4.md"
+        },
+        {
           "hash": "de2c7f6690138240524e60f8f469b65ef73e6113976bfe713fe994323381794d",
           "path": "docs/research.md"
         }
@@ -71,11 +75,11 @@
       "externals": 0,
       "files": [
         {
-          "hash": "082a0f79bd03df6ebf89347d561260ba43244429907d3d0228440aec9573681d",
+          "hash": "0ba9f73e6725bd545143b803c2d11604de85637646e5eae743008b0a52783287",
           "path": ".gitignore"
         },
         {
-          "hash": "4774aae0261daa8b826785a84516d85b64a2d85798b5ab7f69f52c7631a03a6c",
+          "hash": "9386a6fb00a71696251293c9a1b582e006836e274dfb2b1fcb8e5226a87cf09f",
           "path": "CHANGELOG.md"
         },
         {
@@ -103,7 +107,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "27f6ba79412bdfd3efc739a7edd566cf237e96f61d15f62b0fd1582eb21eeaf3",
+          "hash": "64c614ca7a6ca3f431bcbce193bb00b6b7db28e34d369549c69730e1d9a1e5e9",
           "path": "README.md"
         },
         {
@@ -331,11 +335,13 @@
           "hash": "9f7952fd62fb6f03c7f0b6479b65798b77b743df0c778d579e516402b1117262",
           "importsFiles": [
             "src/config.ts",
+            "src/decisions.ts",
             "src/ollama.ts",
             "src/openrouter.ts",
             "src/providers.ts",
             "src/pty-driver.ts",
             "src/report.ts",
+            "src/rescore.ts",
             "src/run.ts",
             "src/stats.ts"
           ],
@@ -414,7 +420,55 @@
                 },
                 {
                   "branch": "verb === 'score'",
+                  "line": 249,
+                  "name": "createDecisionsClient",
+                  "target": {
+                    "file": "src/decisions.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'score'",
                   "inner": [
+                    {
+                      "line": 35,
+                      "name": "fitText",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      }
+                    },
+                    {
+                      "line": 36,
+                      "name": "createScorer",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      }
+                    }
+                  ],
+                  "line": 249,
+                  "name": "rescoreRun",
+                  "target": {
+                    "file": "src/rescore.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'score'",
+                  "inner": [
+                    {
+                      "line": 220,
+                      "name": "readProbability",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
+                    {
+                      "line": 221,
+                      "name": "disagreement",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
                     {
                       "line": 428,
                       "name": "renderCoverageLine",
@@ -484,6 +538,22 @@
                   "branch": "verb === 'report'",
                   "inner": [
                     {
+                      "line": 220,
+                      "name": "readProbability",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
+                    {
+                      "line": 221,
+                      "name": "disagreement",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
+                    {
                       "line": 428,
                       "name": "renderCoverageLine",
                       "target": {
@@ -541,6 +611,13 @@
                   "name": "createRoutedClient",
                   "target": {
                     "file": "src/providers.ts"
+                  }
+                },
+                {
+                  "line": 315,
+                  "name": "createDecisionsClient",
+                  "target": {
+                    "file": "src/decisions.ts"
                   }
                 },
                 {
@@ -662,6 +739,22 @@
                 },
                 {
                   "inner": [
+                    {
+                      "line": 220,
+                      "name": "readProbability",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
+                    {
+                      "line": 221,
+                      "name": "disagreement",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
                     {
                       "line": 428,
                       "name": "renderCoverageLine",
@@ -805,6 +898,22 @@
                 },
                 {
                   "inner": [
+                    {
+                      "line": 220,
+                      "name": "readProbability",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
+                    {
+                      "line": 221,
+                      "name": "disagreement",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "renderScoresSection"
+                    },
                     {
                       "line": 428,
                       "name": "renderCoverageLine",
@@ -1195,10 +1304,12 @@
           "hash": "c3dbbc7ff6681f0043d696659c598aa9af5b5ba75f136b46cc4d22b64cfee518",
           "importOrder": [
             "src/verifiers.ts",
-            "src/ollama.ts"
+            "src/ollama.ts",
+            "src/scorers.ts"
           ],
           "importsFiles": [
             "src/ollama.ts",
+            "src/scorers.ts",
             "src/verifiers.ts"
           ],
           "path": "src/config.ts",
@@ -1359,6 +1470,74 @@
           "path": "src/critic.ts"
         },
         {
+          "hash": "768a9f68def1f8096b7a012cfac49f2e6cc681d8857ed817cd1e7a56da371c1c",
+          "importsFiles": [
+            "src/decisions.ts"
+          ],
+          "path": "src/decisions.test.ts",
+          "testFramework": "vitest"
+        },
+        {
+          "exports": [
+            "createDecisionsClient",
+            "validateAnswer"
+          ],
+          "failurePaths": [
+            {
+              "in": "validateAnswer",
+              "kind": "throw",
+              "line": 89
+            },
+            {
+              "in": "validateAnswer",
+              "kind": "throw",
+              "line": 92
+            },
+            {
+              "in": "validateAnswer",
+              "kind": "throw",
+              "line": 96
+            },
+            {
+              "in": "validateAnswer",
+              "kind": "throw",
+              "line": 104
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "throw",
+              "line": 122
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "throw",
+              "line": 152
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "catch",
+              "line": 155
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "throw",
+              "line": 156
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "catch",
+              "line": 163
+            },
+            {
+              "in": "createDecisionsClient",
+              "kind": "throw",
+              "line": 176
+            }
+          ],
+          "hash": "a5c88e55ab8081952dca01a4f6dd6fb16479364a066a6096cc9f397ba067c78a",
+          "path": "src/decisions.ts"
+        },
+        {
           "hash": "d9e27e1ac5434f3084a392c222e3092e0edfc4b759604eb759edaa58c59a873e",
           "importsFiles": [
             "src/driver.ts"
@@ -1400,12 +1579,15 @@
           "path": "src/driver.ts"
         },
         {
-          "hash": "9221f4fe4e8dd2a305aabf2cee78d6abb2664f12bdee0be2c4dca7c3fbbda20e",
+          "hash": "c7bd5e950ea74705179b7942dd4d77edbef659cec4a94e49d765ed2882e8fe52",
           "importOrder": [
             "src/config.ts",
             "src/openrouter.ts",
             "src/ollama.ts",
             "src/providers.ts",
+            "src/decisions.ts",
+            "src/scorers.ts",
+            "src/rescore.ts",
             "src/stdio-game.ts",
             "src/player.ts",
             "src/critic.ts",
@@ -1424,6 +1606,7 @@
             "src/config.ts",
             "src/coverage.ts",
             "src/critic.ts",
+            "src/decisions.ts",
             "src/driver.ts",
             "src/ollama.ts",
             "src/openrouter.ts",
@@ -1432,8 +1615,10 @@
             "src/providers.ts",
             "src/pty-driver.ts",
             "src/report.ts",
+            "src/rescore.ts",
             "src/rpc-driver.ts",
             "src/run.ts",
+            "src/scorers.ts",
             "src/stats.ts",
             "src/stdio-driver.ts",
             "src/stdio-game.ts",
@@ -1865,6 +2050,7 @@
             "src/coverage.ts",
             "src/critic.ts",
             "src/panel.ts",
+            "src/scorers.ts",
             "src/stats.ts",
             "src/verifiers.ts"
           ],
@@ -1872,6 +2058,44 @@
           "sequences": [
             {
               "calls": [
+                {
+                  "line": 220,
+                  "name": "readProbability",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                },
+                {
+                  "line": 221,
+                  "name": "disagreement",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "renderScoresSection"
+            },
+            {
+              "calls": [
+                {
+                  "line": 220,
+                  "name": "readProbability",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  },
+                  "via": "renderScoresSection"
+                },
+                {
+                  "line": 221,
+                  "name": "disagreement",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  },
+                  "via": "renderScoresSection"
+                },
                 {
                   "line": 428,
                   "name": "renderCoverageLine",
@@ -1894,6 +2118,22 @@
             },
             {
               "calls": [
+                {
+                  "line": 220,
+                  "name": "readProbability",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  },
+                  "via": "renderScoresSection"
+                },
+                {
+                  "line": 221,
+                  "name": "disagreement",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  },
+                  "via": "renderScoresSection"
+                },
                 {
                   "line": 428,
                   "name": "renderCoverageLine",
@@ -1962,6 +2202,51 @@
               "invokedAtTopLevel": false,
               "isDefaultExport": false,
               "name": "writeAggregateReport"
+            }
+          ]
+        },
+        {
+          "entry": "rescoreRun",
+          "entryRule": 4,
+          "exports": [
+            "rescoreRun"
+          ],
+          "failurePaths": [
+            {
+              "in": "rescoreRun",
+              "kind": "catch",
+              "line": 30
+            }
+          ],
+          "hash": "18969e4159123db422c3fed3ac5bac4b5108f971517ab08fb7d5faffeae911f0",
+          "importsFiles": [
+            "src/config.ts",
+            "src/decisions.ts",
+            "src/scorers.ts"
+          ],
+          "path": "src/rescore.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 35,
+                  "name": "fitText",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                },
+                {
+                  "line": 36,
+                  "name": "createScorer",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "rescoreRun"
             }
           ]
         },
@@ -2139,12 +2424,14 @@
             "src/config.ts",
             "src/coverage.ts",
             "src/critic.ts",
+            "src/decisions.ts",
             "src/driver.ts",
             "src/openrouter.ts",
             "src/panel.ts",
             "src/player.ts",
             "src/pty-driver.ts",
             "src/rpc-driver.ts",
+            "src/scorers.ts",
             "src/stdio-driver.ts",
             "src/stdio-game.ts",
             "src/verifiers.ts"
@@ -2336,6 +2623,13 @@
                   }
                 },
                 {
+                  "line": 464,
+                  "name": "createScorer",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                },
+                {
                   "line": 477,
                   "name": "computeCoverage",
                   "target": {
@@ -2357,13 +2651,6 @@
                 {
                   "line": 494,
                   "name": "playerTurns",
-                  "target": {
-                    "file": "src/coverage.ts"
-                  }
-                },
-                {
-                  "line": 497,
-                  "name": "computeCoverage",
                   "target": {
                     "file": "src/coverage.ts"
                   }
@@ -2590,10 +2877,10 @@
                   "via": "runSeat"
                 },
                 {
-                  "line": 477,
-                  "name": "computeCoverage",
+                  "line": 464,
+                  "name": "createScorer",
                   "target": {
-                    "file": "src/coverage.ts"
+                    "file": "src/scorers.ts"
                   },
                   "via": "runSeat"
                 }
@@ -2799,10 +3086,10 @@
                 },
                 {
                   "branch": "cfg.driver.kind === 'rpc'",
-                  "line": 477,
-                  "name": "computeCoverage",
+                  "line": 464,
+                  "name": "createScorer",
                   "target": {
-                    "file": "src/coverage.ts"
+                    "file": "src/scorers.ts"
                   },
                   "via": "runSeat"
                 }
@@ -2814,6 +3101,56 @@
               "truncated": true
             }
           ]
+        },
+        {
+          "hash": "d006acceaf02105a1b1933d9931c6ae31af7912b3b30b18f5815d7c1409452ff",
+          "importOrder": [
+            "src/scorers.ts",
+            "src/config.ts",
+            "src/decisions.ts",
+            "src/player.ts"
+          ],
+          "importsFiles": [
+            "src/config.ts",
+            "src/decisions.ts",
+            "src/player.ts",
+            "src/scorers.ts"
+          ],
+          "path": "src/scorers.test.ts",
+          "testFramework": "vitest"
+        },
+        {
+          "exports": [
+            "createScorer",
+            "criterionQuestions",
+            "disagreement",
+            "fitText",
+            "readProbability",
+            "stateForWindow"
+          ],
+          "failurePaths": [
+            {
+              "in": "scoreState",
+              "kind": "catch",
+              "line": 144
+            }
+          ],
+          "hash": "4d4f8e3bbfea8530d2b5d5e6944b61c6a8bcdf4f3c8390be3ce504a46ac5ba6a",
+          "importOrder": [
+            "src/config.ts",
+            "src/player.ts",
+            "src/critic.ts",
+            "src/ollama.ts",
+            "src/decisions.ts"
+          ],
+          "importsFiles": [
+            "src/config.ts",
+            "src/critic.ts",
+            "src/decisions.ts",
+            "src/ollama.ts",
+            "src/player.ts"
+          ],
+          "path": "src/scorers.ts"
         },
         {
           "hash": "2874a1646df04f14cc6048ffb98db190a6a44f66b8011af8f53770e2247e6dbe",
@@ -2950,38 +3287,33 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 11,
+          "reads": 15,
           "where": [
             "caller"
           ],
-          "writes": 11
+          "writes": 12
         }
       ],
-      "outsideReads": 11,
-      "outsideWrites": 11,
+      "outsideReads": 15,
+      "outsideWrites": 12,
       "role": "code",
       "testRunners": [
         "vitest"
       ],
-      "testedBy": 15,
+      "testedBy": 17,
       "unresolvedNamed": [
         {
-          "path": "src/cli.ts",
-          "specifier": "./decisions.js",
+          "path": "src/index.ts",
+          "specifier": "./calibration.js",
           "why": "missing"
         },
         {
-          "path": "src/cli.ts",
-          "specifier": "./rescore.js",
-          "why": "missing"
-        },
-        {
-          "path": "src/config.ts",
-          "specifier": "./scorers.js",
+          "path": "src/index.ts",
+          "specifier": "./calibration.js",
           "why": "missing"
         }
       ],
-      "unresolvedSites": 11
+      "unresolvedSites": 2
     },
     {
       "dynamicReads": 0,
@@ -3220,7 +3552,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 30
+          "files": 35
         },
         {
           "boundary": "test",
@@ -3298,6 +3630,21 @@
           "job": "verify",
           "matched": true,
           "path": "src/critic.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/decisions.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/decisions.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.json"
         },
@@ -3412,6 +3759,14 @@
           "built": true,
           "job": "verify",
           "matched": true,
+          "path": "src/rescore.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
           "path": "src/rpc-driver.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.json"
@@ -3421,6 +3776,21 @@
           "job": "verify",
           "matched": true,
           "path": "src/run.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/scorers.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/scorers.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.json"
         },
@@ -3506,7 +3876,7 @@
           "via": "tsc tsconfig.test.json"
         }
       ],
-      "runsCount": 37,
+      "runsCount": 42,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -3522,7 +3892,7 @@
       "tests": [
         {
           "config": "vitest.config.ts",
-          "files": 15,
+          "files": 17,
           "job": "verify",
           "runner": "vitest",
           "step": "Verify (typecheck + tests)",
@@ -3735,7 +4105,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 18
+          "files": 21
         }
       ],
       "readers": [],
@@ -3774,8 +4144,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "0cd8e697dda07ae85663259fb5cf7fa51a508219",
-    "tracked": 82
+    "commit": "733e148a744b1d09921708c6e4b0af715826a976",
+    "tracked": 88
   },
   "landings": [
     {
@@ -3865,7 +4235,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 19,
+  "testFiles": 21,
   "unassigned": [
     {
       "hash": "69126346bb485b4026180983bfa6129c5b3017e41a6b3322b9d70041a1ec54c9",

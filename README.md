@@ -184,6 +184,17 @@ node dist/cli.js score path/to/game.playtest.json --label phase9
 
 That is also how to check a rewritten criterion against old transcripts.
 
+### Scoring the playtester itself
+
+[`calibration/`](calibration/README.md) holds **Harrow Gate**, a small text game
+whose every playtest variable is a switch: the world moves on its own or not, a
+character or a system message refuses you, the prompt lists what you can type or
+doesn't, a choice costs something or nothing, and there is or isn't a dead end.
+The game writes its own truth log on stderr, out of every model's sight, so the
+answer key is exact per transcript. `calibrate.mjs grade` scores the jury, each
+probability judge and the deterministic checks against it. No existing benchmark
+let these variables be set, so we built one (`docs/research-4.md`).
+
 ### Write each criterion as one observable claim
 
 A judge asked "X, so Y" answers the easier half. Every judge we tested, LLM and
@@ -388,7 +399,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-228 tests. `tsconfig.test.json` exists because the build config excludes test
+242 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 

@@ -13,6 +13,8 @@ export type {
 export { createScorer, criterionQuestions, stateForWindow, fitText, readProbability, disagreement, SCORER_DEFAULTS } from './scorers.js';
 export type { Scorer, ScorerConfig, ScorerKind, ScorerResult, CriterionScore, ScoreInput } from './scorers.js';
 export { rescoreRun } from './rescore.js';
+export { parseTruthLog, truthFor, gradeRuns, summarize, renderCalibration, CalibrationError } from './calibration.js';
+export type { AnswerKey, TruthRule, TruthLog, Graded, GradedCell, GradedVerifier, CalibrationSummary, CriterionSummary, Confusion } from './calibration.js';
 export { validateScorers, lintCriteria } from './config.js';
 export type { CriterionLint } from './config.js';
 export type { SeatProvider } from './config.js';
