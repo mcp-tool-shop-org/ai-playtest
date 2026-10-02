@@ -1,30 +1,26 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit e27228d by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 33fb116 by Atlas 1.24.0.
 
 ## What this is
 
-6 parts, mostly TypeScript (52 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
+6 parts, mostly TypeScript (53 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (1e1853d)
+## What changed since 2026-10-02 (e27228d)
 
-- CI now also runs src/personas.test.ts.
-- CI now also builds src/personas.ts and src/profile-report.ts.
-- In src/cli.ts, `main` gained a step, `loadProfile`, before `writeProfileReport`.
-- In src/cli.ts, `main` gained a step, `writeProfileReport`, before `listRunSiblings`.
-- In src/cli.ts, `main` gained a step, `resolveProfile`, before `providersInUse`.
-- And 7 more changes to the order of work.
-- 3 files added and 8 changed content, across 2 parts.
+- CI now also runs src/profile-report.test.ts.
+- src/personas.ts now starts at `signalValue`; it started at `renderProfile`.
+- 1 file added and 11 changed content, across 2 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli-verbs.test.ts, src/cli.test.ts, src/coverage.test.ts and 20 more; builds src/calibration.ts, src/cli.ts, src/config.ts and 23 more; checks CHANGELOG.md, LICENSE and src/.
+1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli-verbs.test.ts, src/cli.test.ts, src/coverage.test.ts and 21 more; builds src/calibration.ts, src/cli.ts, src/config.ts and 23 more; checks CHANGELOG.md, LICENSE and src/.
 2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 3. **ai-playtest** (a command of a private package, which nothing ships). Runs src/cli.ts.
 
 ## What happens through CI
 
-1. The workflow runs 17 files in src and 6 files in test; it builds 26 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
+1. The workflow runs 18 files in src and 6 files in test; it builds 26 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
 2. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -43,17 +39,17 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
+- **src/cli.ts** and **src/index.ts** changed together in 8 of 11 commits, inside the src part.
 - **src/report.ts** and **test/run.test.ts** changed together in 5 of 7 commits, and the test part imports the src part.
-- **src/cli.ts** and **src/index.ts** changed together in 7 of 10 commits, inside the src part.
-- **src/index.ts** and **src/report.ts** changed together in 6 of 9 commits, inside the src part.
-- **src/config.ts** and **src/run.ts** changed together in 5 of 8 commits, inside the src part.
 - **src/report.ts** and **src/run.ts** changed together in 5 of 8 commits, inside the src part.
+- **src/cli.ts** and **src/config.ts** changed together in 6 of 10 commits, inside the src part.
+- **src/index.ts** and **src/report.ts** changed together in 6 of 10 commits, inside the src part.
 
 1 file changed together with its own test, as expected.
 
 Confidence is low: fewer than 25 source files reach 10 revisions in the window.
 
-Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 

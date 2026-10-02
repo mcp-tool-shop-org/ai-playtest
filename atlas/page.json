@@ -19,8 +19,8 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 3,
-      "changed": 8,
+      "added": 1,
+      "changed": 11,
       "moved": 0,
       "parts": 2,
       "removed": 0
@@ -28,60 +28,47 @@
     "items": [
       {
         "kind": "door",
-        "sentence": "CI now also runs src/personas.test.ts.",
+        "sentence": "CI now also runs src/profile-report.test.ts.",
         "subjects": [
           ".github/workflows/ci.yml",
-          "src/personas.test.ts"
-        ]
-      },
-      {
-        "kind": "door",
-        "sentence": "CI now also builds src/personas.ts and src/profile-report.ts.",
-        "subjects": [
-          ".github/workflows/ci.yml",
-          "src/personas.ts",
-          "src/profile-report.ts"
+          "src/profile-report.test.ts"
         ]
       },
       {
         "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `loadProfile`, before `writeProfileReport`.",
+        "sentence": "src/personas.ts now starts at `signalValue`; it started at `renderProfile`.",
         "subjects": [
-          "src/cli.ts"
+          "src/personas.ts"
         ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `writeProfileReport`, before `listRunSiblings`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `resolveProfile`, before `providersInUse`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "And 7 more changes to the order of work.",
-        "subjects": []
       },
       {
         "kind": "counts",
-        "sentence": "3 files added and 8 changed content, across 2 parts.",
+        "sentence": "1 file added and 11 changed content, across 2 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "1e1853de24fa479ad2360754ad1a1b5855ca9a3b",
-      "generatedAt": "2026-10-02T15:39:31.715Z"
+      "commit": "e27228d2a93d0b7872368fba4fdb99a93d1176fe",
+      "generatedAt": "2026-10-02T15:51:11.436Z"
     },
     "unchanged": false
   },
   "changesTogether": [
+    {
+      "a": "src/cli.ts",
+      "b": "src/index.ts",
+      "either": 11,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 8
+    },
     {
       "a": "src/report.ts",
       "b": "test/run.test.ts",
@@ -98,51 +85,6 @@
       "shared": 5
     },
     {
-      "a": "src/cli.ts",
-      "b": "src/index.ts",
-      "either": 10,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 7
-    },
-    {
-      "a": "src/index.ts",
-      "b": "src/report.ts",
-      "either": 9,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 6
-    },
-    {
-      "a": "src/config.ts",
-      "b": "src/run.ts",
-      "either": 8,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 5
-    },
-    {
       "a": "src/report.ts",
       "b": "src/run.ts",
       "either": 8,
@@ -156,17 +98,47 @@
       ],
       "relation": "inside",
       "shared": 5
+    },
+    {
+      "a": "src/cli.ts",
+      "b": "src/config.ts",
+      "either": 10,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 6
+    },
+    {
+      "a": "src/index.ts",
+      "b": "src/report.ts",
+      "either": 10,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 6
     }
   ],
   "changesTogetherNote": [
     "1 file changed together with its own test, as expected.",
     "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
-    "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "e27228d2a93d0b7872368fba4fdb99a93d1176fe",
+  "commit": "33fb11630fbb0b71f4bbb27f611bd8fdf265086d",
   "defaultBranch": "main",
-  "derived": "6 parts, mostly TypeScript (52 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
+  "derived": "6 parts, mostly TypeScript (53 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
     {
       "builds": [
@@ -218,7 +190,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 43
+          "files": 44
         },
         {
           "boundary": "test",
@@ -239,6 +211,7 @@
         "src/panel.test.ts",
         "src/personas.test.ts",
         "src/player.test.ts",
+        "src/profile-report.test.ts",
         "src/rescore.test.ts",
         "src/scorers.test.ts",
         "src/stats.test.ts",
@@ -251,8 +224,8 @@
         "test/rpc-driver.test.ts",
         "test/run.test.ts"
       ],
-      "runsCount": 23,
-      "runsMore": 20,
+      "runsCount": 24,
+      "runsMore": 21,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -330,7 +303,7 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-10-02T15:51:11.436Z",
+  "generatedAt": "2026-10-02T18:16:21.898Z",
   "limits": [
     "4 writes and 3 reads use paths built at run time and are not named here.",
     "2 writes go to places this repository does not track, so they are not listed as generated.",
@@ -365,9 +338,9 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 27,
+  "testFiles": 28,
   "testedBy": {
-    "src": 23
+    "src": 24
   },
   "unnamedWrites": 4,
   "unread": [],

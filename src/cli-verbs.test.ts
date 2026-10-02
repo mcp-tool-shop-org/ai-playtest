@@ -228,7 +228,7 @@ describe('persona profiles', () => {
     const md = await readFile(join(root, 'runs', 'p1', 'PERSONAS.md'), 'utf8');
     expect(md).toContain('`player` profile');
     expect(md, md).toContain('| reader | 1 | share:talk,examine ↑ | 100% | 0% | 10% | **distinct** |');
-    expect(md, md).toContain('| tinkerer | 1 | offPath ↑ | 0% | 0% | 10% | played like control |');
+    expect(md, md).toContain('| tinkerer | 1 | share:use ↑ | 0% | 0% | 10% | played like control |');
     expect(out).toContain('personas: 1/2 played distinctly');
     const saved = JSON.parse(await readFile(join(root, 'runs', 'p1', 'profile.json'), 'utf8'));
     expect(saved.personas.map((p: { id: string }) => p.id)).toEqual(['control', 'reader', 'tinkerer']);

@@ -22,7 +22,7 @@
 //   5. A persona that does not separate is reported as playing like control.
 
 import type { Coverage } from './coverage.js';
-import type { VerifierReport } from './verifiers.js';
+import { isIgnored, type VerifierReport } from './verifiers.js';
 
 export type Direction = 'high' | 'low';
 
@@ -31,6 +31,7 @@ export type Direction = 'high' | 'low';
  * - `share:<tag>[,<tag>...]`: fraction of inputs with any of those action tags
  * - `novelStates`, `distinctActions`, `repeatRate`: from the coverage block
  * - `turnsPlayed`: inputs before the run ended
+ * - `turnsToFinish`: the same, except a run the player quit has none
  * - `rejectedRate`: fraction of inputs the game refused or ignored
  * - `offPath`: fraction of inputs control never used
  */
@@ -68,7 +69,7 @@ export const PROFILES: Record<string, ProfileSpec> = {
       {
         id: 'briefed',
         brief: 'You know what this game wants from you and how to get there. Head for it directly and do not wander.',
-        target: { signal: 'turnsPlayed', direction: 'low' },
+        target: { signal: 'turnsToFinish', direction: 'low' },
         needsBriefing: true,
       },
       {
@@ -111,7 +112,7 @@ export const PROFILES: Record<string, ProfileSpec> = {
       {
         id: 'runner',
         brief: 'You want to see how it ends. Follow the main thread and skip anything optional.',
-        target: { signal: 'turnsPlayed', direction: 'low' },
+        target: { signal: 'turnsToFinish', direction: 'low' },
       },
       {
         id: 'reader',
@@ -136,7 +137,7 @@ export const PROFILES: Record<string, ProfileSpec> = {
       {
         id: 'tinkerer',
         brief: 'You poke at things to see what happens: combine items, use things in odd places, take detours just to see where they go.',
-        target: { signal: 'offPath', direction: 'high' },
+        target: { signal: 'share:use', direction: 'high' },
       },
     ],
   },
@@ -152,7 +153,7 @@ export const PROFILES: Record<string, ProfileSpec> = {
       {
         id: 'speedrunner',
         brief: 'You play for speed. Skip everything you can, take the shortest route you can find, and try doing things out of the intended order.',
-        target: { signal: 'turnsPlayed', direction: 'low' },
+        target: { signal: 'turnsToFinish', direction: 'low' },
       },
       {
         id: 'theorycrafter',
@@ -179,7 +180,7 @@ export const DEFAULT_ACTION_TAGS: Array<[string, string]> = [
   ['help', '^(help|hint|hints|commands|\\?)\\b'],
   ['save', '^(save|load|restore)\\b'],
   ['flee', '^(flee|run away|escape|retreat)\\b'],
-  ['fight', '^(attack|fight|hit|strike|cast|shoot|defend|block|kill)\\b'],
+  ['fight', '^(attack|fight|spar|hit|strike|cast|shoot|defend|block|kill)\\b'],
   ['talk', '^(talk|ask|say|tell|greet|speak|answer|reply|shout)\\b'],
   ['examine', '^(look|l|examine|x|inspect|read|search|study|check)\\b'],
   ['menu', '^(i|inv|inventory|status|stats|map|journal|quests?|party|skills|menu|equipment|score)\\b'],
@@ -273,13 +274,13 @@ export function resolveProfile(cfg: PersonasConfig): ResolvedProfile {
   };
 }
 
-const COUNT_SIGNALS = new Set(['novelStates', 'distinctActions', 'turnsPlayed']);
+const COUNT_SIGNALS = new Set(['novelStates', 'distinctActions', 'turnsPlayed', 'turnsToFinish']);
 const RATE_SIGNALS = new Set(['repeatRate', 'rejectedRate', 'offPath']);
 
 function validateSignal(signal: string, who: string): void {
   if (COUNT_SIGNALS.has(signal) || RATE_SIGNALS.has(signal)) return;
   if (/^share:[a-z0-9-]+(,[a-z0-9-]+)*$/.test(signal)) return;
-  throw new PersonaError(`${who} targets unknown signal "${signal}"`, 'use share:<tag>[,<tag>], novelStates, distinctActions, repeatRate, turnsPlayed, rejectedRate or offPath');
+  throw new PersonaError(`${who} targets unknown signal "${signal}"`, 'use share:<tag>[,<tag>], novelStates, distinctActions, repeatRate, turnsPlayed, turnsToFinish, rejectedRate or offPath');
 }
 
 /** The full brief a seat plays: the world from config, then the style, then what it was told. */
@@ -315,6 +316,9 @@ export function signalValue(signal: Signal, t: SeatTrace, tags: Array<[string, s
   }
   switch (signal) {
     case 'turnsPlayed': return t.turnsPlayed;
+    // A quit is not a finish. Without this, a quitter would beat the runner on
+    // fewest turns. A run that hit the turn budget counts all its turns.
+    case 'turnsToFinish': return inputs.length > 0 && tagInput(inputs[inputs.length - 1]!, tags) === 'quit' ? null : t.turnsPlayed;
     case 'novelStates': return t.coverage?.novelStates ?? null;
     case 'distinctActions': return t.coverage?.distinctActions ?? null;
     case 'repeatRate': return t.coverage?.repeatRate ?? null;
@@ -333,7 +337,7 @@ export function signalValue(signal: Signal, t: SeatTrace, tags: Array<[string, s
 /** Turns whose input the game refused (parser lists) or ignored (unchanged screen). */
 export function rejectedTurns(v: VerifierReport): Set<number> {
   const out = new Set<number>();
-  for (const x of v.ignoredInputs) if (x.kind !== 'changed') out.add(x.turn);
+  for (const x of v.ignoredInputs) if (isIgnored(x)) out.add(x.turn);
   for (const x of v.parser.turns) if (x.classification === 'unparsed' || x.classification === 'refused') out.add(x.turn);
   return out;
 }
@@ -373,7 +377,7 @@ function floorFor(signal: string, control: number, noise: { share: number; count
 
 export function judgeProfile(profile: ResolvedProfile, traces: Record<string, SeatTrace[]>): ProfileResult {
   const signalsInPlay = [...new Set([
-    'turnsPlayed', 'novelStates', 'repeatRate', 'rejectedRate', 'offPath',
+    'turnsPlayed', 'turnsToFinish', 'novelStates', 'repeatRate', 'rejectedRate', 'offPath',
     ...profile.personas.flatMap((p) => (p.target ? [p.target.signal] : [])),
   ])];
   const controlInputs = new Set((traces.control ?? []).flatMap((t) => t.inputs.filter((x) => x.trim() !== '').map(norm)));
@@ -411,7 +415,8 @@ export function judgeProfile(profile: ResolvedProfile, traces: Record<string, Se
     let verdict: PersonaVerdict = gap >= floor ? 'distinct' : 'like-control';
     if (verdict === 'distinct') {
       const rivals = contenders.filter((o) => o.id !== p.id).map((o) => signalTable[o.id][signal]).filter((x): x is number => x !== null && x !== undefined);
-      const beaten = rivals.some((r) => (direction === 'high' ? r >= value : r <= value));
+      // A tie is not going further: two styles that both make no mistakes both count.
+      const beaten = rivals.some((r) => (direction === 'high' ? r > value : r < value));
       if (beaten) verdict = 'not-first';
     }
     return { id: p.id, seats, target: p.target, value, control, floor, verdict, signals };

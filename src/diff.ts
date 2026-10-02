@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { readRun, isEmptyDegradedPanel, ReportError, type SeatSummary } from './report.js';
 import { readProbability } from './scorers.js';
 import { isHarnessReason } from './coverage.js';
+import { isIgnored } from './verifiers.js';
 
 export type FindingKind =
   | 'criterion-lost'
@@ -80,7 +81,7 @@ function aliveOf(s: SeatSummary): boolean | null {
 function ignoredShare(s: SeatSummary): number | null {
   const v = s.verifiers;
   if (!v || s.turnsPlayed <= 0) return null;
-  const ignored = v.ignoredInputs.filter((x) => x.kind !== 'changed').length;
+  const ignored = v.ignoredInputs.filter(isIgnored).length;
   return ignored / s.turnsPlayed;
 }
 
@@ -247,7 +248,7 @@ export async function diffRuns(
   const hShare = mean(hShares.map((p) => p.x));
   if (bShare !== null && hShare !== null && hShare - bShare >= IGNORED_RISE) {
     const repro = await Promise.all(hShares.map((p) => {
-      const first = p.s.verifiers!.ignoredInputs.find((x) => x.kind !== 'changed');
+      const first = p.s.verifiers!.ignoredInputs.find(isIgnored);
       return reproFor(headDir, p.s, first?.turn ?? null, first ? `"${first.input}" left the screen unchanged` : 'no single turn');
     }));
     findings.push({ id: 'ignored-up:inputs', kind: 'ignored-up', subject: 'inputs', base: `${pct(bShare)} ignored`, head: `${pct(hShare)} ignored`, repro });

@@ -172,6 +172,37 @@ describe('judgeProfile', () => {
     expect(r.personas.find((x) => x.id === 'talker')!.verdict).toBe('not-first');
   });
 
+  it('lets a tie pass: two styles that both go as far count, only going further beats you', () => {
+    const p = resolveProfile({
+      profile: 'custom',
+      add: [
+        { id: 'careful', brief: 'You check every word before you type it.', target: { signal: 'rejectedRate', direction: 'low' } },
+        { id: 'quick', brief: 'You know the way and take it.', target: { signal: 'turnsToFinish', direction: 'low' } },
+      ],
+    });
+    const clean = verifiers([['look', 'changed'], ['go north', 'changed']]);
+    const r = judgeProfile(p, {
+      control: [trace(['xyzzy', 'look', 'go north', 'go north'], { verifiers: verifiers([['xyzzy', 'identical-screen'], ['look', 'changed'], ['go north', 'changed'], ['go north', 'changed']]) })],
+      careful: [trace(['look', 'go north'], { verifiers: clean })],
+      quick: [trace(['look', 'go north'], { verifiers: clean })],
+    });
+    expect(r.personas.find((x) => x.id === 'careful')!.verdict).toBe('distinct');
+    expect(r.personas.find((x) => x.id === 'quick')!.verdict).toBe('distinct');
+  });
+
+  it('counts turns to finish only for runs the player did not quit, so a quitter never beats a runner on speed', () => {
+    const tags = DEFAULT_ACTION_TAGS;
+    expect(signalValue('turnsToFinish', trace(['north', 'quit']), tags, new Set())).toBeNull();
+    expect(signalValue('turnsToFinish', trace(['north', 'east', 'west']), tags, new Set())).toBe(3);
+    const r = judgeProfile(profile('player', { only: ['runner', 'quitter'] }), {
+      control: [trace(['look', 'go north', 'look', 'go north', 'go east', 'go west'])],
+      runner: [trace(['go north', 'go east', 'go west'])],
+      quitter: [trace(['look', 'quit'])],
+    });
+    expect(r.personas.find((x) => x.id === 'runner')!.verdict).toBe('distinct');
+    expect(r.personas.find((x) => x.id === 'quitter')!.verdict).toBe('distinct');
+  });
+
   it('uses the replicate gap as the floor when it is larger than the default', () => {
     const r = judgeProfile(profile('scientific'), {
       control: [trace(['look', 'look', 'look', 'look'], { coverage: coverage({ repeatRate: 0.1 }) })],

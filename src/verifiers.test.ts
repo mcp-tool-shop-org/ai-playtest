@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   tarjanScc, detectAbsorbing, classifyIgnored, classifyParser, detectTerminal,
-  detectNoProgress, entityAppearanceGrid, runVerifiers, renderAbsorbingLine,
+  detectNoProgress, entityAppearanceGrid, runVerifiers, renderAbsorbingLine, isIgnored,
   detectStateInvariants, DEFAULT_VERIFIERS,
 } from './verifiers.js';
 import type { TurnRecord } from './player.js';
@@ -109,6 +109,13 @@ describe('classifyIgnored', () => {
     const rows = classifyIgnored([t(1, 'Nave', 'look')]);
     expect(rows).toEqual([{ turn: 1, input: 'look', kind: 'changed' }]);
     expect(classifyIgnored([t(1, 'The end.', '')])).toEqual([]);
+  });
+
+  it('calls a bare look that reprints the same screen a redisplay, not an ignored input', () => {
+    const h = [t(1, 'Nave', 'look'), t(2, 'Nave', 'Look around'), t(3, 'Nave', 'look at altar'), t(4, 'Nave', '')];
+    const rows = classifyIgnored(h);
+    expect(rows.map((r) => r.kind)).toEqual(['redisplay', 'redisplay', 'identical-screen']);
+    expect(rows.filter(isIgnored).map((r) => r.input)).toEqual(['look at altar']);
   });
 });
 

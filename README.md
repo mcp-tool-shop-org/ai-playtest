@@ -165,10 +165,14 @@ The same rules hold for every profile:
    - places seen (`novelStates`)
    - repeats (`repeatRate`)
    - turns before the run ended (`turnsPlayed`)
-   - inputs the game refused or ignored (`rejectedRate`)
+   - turns to finish (`turnsToFinish`): the same, except a run the player quit has
+     none, so a quitter never beats a runner on speed
+   - inputs the game refused or ignored (`rejectedRate`); a bare `look` that
+     reprints the screen is not ignored
    - inputs control never used (`offPath`)
 4. **A persona counts only if it separates.** Its target must beat control by the
-   noise floor, *and* no other persona in the profile may go further on it. A
+   noise floor, *and* no other persona in the profile may go further on it. A tie
+   is not going further: two styles that both make no mistakes both count. A
    persona that does not separate is reported as playing like control, because
    its findings are control's findings under another name.
 
@@ -185,6 +189,14 @@ raise the default but never lower it.
 PERSONAS.md also tallies what the game refused or ignored, **by kind of input**.
 If genre veterans type `save` and get nothing, that is a missing verb, not a
 player mistake.
+
+**Check that a game can separate the styles before paying for a run.** A small
+game gives every style the same few turns, and the profile will report that, at
+the cost of the run. The full Harrow Gate town is a cabinet in
+[mcp-arcade-cabinets](https://github.com/mcp-tool-shop-org/mcp-arcade-cabinets) built
+for this. It has 15 places, people with topics, a side quest, tokens, fights, a
+shortcut and system verbs. A scripted bot for every persona plays it, and its build
+fails unless each style comes out distinct by these rules.
 
 ```json
 "personas": {
@@ -515,7 +527,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-337 tests. `tsconfig.test.json` exists because the build config excludes test
+340 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 

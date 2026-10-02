@@ -12,7 +12,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PanelVerdict } from './panel.js';
-import type { VerifierReport } from './verifiers.js';
+import { isIgnored, type VerifierReport } from './verifiers.js';
 import { readProbability, type ScorerResult } from './scorers.js';
 
 export type TruthRule =
@@ -116,7 +116,7 @@ export const IGNORED_FIRES_AT = 0.25;
 
 function ignoredShare(v: VerifierReport): number {
   const rows = v.ignoredInputs;
-  return rows.length === 0 ? 0 : rows.filter((x) => x.kind !== 'changed').length / rows.length;
+  return rows.length === 0 ? 0 : rows.filter(isIgnored).length / rows.length;
 }
 
 async function isDir(p: string): Promise<boolean> {

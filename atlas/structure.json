@@ -83,7 +83,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "401fa3eff0047e5b3257bfd20cda2223993593df1b81d4f24f92936bec2ba360",
+          "hash": "386acb1f6a48082f6ab17a37f38c1aa57f573db2cc00c736f8c86a5bbaae4fa5",
           "path": "CHANGELOG.md"
         },
         {
@@ -111,7 +111,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "969a0e7405813ebb140683e8ff8e24df92ab1485509fbdfdfa7bb0286dfe6fcb",
+          "hash": "fc525d1c9dd0f7eecd04fdce95a7c115514dd64dad6ea6628d9524dc99d06bb2",
           "path": "README.md"
         },
         {
@@ -311,7 +311,7 @@
               "line": 123
             }
           ],
-          "hash": "f73ead6bb612f0f29fc5fabafdc39bc58d1acd53f7b385e47ce599182f726302",
+          "hash": "beef78ea84321750cabc11dfbad4c86d4536446f5e64dd2c6466114a1abd13ce",
           "importOrder": [
             "src/panel.ts",
             "src/verifiers.ts",
@@ -325,7 +325,7 @@
           "path": "src/calibration.ts"
         },
         {
-          "hash": "587b9feabd9b4d3bda4e4706fd7d6116dade368ed762c11958ed660d573b62dc",
+          "hash": "87c71fdffc11a8129c21dcbc67cc54107be5fffc5891daf2c7fc92a16071b65e",
           "importsFiles": [
             "src/cli.ts"
           ],
@@ -543,14 +543,14 @@
                   "branch": "verb === 'diff'",
                   "inner": [
                     {
-                      "line": 185,
+                      "line": 186,
                       "name": "readRun",
                       "target": {
                         "file": "src/report.ts"
                       }
                     },
                     {
-                      "line": 68,
+                      "line": 69,
                       "name": "isEmptyDegradedPanel",
                       "target": {
                         "file": "src/report.ts"
@@ -558,7 +558,7 @@
                       "via": "verdictFor"
                     },
                     {
-                      "line": 142,
+                      "line": 143,
                       "name": "isHarnessReason",
                       "target": {
                         "file": "src/coverage.ts"
@@ -566,7 +566,7 @@
                       "via": "reproFor"
                     },
                     {
-                      "line": 169,
+                      "line": 170,
                       "name": "readProbability",
                       "target": {
                         "file": "src/scorers.ts"
@@ -574,12 +574,21 @@
                       "via": "scorerNote"
                     },
                     {
-                      "line": 76,
+                      "line": 77,
                       "name": "isEmptyDegradedPanel",
                       "target": {
                         "file": "src/report.ts"
                       },
                       "via": "aliveOf"
+                    },
+                    {
+                      "line": 84,
+                      "name": "isIgnored",
+                      "passed": true,
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "ignoredShare"
                     }
                   ],
                   "line": 266,
@@ -666,6 +675,15 @@
                     {
                       "line": 455,
                       "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 461,
+                      "name": "isIgnored",
+                      "passed": true,
                       "target": {
                         "file": "src/verifiers.ts"
                       },
@@ -798,6 +816,15 @@
                     {
                       "line": 455,
                       "name": "renderAbsorbingLine",
+                      "target": {
+                        "file": "src/verifiers.ts"
+                      },
+                      "via": "renderReport"
+                    },
+                    {
+                      "line": 461,
+                      "name": "isIgnored",
+                      "passed": true,
                       "target": {
                         "file": "src/verifiers.ts"
                       },
@@ -1552,12 +1579,7 @@
             {
               "in": "reproFor",
               "kind": "catch",
-              "line": 136
-            },
-            {
-              "in": "diffRuns",
-              "kind": "throw",
-              "line": 187
+              "line": 137
             },
             {
               "in": "diffRuns",
@@ -1565,48 +1587,54 @@
               "line": 188
             },
             {
-              "in": "parseAcceptances",
-              "kind": "catch",
-              "line": 287
+              "in": "diffRuns",
+              "kind": "throw",
+              "line": 189
             },
             {
               "in": "parseAcceptances",
-              "kind": "throw",
+              "kind": "catch",
               "line": 288
             },
             {
               "in": "parseAcceptances",
               "kind": "throw",
-              "line": 292
+              "line": 289
             },
             {
               "in": "parseAcceptances",
               "kind": "throw",
-              "line": 296
+              "line": 293
             },
             {
               "in": "parseAcceptances",
               "kind": "throw",
-              "line": 298
+              "line": 297
             },
             {
               "in": "parseAcceptances",
               "kind": "throw",
-              "line": 300
+              "line": 299
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 301
             }
           ],
-          "hash": "68a70fb0115c65ccba4ad1ba6009b1bd916a57bbf250c1d86d0eb190169ff13a",
+          "hash": "d8c0bbd43af6782d4b1f4ae986f3b07958ef315fb1d0acc102b3a723fb6c01bd",
           "importsFiles": [
             "src/coverage.ts",
             "src/report.ts",
-            "src/scorers.ts"
+            "src/scorers.ts",
+            "src/verifiers.ts"
           ],
           "path": "src/diff.ts",
           "sequences": [
             {
               "calls": [
                 {
-                  "line": 68,
+                  "line": 69,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -1621,7 +1649,7 @@
             {
               "calls": [
                 {
-                  "line": 76,
+                  "line": 77,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -1636,7 +1664,23 @@
             {
               "calls": [
                 {
-                  "line": 128,
+                  "line": 84,
+                  "name": "isIgnored",
+                  "passed": true,
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "ignoredShare"
+            },
+            {
+              "calls": [
+                {
+                  "line": 129,
                   "name": "isHarnessReason",
                   "target": {
                     "file": "src/coverage.ts"
@@ -1651,7 +1695,7 @@
             {
               "calls": [
                 {
-                  "line": 142,
+                  "line": 143,
                   "name": "isHarnessReason",
                   "target": {
                     "file": "src/coverage.ts"
@@ -1666,7 +1710,7 @@
             {
               "calls": [
                 {
-                  "line": 169,
+                  "line": 170,
                   "name": "readProbability",
                   "target": {
                     "file": "src/scorers.ts"
@@ -1681,14 +1725,14 @@
             {
               "calls": [
                 {
-                  "line": 185,
+                  "line": 186,
                   "name": "readRun",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 68,
+                  "line": 69,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -1696,7 +1740,7 @@
                   "via": "verdictFor"
                 },
                 {
-                  "line": 142,
+                  "line": 143,
                   "name": "isHarnessReason",
                   "target": {
                     "file": "src/coverage.ts"
@@ -1704,7 +1748,7 @@
                   "via": "reproFor"
                 },
                 {
-                  "line": 169,
+                  "line": 170,
                   "name": "readProbability",
                   "target": {
                     "file": "src/scorers.ts"
@@ -1712,12 +1756,21 @@
                   "via": "scorerNote"
                 },
                 {
-                  "line": 76,
+                  "line": 77,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
                   },
                   "via": "aliveOf"
+                },
+                {
+                  "line": 84,
+                  "name": "isIgnored",
+                  "passed": true,
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "ignoredShare"
                 }
               ],
               "exported": true,
@@ -1769,7 +1822,7 @@
           "path": "src/driver.ts"
         },
         {
-          "hash": "74f99cd91d819aa76f1958956bbd3cd6eb65e792dc8edf308c51309eb1aba821",
+          "hash": "9ab7f55c322cc140ce86ab38d479928bb56ca03fea84ea9fb434a7c3254ad8aa",
           "importOrder": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -2042,7 +2095,7 @@
           "path": "src/panel.ts"
         },
         {
-          "hash": "be4449f058831eb6ca3e7d64123df72341a57549cc1e35d23b7e48bf85abf0f2",
+          "hash": "2f75f0ea5580358b0ded7948aad170b3fc5398eb9e048c831c49f68860c28dd1",
           "importOrder": [
             "src/personas.ts",
             "src/verifiers.ts",
@@ -2059,7 +2112,7 @@
           "testFramework": "vitest"
         },
         {
-          "entry": "renderProfile",
+          "entry": "signalValue",
           "entryRule": 4,
           "exports": [
             "composePersona",
@@ -2074,12 +2127,7 @@
             {
               "in": "resolveProfile",
               "kind": "throw",
-              "line": 232
-            },
-            {
-              "in": "resolveProfile",
-              "kind": "throw",
-              "line": 237
+              "line": 233
             },
             {
               "in": "resolveProfile",
@@ -2089,30 +2137,35 @@
             {
               "in": "resolveProfile",
               "kind": "throw",
-              "line": 243
+              "line": 239
             },
             {
               "in": "resolveProfile",
               "kind": "throw",
-              "line": 251
+              "line": 244
+            },
+            {
+              "in": "resolveProfile",
+              "kind": "throw",
+              "line": 252
             },
             {
               "in": "resolveProfile",
               "kind": "catch",
-              "line": 262
+              "line": 263
             },
             {
               "in": "resolveProfile",
               "kind": "throw",
-              "line": 262
+              "line": 263
             },
             {
               "in": "validateSignal",
               "kind": "throw",
-              "line": 282
+              "line": 283
             }
           ],
-          "hash": "689fc3a849ee5ab757c8adec9be99c43fcbdfcdb4aee871f4eab657921273582",
+          "hash": "c87bab1b36ba9457e146a998550a73a7c832c0d99c8c24acc96ad1fea03000da",
           "importsFiles": [
             "src/coverage.ts",
             "src/verifiers.ts"
@@ -2122,8 +2175,55 @@
             {
               "calls": [
                 {
+                  "line": 340,
+                  "name": "isIgnored",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "rejectedTurns"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "signalValue"
+            },
+            {
+              "calls": [
+                {
+                  "line": 340,
+                  "name": "isIgnored",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "rejectedTurns"
+            },
+            {
+              "calls": [
+                {
+                  "line": 340,
+                  "name": "isIgnored",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "rejectedTurns"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "judgeProfile"
+            },
+            {
+              "calls": [
+                {
                   "branch": "signal && COUNT_SIGNALS.has(signal)",
-                  "line": 443,
+                  "line": 448,
                   "name": "toFixed",
                   "target": null
                 }
@@ -2137,7 +2237,7 @@
               "calls": [
                 {
                   "branch": "signal && COUNT_SIGNALS.has(signal)",
-                  "line": 443,
+                  "line": 448,
                   "name": "toFixed",
                   "target": null,
                   "via": "fmt"
@@ -2176,6 +2276,21 @@
             "src/openrouter.ts"
           ],
           "path": "src/player.ts"
+        },
+        {
+          "hash": "fe00c40fad94f8b5d9544bc084e524298ff0648f12110cd83a312e43d412b62c",
+          "importOrder": [
+            "src/profile-report.ts",
+            "src/personas.ts",
+            "src/report.ts"
+          ],
+          "importsFiles": [
+            "src/personas.ts",
+            "src/profile-report.ts",
+            "src/report.ts"
+          ],
+          "path": "src/profile-report.test.ts",
+          "testFramework": "vitest"
         },
         {
           "entry": "writeProfileReport",
@@ -2448,7 +2563,7 @@
               "line": 691
             }
           ],
-          "hash": "20aa8e7aec458f6e86281ce1c6f305c0a80e7e3235ef447dec927801a4572392",
+          "hash": "e3f3dea0badde94fdfc2d88bbaa28f327b57f53f01aa3aa4ea7cc0aea79bfe24",
           "importsFiles": [
             "src/config.ts",
             "src/coverage.ts",
@@ -2513,6 +2628,14 @@
                   "target": {
                     "file": "src/verifiers.ts"
                   }
+                },
+                {
+                  "line": 461,
+                  "name": "isIgnored",
+                  "passed": true,
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  }
                 }
               ],
               "exported": true,
@@ -2549,6 +2672,15 @@
                 {
                   "line": 455,
                   "name": "renderAbsorbingLine",
+                  "target": {
+                    "file": "src/verifiers.ts"
+                  },
+                  "via": "renderReport"
+                },
+                {
+                  "line": 461,
+                  "name": "isIgnored",
+                  "passed": true,
                   "target": {
                     "file": "src/verifiers.ts"
                   },
@@ -3005,7 +3137,7 @@
           "path": "src/stdio-game.ts"
         },
         {
-          "hash": "3e3b86385ee035e0b2bd1fef534184097f3841e6c2f6dc970eecc4570e36d060",
+          "hash": "1c4179b9fc53c24d48bfdc69868a471a163e8a0f309dc202033ef0010a6904a3",
           "importOrder": [
             "src/verifiers.ts",
             "src/player.ts"
@@ -3026,6 +3158,7 @@
             "detectStateInvariants",
             "detectTerminal",
             "entityAppearanceGrid",
+            "isIgnored",
             "renderAbsorbingLine",
             "runVerifiers",
             "tarjanScc"
@@ -3034,15 +3167,15 @@
             {
               "in": "entityAppearanceGrid",
               "kind": "catch",
-              "line": 360
+              "line": 371
             },
             {
               "in": "entityAppearanceGrid",
               "kind": "catch",
-              "line": 380
+              "line": 391
             }
           ],
-          "hash": "e1c829633878315dfa29e18432cb604ee8eedf1d75ad619e89550b3673d0471a",
+          "hash": "fc0135ed217ff7e2e06d74e5a78a162cf69444ffb08cf037073debd960c30283",
           "importsFiles": [
             "src/coverage.ts",
             "src/player.ts"
@@ -3071,7 +3204,7 @@
       "testRunners": [
         "vitest"
       ],
-      "testedBy": 23,
+      "testedBy": 24,
       "unresolvedSites": 0
     },
     {
@@ -3339,7 +3472,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 43
+          "files": 44
         },
         {
           "boundary": "test",
@@ -3564,6 +3697,13 @@
           "via": "tsc tsconfig.json"
         },
         {
+          "job": "verify",
+          "matched": true,
+          "path": "src/profile-report.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
           "built": true,
           "job": "verify",
           "matched": true,
@@ -3737,7 +3877,7 @@
           "via": "tsc tsconfig.test.json"
         }
       ],
-      "runsCount": 52,
+      "runsCount": 53,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -3753,7 +3893,7 @@
       "tests": [
         {
           "config": "vitest.config.ts",
-          "files": 23,
+          "files": 24,
           "job": "verify",
           "runner": "vitest",
           "step": "Verify (typecheck + tests)",
@@ -4005,8 +4145,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "e27228d2a93d0b7872368fba4fdb99a93d1176fe",
-    "tracked": 106
+    "commit": "33fb11630fbb0b71f4bbb27f611bd8fdf265086d",
+    "tracked": 107
   },
   "landings": [
     {
@@ -4228,7 +4368,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 27,
+  "testFiles": 28,
   "unassigned": [
     {
       "hash": "c129ecffad48d686697166c48617cbd6e3721c7d59643b5de3428f996a3cb6cd",

@@ -34,7 +34,7 @@ export { runSeat, runAll, toAction } from './run.js';
 export type { SeatResult, RunOptions } from './run.js';
 export { readRun, renderReport, renderReportJson, writeReport, renderAggregateReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, criterionMetBySeats, isEmptyDegradedPanel, REPORT_FORMAT } from './report.js';
 export type { SeatSummary, SkippedSeatDir, RunContents, AggregatePayload, SingleRunReport } from './report.js';
-export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, DEFAULT_VERIFIERS } from './verifiers.js';
+export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, isIgnored, DEFAULT_VERIFIERS } from './verifiers.js';
 export type { VerifierReport, VerifierConfig, AbsorbingHit } from './verifiers.js';
 export { summarizeRuns, minSignFlipP, betaMean, juryNEff, FIRST_INFERENTIAL_N } from './stats.js';
 export type { RunStats, CriterionPosterior } from './stats.js';

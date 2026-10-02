@@ -70,8 +70,19 @@ export type AbsorbingHit = {
 export type IgnoredInput = {
   turn: number;
   input: string;
-  kind: 'no-output' | 'identical-screen' | 'changed';
+  /**
+   * `redisplay`: a bare `look` whose reply is the same screen. Reprinting the
+   * screen is what `look` is for, so it is not an ignored input.
+   */
+  kind: 'no-output' | 'identical-screen' | 'redisplay' | 'changed';
 };
+
+/** An input the game ignored: no output, or the same screen back for anything but a bare look. */
+export function isIgnored(row: IgnoredInput): boolean {
+  return row.kind === 'no-output' || row.kind === 'identical-screen';
+}
+
+const REDISPLAY = /^(l|look|look around|redraw|refresh)$/i;
 
 export type ParserClass = 'unparsed' | 'refused' | 'accepted' | 'unknown';
 
@@ -254,7 +265,7 @@ export function classifyIgnored(turns: TurnRecord[]): IgnoredInput[] {
     if (!reply) return { turn: t.turn, input: t.input, kind: 'changed' as const };
     const empty = reply.screen.trim().length === 0;
     const same = hashTurn(reply) === hashTurn(t);
-    const kind: IgnoredInput['kind'] = empty ? 'no-output' : same ? 'identical-screen' : 'changed';
+    const kind: IgnoredInput['kind'] = empty ? 'no-output' : !same ? 'changed' : REDISPLAY.test(t.input.trim()) ? 'redisplay' : 'identical-screen';
     return { turn: t.turn, input: t.input, kind };
   });
 }

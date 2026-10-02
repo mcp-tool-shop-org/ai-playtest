@@ -35,6 +35,23 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
   Options: `custom` profiles, extra personas, game-specific action tags, and a
   `briefing` for the briefed persona.
+
+  Scripted bots for every persona, played on the full Harrow Gate town in
+  mcp-arcade-cabinets, then shaped the separation rules:
+  - **`turnsToFinish`.** The runner, speedrunner and briefed now target this
+    signal. It counts turns, except that a run the player quit has none. On
+    `turnsPlayed`, the quitter beat the runner by giving up first.
+  - **Ties pass the lead check.** "No other persona goes further" now means
+    strictly further, so a briefed player and a novice who both make no mistakes
+    both count.
+  - **The tinkerer targets `share:use`.** That covers give, use, combine and put.
+    On `offPath`, every style unlike control scored high, and grinder and
+    completionist beat the tinkerer on its own signal.
+  - **`spar` counts as a fight input.**
+  - **A bare `look` that reprints the screen is a `redisplay`, not an ignored
+    input.** The ignored-input check, `rejectedRate`, `diff` and calibration
+    grading now read it through one `isIgnored`. The false positive had put the
+    novice at 6% refused inputs for typing `look`.
 - **`transcriptTurns`** reads a transcript's turn numbers and reasons.
   `transcriptInputs` now returns only the inputs the player chose; it used to
   count setup answers and the runner's own quit sequence. `diff` repros keep
