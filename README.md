@@ -146,6 +146,42 @@ So "build B scored worse than build A on *reacts-to-player*" is a claim this too
 supports. "This game is alive: yes" is not, and the report is written to keep
 that distinction visible.
 
+### Comparing two builds
+
+`diff` puts that into practice. Play the old build and the new one with the same
+config, then:
+
+```bash
+node dist/cli.js diff path/to/game.playtest.json --base v1 --head v2
+```
+
+It lists what got worse:
+- a criterion the jury stopped passing
+- a world that no longer feels alive
+- a new soft-lock lead
+- a rise of a quarter or more in ignored input
+- more seats ending in error
+
+Each finding has a stable id (`criterion-lost:spends-resource`), the vote counts on
+both sides, and the turn and inputs in each head transcript that show it. When a
+probability judge scored the head run, its P(met) is added as a second opinion. It
+annotates the finding and never changes it.
+
+`diff` writes `DIFF-<base>.md` and `.json` into the head run, and **exits 5 while
+any finding is open**, so a CI step can stop on it. A change you meant goes in an
+acceptance file, passed with `--accept`:
+
+```json
+{ "accepted": [{ "id": "criterion-lost:spends-resource", "note": "the lamp was cut on purpose", "head": "v2" }] }
+```
+
+Every acceptance needs a note. `head` is optional and limits it to one run.
+Accepted findings stay in the report, and an acceptance that no longer matches
+anything is listed so it can be removed. On Harrow Gate, the build with the lamp
+removed came back with exactly one finding, `criterion-lost:spends-resource`,
+which is the switch that was flipped. With one seat on a side, a flip is one
+judge's verdict, and the report says so.
+
 **A known gap, stated plainly:** no study we could find measures agreement
 between issues found by agent playtesters and issues found by human playtesters
 *for experience quality*. Automated playtesting is validated against difficulty
@@ -254,6 +290,7 @@ node dist/cli.js run path/to/game.playtest.json --label compare --runs 3   # des
 node dist/cli.js run path/to/game.playtest.json --label rpc --serial       # one game, several seats; needed for RPC until you multiplex
 node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md + REPORT.json from disk
 node dist/cli.js score path/to/game.playtest.json --label phase9    # re-run config.scorers over the saved transcripts
+node dist/cli.js diff path/to/game.playtest.json --base v1 --head v2 # what got worse between two runs; exits 5 if anything is open
 ```
 
 `--serial` runs seats one after another. On the RPC driver it reuses one TCP
@@ -262,7 +299,8 @@ is its own process — they will contend if they share one listening game.
 
 Exit codes: 0 ok · 1 usage · 2 config · 3 provider (key missing, model has no
 endpoints, local daemon down) · 4 run error (every seat ended in error, or no
-seat produced a verdict). Errors print `error:` and `hint:`.
+seat produced a verdict) · 5 `diff` found open regressions. Errors print `error:`
+and `hint:`.
 
 ### Local seats, no API key
 
@@ -346,7 +384,8 @@ See [SECURITY.md](SECURITY.md) for the full write-up.
 bridge prints, chat completions from OpenRouter or a local Ollama daemon
 (player + jury), and files the
 runner writes under `runsDir` (`transcript.txt`, `critique.json`,
-`meta.json`, `REPORT.md`, `REPORT.json`).
+`meta.json`, `REPORT.md`, `REPORT.json`, and `DIFF-<base>.md` / `.json` from
+`diff`). `diff` also reads the acceptance file you pass it.
 
 **Data not touched:** the runner sends no telemetry and collects no
 analytics. The game process does not receive `OPENROUTER_API_KEY` unless
@@ -399,7 +438,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-242 tests. `tsconfig.test.json` exists because the build config excludes test
+301 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 

@@ -9,6 +9,24 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`diff`, a regression gate between two runs.**
+  `ai-playtest diff <config> --base <label> --head <label>` compares the two and
+  lists what got worse:
+  - a criterion the jury stopped passing (by majority of seats)
+  - a world no longer alive
+  - a new soft-lock lead
+  - ignored input up by 25 points or more
+  - more seats ending in error
+
+  Each finding has a stable id, both vote counts, and the turn and inputs in the
+  head transcripts that show it. A probability judge's P(met) on the head run is
+  attached as a second opinion. `diff` writes `DIFF-<base>.md` / `.json` into the
+  head run and exits **5** while any finding is open. `--accept <file>` takes
+  `{"accepted":[{"id","note","head"?}]}`. A note is required, accepted findings stay
+  in the report, and stale acceptances are listed.
+
+  On the Harrow Gate builds, the lamp-less build produced exactly one finding,
+  `criterion-lost:spends-resource`.
 - **Probability judges (`scorers`).** A second opinion beside the jury: each
   criterion scored as P(met), shown per criterion and seat in a new report section
   with an uncertain band (`?`, default 0.35–0.65) and a `⚠` where the probability

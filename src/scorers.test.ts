@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createScorer, criterionQuestions, disagreement, readProbability, stateForWindow, SCORER_DEFAULTS } from './scorers.js';
+import { createScorer, criterionQuestions, disagreement, fitText, readProbability, stateForWindow, SCORER_DEFAULTS } from './scorers.js';
 import { validateConfig, ConfigError, lintCriteria } from './config.js';
 import type { DecisionsClient } from './decisions.js';
 import type { TurnRecord } from './player.js';
@@ -11,6 +11,22 @@ const criteria = [
 const turn = (n: number, screen: string, input = 'look'): TurnRecord => ({ turn: n, screen, input, reason: 'prompt', ms: 1 } as TurnRecord);
 const outcome = { endedBy: 'turns', turnsPlayed: 2 };
 const jev = { id: 'jev', kind: 'jev' as const, ...SCORER_DEFAULTS.jev };
+
+describe('fitText', () => {
+  it('passes a transcript that fits through untouched', () => {
+    expect(fitText('short transcript', 1000)).toEqual({ state: 'short transcript', clipped: false });
+  });
+
+  it('trims the middle of one that does not, keeping the start and the end', () => {
+    const text = `START ${'middle of the session. '.repeat(4000)} END`;
+    const r = fitText(text, 2000);
+    expect(r.clipped).toBe(true);
+    expect(r.state.startsWith('START')).toBe(true);
+    expect(r.state.endsWith('END')).toBe(true);
+    expect(r.state).toMatch(/\[\.\.\. \d+ characters trimmed \.\.\.\]/);
+    expect(r.state.length).toBeLessThan(text.length);
+  });
+});
 
 describe('jev scorer', () => {
   it('asks every criterion in ONE request, as noul questions keyed by criterion id, and maps P(met) back', async () => {

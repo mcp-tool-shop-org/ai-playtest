@@ -11,3 +11,4 @@ site/node_modules/
 
 calibration/configs/
 calibration/runs/
+coverage/

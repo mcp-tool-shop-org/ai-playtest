@@ -52,6 +52,10 @@
           "path": "docs/research-4.md"
         },
         {
+          "hash": "69f85c2db9d36823e7489b6ad9a7d8df8ab74bae6eca54691adacd7c6890069d",
+          "path": "docs/research-5.md"
+        },
+        {
           "hash": "de2c7f6690138240524e60f8f469b65ef73e6113976bfe713fe994323381794d",
           "path": "docs/research.md"
         }
@@ -75,11 +79,11 @@
       "externals": 0,
       "files": [
         {
-          "hash": "0ba9f73e6725bd545143b803c2d11604de85637646e5eae743008b0a52783287",
+          "hash": "e06bf82348b9f2826279b263988bd090baac6814c220b368acfc5e73b7cb4cb3",
           "path": ".gitignore"
         },
         {
-          "hash": "6270d5018069bab0b5eb9e8db96afb33682ec537e49a0d4399d49f9ce5dd2575",
+          "hash": "64fb0ff3529a8f6bf5da2a8af05fff30a568b6bc14f1c7fe23ad82787e8fc9d5",
           "path": "CHANGELOG.md"
         },
         {
@@ -107,7 +111,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "64c614ca7a6ca3f431bcbce193bb00b6b7db28e34d369549c69730e1d9a1e5e9",
+          "hash": "d755ba3635b814a3f1809e81f4fbd734a27eaeb7f2f05250b057ac795598b808",
           "path": "README.md"
         },
         {
@@ -131,7 +135,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "hash": "a8d53e37fc14ea48b1ac9f5b1b8fc98e20fb54a9e32f054a092b4a2ce00ad5fb",
           "path": "codecov.yml"
         },
         {
@@ -273,10 +277,10 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 2,
+      "dynamicReads": 3,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 2,
+      "dynamicWrites": 4,
       "entryPoints": [
         "src/cli.ts"
       ],
@@ -294,20 +298,20 @@
             {
               "in": "parseTruthLog",
               "kind": "catch",
-              "line": 47
+              "line": 40
             },
             {
               "in": "gradeRuns",
               "kind": "catch",
-              "line": 93
+              "line": 86
             },
             {
               "in": "isDir",
               "kind": "catch",
-              "line": 118
+              "line": 111
             }
           ],
-          "hash": "b0bede6ec698301f7dafaa3ca488474312e37a2ca84d52005bf292c16fa4445f",
+          "hash": "742f65e01bd84fa04fbaba7c056b7f8a0d9d1c38dc47551b01ab8e7945d968d2",
           "importOrder": [
             "src/panel.ts",
             "src/verifiers.ts",
@@ -321,7 +325,15 @@
           "path": "src/calibration.ts"
         },
         {
-          "hash": "9f0e89dd0447890adb697e991a12c5ab4aa882504e5212083fc617a2f844a80b",
+          "hash": "a5b5cf2e113565daaaaa0ab1db054886b23f862a0c64ae7c97a93dc2e2b2e554",
+          "importsFiles": [
+            "src/cli.ts"
+          ],
+          "path": "src/cli-verbs.test.ts",
+          "testFramework": "vitest"
+        },
+        {
+          "hash": "cde4581c6609c6d76a9dbc33e8451e79d78bf473767cc267b5fe0416d040fd9c",
           "importsFiles": [
             "src/cli.ts"
           ],
@@ -342,38 +354,44 @@
             {
               "in": "main",
               "kind": "catch",
-              "line": 220
+              "line": 228
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 222
+              "line": 230
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 259
+              "line": 274
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 292
+              "line": 300
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 370
+              "line": 333
+            },
+            {
+              "in": "main",
+              "kind": "catch",
+              "line": 411
             },
             {
               "in": "runningAsCli",
               "kind": "catch",
-              "line": 380
+              "line": 421
             }
           ],
-          "hash": "9f7952fd62fb6f03c7f0b6479b65798b77b743df0c778d579e516402b1117262",
+          "hash": "95857944637c1c7c8480a1ace981c0979d274dbaad85b99870cc47d0487ceb7a",
           "importsFiles": [
             "src/config.ts",
             "src/decisions.ts",
+            "src/diff.ts",
             "src/ollama.ts",
             "src/openrouter.ts",
             "src/providers.ts",
@@ -388,7 +406,7 @@
             {
               "calls": [
                 {
-                  "line": 149,
+                  "line": 157,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -403,7 +421,7 @@
             {
               "calls": [
                 {
-                  "line": 181,
+                  "line": 189,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -411,14 +429,14 @@
                 },
                 {
                   "branch": "r.critique",
-                  "line": 191,
+                  "line": 199,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 194,
+                  "line": 202,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -443,22 +461,87 @@
                       "via": "validateConfig"
                     }
                   ],
-                  "line": 219,
+                  "line": 227,
                   "name": "loadConfig",
                   "target": {
                     "file": "src/config.ts"
                   }
                 },
                 {
-                  "line": 225,
+                  "line": 233,
                   "name": "lintCriteria",
                   "target": {
                     "file": "src/config.ts"
                   }
                 },
                 {
+                  "branch": "verb === 'diff'",
+                  "line": 259,
+                  "name": "parseAcceptances",
+                  "target": {
+                    "file": "src/diff.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'diff'",
+                  "inner": [
+                    {
+                      "line": 160,
+                      "name": "readRun",
+                      "target": {
+                        "file": "src/report.ts"
+                      }
+                    },
+                    {
+                      "line": 67,
+                      "name": "isEmptyDegradedPanel",
+                      "target": {
+                        "file": "src/report.ts"
+                      },
+                      "via": "verdictFor"
+                    },
+                    {
+                      "line": 144,
+                      "name": "readProbability",
+                      "target": {
+                        "file": "src/scorers.ts"
+                      },
+                      "via": "scorerNote"
+                    },
+                    {
+                      "line": 75,
+                      "name": "isEmptyDegradedPanel",
+                      "target": {
+                        "file": "src/report.ts"
+                      },
+                      "via": "aliveOf"
+                    }
+                  ],
+                  "line": 261,
+                  "name": "diffRuns",
+                  "target": {
+                    "file": "src/diff.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'diff'",
+                  "line": 262,
+                  "name": "renderDiff",
+                  "target": {
+                    "file": "src/diff.ts"
+                  }
+                },
+                {
+                  "branch": "verb === 'diff'",
+                  "line": 272,
+                  "name": "openFindings",
+                  "target": {
+                    "file": "src/diff.ts"
+                  }
+                },
+                {
                   "branch": "verb === 'score'",
-                  "line": 249,
+                  "line": 290,
                   "name": "createDecisionsClient",
                   "target": {
                     "file": "src/decisions.ts"
@@ -482,7 +565,7 @@
                       }
                     }
                   ],
-                  "line": 249,
+                  "line": 290,
                   "name": "rescoreRun",
                   "target": {
                     "file": "src/rescore.ts"
@@ -524,7 +607,7 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 257,
+                  "line": 298,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
@@ -532,7 +615,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 273,
+                  "line": 314,
                   "name": "listRunSiblings",
                   "target": {
                     "file": "src/report.ts"
@@ -540,7 +623,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 274,
+                  "line": 315,
                   "name": "isAggregateDir",
                   "target": {
                     "file": "src/report.ts"
@@ -548,7 +631,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 280,
+                  "line": 321,
                   "name": "readRun",
                   "target": {
                     "file": "src/report.ts"
@@ -566,7 +649,7 @@
                       "via": "renderAggregateReport"
                     }
                   ],
-                  "line": 284,
+                  "line": 325,
                   "name": "writeAggregateFromRuns",
                   "target": {
                     "file": "src/report.ts"
@@ -608,7 +691,7 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 290,
+                  "line": 331,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
@@ -624,42 +707,42 @@
                       }
                     }
                   ],
-                  "line": 303,
+                  "line": 344,
                   "name": "providersInUse",
                   "target": {
                     "file": "src/providers.ts"
                   }
                 },
                 {
-                  "line": 312,
+                  "line": 353,
                   "name": "createOpenRouterClient",
                   "target": {
                     "file": "src/openrouter.ts"
                   }
                 },
                 {
-                  "line": 313,
+                  "line": 354,
                   "name": "createOllamaClient",
                   "target": {
                     "file": "src/ollama.ts"
                   }
                 },
                 {
-                  "line": 311,
+                  "line": 352,
                   "name": "createRoutedClient",
                   "target": {
                     "file": "src/providers.ts"
                   }
                 },
                 {
-                  "line": 315,
+                  "line": 356,
                   "name": "createDecisionsClient",
                   "target": {
                     "file": "src/decisions.ts"
                   }
                 },
                 {
-                  "line": 321,
+                  "line": 362,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -769,7 +852,7 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 328,
+                  "line": 369,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
@@ -810,14 +893,14 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 332,
+                  "line": 373,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 149,
+                  "line": 157,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -928,89 +1011,18 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 346,
+                  "line": 387,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
-                  }
-                },
-                {
-                  "inner": [
-                    {
-                      "line": 220,
-                      "name": "readProbability",
-                      "target": {
-                        "file": "src/scorers.ts"
-                      },
-                      "via": "renderScoresSection"
-                    },
-                    {
-                      "line": 221,
-                      "name": "disagreement",
-                      "target": {
-                        "file": "src/scorers.ts"
-                      },
-                      "via": "renderScoresSection"
-                    },
-                    {
-                      "line": 428,
-                      "name": "renderCoverageLine",
-                      "target": {
-                        "file": "src/coverage.ts"
-                      },
-                      "via": "renderReport"
-                    },
-                    {
-                      "line": 455,
-                      "name": "renderAbsorbingLine",
-                      "target": {
-                        "file": "src/verifiers.ts"
-                      },
-                      "via": "renderReport"
-                    }
-                  ],
-                  "line": 349,
-                  "name": "writeReport",
-                  "target": {
-                    "file": "src/report.ts"
-                  }
-                },
-                {
-                  "line": 354,
-                  "name": "criterionMetBySeats",
-                  "target": {
-                    "file": "src/report.ts"
-                  }
-                },
-                {
-                  "line": 356,
-                  "name": "isEmptyDegradedPanel",
-                  "target": {
-                    "file": "src/report.ts"
-                  }
-                },
-                {
-                  "inner": [
-                    {
-                      "line": 735,
-                      "name": "summarizeRuns",
-                      "target": {
-                        "file": "src/stats.ts"
-                      },
-                      "via": "renderAggregateReport"
-                    }
-                  ],
-                  "line": 361,
-                  "name": "writeAggregateReport",
-                  "target": {
-                    "file": "src/report.ts"
                   }
                 }
               ],
               "exported": true,
               "invokedAtTopLevel": true,
               "isDefaultExport": false,
-              "name": "main"
+              "name": "main",
+              "truncated": true
             }
           ]
         },
@@ -1576,6 +1588,166 @@
           "path": "src/decisions.ts"
         },
         {
+          "hash": "316b54cc6db75b3e7f5570e8b44eaf79d31740b06b46aba8b608322c07e82de5",
+          "importsFiles": [
+            "src/diff.ts",
+            "src/report.ts"
+          ],
+          "path": "src/diff.test.ts",
+          "testFramework": "vitest"
+        },
+        {
+          "entry": "diffRuns",
+          "entryRule": 4,
+          "exports": [
+            "diffRuns",
+            "matchAcceptance",
+            "openFindings",
+            "parseAcceptances",
+            "renderDiff",
+            "transcriptInputs"
+          ],
+          "failurePaths": [
+            {
+              "in": "reproFor",
+              "kind": "catch",
+              "line": 114
+            },
+            {
+              "in": "diffRuns",
+              "kind": "throw",
+              "line": 162
+            },
+            {
+              "in": "diffRuns",
+              "kind": "throw",
+              "line": 163
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "catch",
+              "line": 262
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 263
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 267
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 271
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 273
+            },
+            {
+              "in": "parseAcceptances",
+              "kind": "throw",
+              "line": 275
+            }
+          ],
+          "hash": "d44852057a8c27e0bab3ec2138478c0478d3ca018bc55f435cd92439d71bade0",
+          "importsFiles": [
+            "src/report.ts",
+            "src/scorers.ts"
+          ],
+          "path": "src/diff.ts",
+          "sequences": [
+            {
+              "calls": [
+                {
+                  "line": 67,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "verdictFor"
+            },
+            {
+              "calls": [
+                {
+                  "line": 75,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "aliveOf"
+            },
+            {
+              "calls": [
+                {
+                  "line": 144,
+                  "name": "readProbability",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  }
+                }
+              ],
+              "exported": false,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "scorerNote"
+            },
+            {
+              "calls": [
+                {
+                  "line": 160,
+                  "name": "readRun",
+                  "target": {
+                    "file": "src/report.ts"
+                  }
+                },
+                {
+                  "line": 67,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  },
+                  "via": "verdictFor"
+                },
+                {
+                  "line": 144,
+                  "name": "readProbability",
+                  "target": {
+                    "file": "src/scorers.ts"
+                  },
+                  "via": "scorerNote"
+                },
+                {
+                  "line": 75,
+                  "name": "isEmptyDegradedPanel",
+                  "target": {
+                    "file": "src/report.ts"
+                  },
+                  "via": "aliveOf"
+                }
+              ],
+              "exported": true,
+              "invokedAtTopLevel": false,
+              "isDefaultExport": false,
+              "name": "diffRuns"
+            }
+          ]
+        },
+        {
           "hash": "d9e27e1ac5434f3084a392c222e3092e0edfc4b759604eb759edaa58c59a873e",
           "importsFiles": [
             "src/driver.ts"
@@ -1617,7 +1789,7 @@
           "path": "src/driver.ts"
         },
         {
-          "hash": "c7bd5e950ea74705179b7942dd4d77edbef659cec4a94e49d765ed2882e8fe52",
+          "hash": "bdd8d37f656da9a94e8072d65acc5e352cbd6d6e051b8071ea3d7d673a5ac754",
           "importOrder": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -1626,6 +1798,7 @@
             "src/decisions.ts",
             "src/scorers.ts",
             "src/rescore.ts",
+            "src/diff.ts",
             "src/calibration.ts",
             "src/stdio-game.ts",
             "src/player.ts",
@@ -1647,6 +1820,7 @@
             "src/coverage.ts",
             "src/critic.ts",
             "src/decisions.ts",
+            "src/diff.ts",
             "src/driver.ts",
             "src/ollama.ts",
             "src/openrouter.ts",
@@ -2244,6 +2418,23 @@
               "name": "writeAggregateReport"
             }
           ]
+        },
+        {
+          "hash": "4012eb7e8ecea9e3c56a635ff33c6fa9a075dd324ef16a89d07e81204f97244e",
+          "importOrder": [
+            "src/rescore.ts",
+            "src/scorers.ts",
+            "src/config.ts",
+            "src/decisions.ts"
+          ],
+          "importsFiles": [
+            "src/config.ts",
+            "src/decisions.ts",
+            "src/rescore.ts",
+            "src/scorers.ts"
+          ],
+          "path": "src/rescore.test.ts",
+          "testFramework": "vitest"
         },
         {
           "entry": "rescoreRun",
@@ -3143,7 +3334,7 @@
           ]
         },
         {
-          "hash": "d006acceaf02105a1b1933d9931c6ae31af7912b3b30b18f5815d7c1409452ff",
+          "hash": "e61bbc2bc99e14ffc83fb1960d7091061e821368b26bafe4f6925dc4b7858bbe",
           "importOrder": [
             "src/scorers.ts",
             "src/config.ts",
@@ -3327,20 +3518,20 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 19,
+          "reads": 22,
           "where": [
             "caller"
           ],
           "writes": 12
         }
       ],
-      "outsideReads": 19,
+      "outsideReads": 22,
       "outsideWrites": 12,
       "role": "code",
       "testRunners": [
         "vitest"
       ],
-      "testedBy": 18,
+      "testedBy": 22,
       "unresolvedSites": 0
     },
     {
@@ -3351,6 +3542,14 @@
       "entryPoints": [],
       "externals": 0,
       "files": [
+        {
+          "hash": "300aea82ed09c656f09d0e8c763168c277535146054e72205d60ac6bdff83410",
+          "importsFiles": [
+            "src/calibration.ts"
+          ],
+          "path": "test/calibration-edges.test.ts",
+          "testFramework": "vitest"
+        },
         {
           "hash": "42d84b0e53e4758f9c869606bd2e0a533be41c15f9221d762cfddc8e12941d7c",
           "importOrder": [
@@ -3600,12 +3799,12 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 36
+          "files": 40
         },
         {
           "boundary": "test",
           "depth": 0,
-          "files": 5
+          "files": 6
         }
       ],
       "readers": [],
@@ -3635,6 +3834,13 @@
           "path": "src/calibration.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/cli-verbs.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
         },
         {
           "job": "verify",
@@ -3701,6 +3907,21 @@
           "job": "verify",
           "matched": true,
           "path": "src/decisions.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
+          "path": "src/diff.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
+          "built": true,
+          "job": "verify",
+          "matched": true,
+          "path": "src/diff.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.json"
         },
@@ -3812,6 +4033,13 @@
           "via": "tsc tsconfig.json"
         },
         {
+          "job": "verify",
+          "matched": true,
+          "path": "src/rescore.test.ts",
+          "runKind": "executes",
+          "via": "vitest vitest.config.ts"
+        },
+        {
           "built": true,
           "job": "verify",
           "matched": true,
@@ -3906,6 +4134,13 @@
         {
           "job": "verify",
           "matched": true,
+          "path": "test/calibration-edges.test.ts",
+          "runKind": "executes",
+          "via": "tsc tsconfig.test.json"
+        },
+        {
+          "job": "verify",
+          "matched": true,
           "path": "test/calibration.test.ts",
           "runKind": "executes",
           "via": "tsc tsconfig.test.json"
@@ -3939,7 +4174,7 @@
           "via": "tsc tsconfig.test.json"
         }
       ],
-      "runsCount": 44,
+      "runsCount": 49,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -3955,7 +4190,7 @@
       "tests": [
         {
           "config": "vitest.config.ts",
-          "files": 18,
+          "files": 22,
           "job": "verify",
           "runner": "vitest",
           "step": "Verify (typecheck + tests)",
@@ -4168,7 +4403,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 21
+          "files": 22
         }
       ],
       "readers": [],
@@ -4207,8 +4442,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "5e6bf567a28bf743f39ba45c3f8598cfb4bccd0c",
-    "tracked": 97
+    "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf",
+    "tracked": 103
   },
   "landings": [
     {
@@ -4430,7 +4665,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 22,
+  "testFiles": 26,
   "unassigned": [
     {
       "hash": "c129ecffad48d686697166c48617cbd6e3721c7d59643b5de3428f996a3cb6cd",

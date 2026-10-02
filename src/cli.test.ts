@@ -10,4 +10,10 @@ describe('cli usage', () => {
     expect(u).toMatch(/Exit codes/);
     expect(u).toMatch(/check <config\.json>/);
   });
+
+  it('documents diff, its acceptance file and exit code 5', () => {
+    const u = usage();
+    expect(u).toMatch(/diff <config\.json> --base <label> --head <label> \[--accept <file>\]/);
+    expect(u).toMatch(/5 diff found open regressions/);
+  });
 });

@@ -29,13 +29,6 @@ export type AnswerKey = {
 
 export type TruthLog = { variant: string; knobs: Record<string, unknown>; events: string[] };
 
-export class CalibrationError extends Error {
-  readonly code = 'E_CALIBRATION';
-  constructor(message: string, readonly hint: string) {
-    super(message);
-  }
-}
-
 /** Parse a game's stderr into its switches and every event, in order. Non-log lines are ignored. */
 export function parseTruthLog(stderr: string): TruthLog | null {
   let knobs: Record<string, unknown> | null = null;

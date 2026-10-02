@@ -13,7 +13,9 @@ export type {
 export { createScorer, criterionQuestions, stateForWindow, fitText, readProbability, disagreement, SCORER_DEFAULTS } from './scorers.js';
 export type { Scorer, ScorerConfig, ScorerKind, ScorerResult, CriterionScore, ScoreInput } from './scorers.js';
 export { rescoreRun } from './rescore.js';
-export { parseTruthLog, truthFor, gradeRuns, summarize, renderCalibration, CalibrationError } from './calibration.js';
+export { diffRuns, parseAcceptances, openFindings, renderDiff, transcriptInputs, IGNORED_RISE } from './diff.js';
+export type { DiffResult, Finding, FindingKind, Improvement, Acceptance, Repro } from './diff.js';
+export { parseTruthLog, truthFor, gradeRuns, summarize, renderCalibration } from './calibration.js';
 export type { AnswerKey, TruthRule, TruthLog, Graded, GradedCell, GradedVerifier, CalibrationSummary, CriterionSummary, Confusion } from './calibration.js';
 export { validateScorers, lintCriteria } from './config.js';
 export type { CriterionLint } from './config.js';
