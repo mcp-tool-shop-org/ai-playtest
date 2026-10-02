@@ -9,7 +9,7 @@ import type { Seat } from './config.js';
 import { VERSION, SCHEMA_VERSION } from './config.js';
 import { renderCoverageLine, type Coverage } from './coverage.js';
 import type { PanelVerdict } from './panel.js';
-import { renderAbsorbingLine, type VerifierReport } from './verifiers.js';
+import { isIgnored, renderAbsorbingLine, type VerifierReport } from './verifiers.js';
 import { summarizeRuns, type CriterionPosterior, type RunStats } from './stats.js';
 import { disagreement, readProbability, type ScorerResult } from './scorers.js';
 
@@ -458,7 +458,7 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
       } else {
         lines.push('  - session finished: no victory/death regex matched (lists empty, or the session did not finish)');
       }
-      const ignored = v.ignoredInputs.filter((i) => i.kind !== 'changed');
+      const ignored = v.ignoredInputs.filter(isIgnored);
       if (ignored.length) {
         lines.push(`  - ignored inputs: ${ignored.length} (${ignored.slice(0, 6).map((i) => `t${i.turn} ${i.kind} "${cell(i.input)}"`).join('; ')})`);
       }

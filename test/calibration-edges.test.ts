@@ -91,6 +91,19 @@ describe('gradeRuns edges', () => {
       { variant: 'deaf', seat: 's', check: 'ignoredInputs', truth: true, fired: false },
     ]);
   });
+
+  it('fires the ignored-input check on the share of ignored inputs, not because every input has a row', async () => {
+    const rows = (kinds: string[]) => kinds.map((kind, i) => ({ turn: i + 1, input: `in${i}`, kind }));
+    // quiet: 1 of 5 ignored (20%, under the 25% line); loud: 1 of 2 (50%).
+    for (const [id, kinds] of [['quiet', ['changed', 'changed', 'changed', 'changed', 'identical-screen']], ['loud', ['changed', 'identical-screen']]] as const) {
+      await seatDir('a', id, {
+        'meta.json': JSON.stringify({ seat: { id }, verifiers: { absorbing: null, ignoredInputs: rows([...kinds]) } }),
+        'stderr.txt': log({ knobs: {} }),
+      });
+    }
+    const g = await gradeRuns(root, 'L', { rules: {}, verifiers: { ignoredInputs: { anyEvent: 'ignored' } } });
+    expect(g.verifiers.map((v) => [v.seat, v.fired])).toEqual([['loud', true], ['quiet', false]]);
+  });
 });
 
 describe('summarize and render edges', () => {

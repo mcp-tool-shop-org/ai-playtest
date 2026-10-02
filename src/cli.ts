@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// cli.ts — `ai-playtest run <config.json> [--label x] [--seats a,b] [--turns n] [--runs n] [--serial]`
+// cli.ts — `ai-playtest run <config.json> [--label x] [--seats a,b] [--turns n] [--runs n] [--serial] [--profile p] [--personas a,b]`
 //          `ai-playtest report <config.json> --label x`
 //          `ai-playtest score <config.json> --label x`
 //          `ai-playtest check <config.json>`
@@ -18,6 +18,8 @@ import { createRoutedClient, providersInUse } from './providers.js';
 import { createDecisionsClient, DecisionsError } from './decisions.js';
 import { rescoreRun } from './rescore.js';
 import { diffRuns, parseAcceptances, openFindings, renderDiff } from './diff.js';
+import { resolveProfile, composePersona, PersonaError, PROFILES } from './personas.js';
+import { personaLabel, saveProfile, loadProfile, writeProfileReport } from './profile-report.js';
 import { runAll, type SeatResult } from './run.js';
 import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats, isEmptyDegradedPanel } from './report.js';
 import { summarizeRuns } from './stats.js';
@@ -28,7 +30,7 @@ export function usage(): string {
     'ai-playtest -- family-diverse AI playtesting for text games',
     '',
     'Usage:',
-    '  ai-playtest run <config.json> [--label <name>] [--seats <id,id>] [--turns <n>] [--runs <n>] [--serial]',
+    '  ai-playtest run <config.json> [--label <name>] [--seats <id,id>] [--turns <n>] [--runs <n>] [--serial] [--profile <name>] [--personas <id,id>]',
     '  ai-playtest report <config.json> --label <name>',
     '  ai-playtest score <config.json> --label <name>',
     '  ai-playtest check <config.json>',
@@ -37,6 +39,9 @@ export function usage(): string {
     '',
     'score re-runs config.scorers over a finished run\'s saved transcripts, against the config\'s current',
     'criteria, without replaying the game; it rewrites each seat\'s scores and the report.',
+    `--profile plays a persona profile (${Object.keys(PROFILES).join(', ')}, or custom from config.personas): control plus each`,
+    'play style as its own label <label>--<persona>, then PERSONAS.md says which styles actually played differently.',
+    '--personas narrows the profile to those ids; control always runs. report --label <label> rebuilds PERSONAS.md.',
     'diff compares two finished runs of the config and lists what got worse: a criterion the jury stopped',
     'passing, the world no longer alive, a new soft-lock lead, more ignored input, more seats ending in error.',
     'Each finding has an id and the transcript turns that show it. It writes DIFF-<base>.md and .json in the',
@@ -71,7 +76,7 @@ function failFrom(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
   const hint = hinted(err);
   if (err instanceof OpenRouterError || err instanceof OllamaError || err instanceof DecisionsError) fail(3, message, hint);
-  if (err instanceof ConfigError || err instanceof ReportError || err instanceof PtyUnavailableError) {
+  if (err instanceof ConfigError || err instanceof ReportError || err instanceof PtyUnavailableError || err instanceof PersonaError) {
     fail(2, message, hint);
   }
   const stack = err instanceof Error ? err.stack : undefined;
@@ -80,8 +85,8 @@ function failFrom(err: unknown): never {
   fail(4, message, hint);
 }
 
-const FLAGS_WITH_VALUE = new Set(['--label', '--seats', '--turns', '--runs', '--base', '--head', '--accept']);
-const KNOWN_FLAGS = new Set(['--label', '--seats', '--turns', '--runs', '--serial', '--base', '--head', '--accept', '--help', '-h', '--version']);
+const FLAGS_WITH_VALUE = new Set(['--label', '--seats', '--turns', '--runs', '--base', '--head', '--accept', '--profile', '--personas']);
+const KNOWN_FLAGS = new Set(['--label', '--seats', '--turns', '--runs', '--serial', '--base', '--head', '--accept', '--profile', '--personas', '--help', '-h', '--version']);
 const KNOWN_VERBS = new Set(['run', 'report', 'check', 'score', 'diff']);
 
 function rejectUnknownFlags(args: string[]): void {
@@ -311,6 +316,13 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     const runDir = join(cfg.runsDir, label);
     if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label, or run the playtest first');
     try {
+      const saved = await loadProfile(cfg.runsDir, label);
+      if (saved) {
+        const { path } = await writeProfileReport(cfg.name, cfg.runsDir, label, saved);
+        process.stdout.write(`wrote ${path}
+`);
+        return;
+      }
       const siblings = await listRunSiblings(cfg.runsDir, label);
       const aggregate = await isAggregateDir(runDir);
       if (aggregate && siblings.length === 0) {
@@ -340,6 +352,23 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
   if (turns) cfg.turns = parseTurns(turns);
   const runsFlag = flag(argv, '--runs');
   const runCount = runsFlag ? parseRuns(runsFlag) : 1;
+  const profileFlag = flag(argv, '--profile');
+  const personasFlag = flag(argv, '--personas');
+  let profile: ReturnType<typeof resolveProfile> | undefined;
+  if (profileFlag || personasFlag || cfg.personas) {
+    if (runCount !== 1) fail(1, '--runs and a persona profile cannot be combined yet', 'run the profile once per label, or drop --runs');
+    const name = profileFlag ?? cfg.personas?.profile;
+    if (!name) fail(1, '--personas needs a profile', 'add --profile <name> or config.personas.profile');
+    try {
+      profile = resolveProfile({
+        ...(cfg.personas ?? {}),
+        profile: name!,
+        ...(personasFlag ? { only: personasFlag.split(',').map((x) => x.trim()).filter(Boolean) } : {}),
+      });
+    } catch (err) {
+      failFrom(err);
+    }
+  }
   const seats = resolveSeatIds(cfg.seats.map((s) => s.id), flag(argv, '--seats'));
   const used = providersInUse(cfg.seats, seats, cfg.panelSize);
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -365,7 +394,31 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
   const onSeatDone = (r: SeatResult) => process.stdout.write(formatSeatDone(r));
   try {
     const criterionIds = cfg.criteria.map((c) => c.id);
-    if (runCount === 1) {
+    if (profile) {
+      for (const n of profile.notes) process.stdout.write(`note: ${n}
+`);
+      await saveProfile(cfg.runsDir, label, profile);
+      let anyVerdict = false;
+      let anyPlayOk = false;
+      for (const p of profile.personas) {
+        const runLabel = personaLabel(label, p.id);
+        process.stdout.write(`-- persona ${p.id} (${runLabel})
+`);
+        const results = await runAll({ ...cfg, persona: composePersona(cfg.persona, p, profile.briefing) }, {
+          label: runLabel, client, decisions, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
+        });
+        await writeReport(`${cfg.name} (${p.id})`, join(cfg.runsDir, runLabel), runLabel, criterionIds);
+        notePlayFailures(results);
+        if (results.some((r) => hasVerdict(r))) anyVerdict = true;
+        if (results.some((r) => r.endedBy !== 'error')) anyPlayOk = true;
+      }
+      const { path, result } = await writeProfileReport(cfg.name, cfg.runsDir, label, profile);
+      const judged = result.personas.filter((x) => x.target);
+      process.stdout.write(`personas: ${judged.filter((x) => x.verdict === 'distinct').length}/${judged.length} played distinctly; ${path}
+`);
+      if (!anyVerdict) fail(4, 'no seat produced a verdict for any persona');
+      if (!anyPlayOk) fail(4, 'every seat failed for every persona');
+    } else if (runCount === 1) {
       const results = await runAll(cfg, {
         label, client, decisions, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
       });

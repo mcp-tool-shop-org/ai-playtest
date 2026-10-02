@@ -12,7 +12,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PanelVerdict } from './panel.js';
-import type { VerifierReport } from './verifiers.js';
+import { isIgnored, type VerifierReport } from './verifiers.js';
 import { readProbability, type ScorerResult } from './scorers.js';
 
 export type TruthRule =
@@ -99,12 +99,24 @@ export async function gradeRuns(root: string, label: string, key: AnswerKey): Pr
       for (const check of ['absorbing', 'ignoredInputs'] as const) {
         const rule = key.verifiers?.[check];
         if (!rule || !meta.verifiers) continue;
-        const fired = check === 'absorbing' ? meta.verifiers.absorbing !== null : meta.verifiers.ignoredInputs.length > 0;
+        const fired = check === 'absorbing' ? meta.verifiers.absorbing !== null : ignoredShare(meta.verifiers) >= IGNORED_FIRES_AT;
         out.verifiers.push({ variant: log.variant, seat, check, truth: truthFor(rule, log), fired });
       }
     }
   }
   return out;
+}
+
+/**
+ * The ignored-input check holds a row for every input, so "any row" fired on
+ * every transcript. A share decides it instead. On cal-01, every healthy
+ * build stayed at 18% or below and the deaf build reached 38–50%.
+ */
+export const IGNORED_FIRES_AT = 0.25;
+
+function ignoredShare(v: VerifierReport): number {
+  const rows = v.ignoredInputs;
+  return rows.length === 0 ? 0 : rows.filter(isIgnored).length / rows.length;
 }
 
 async function isDir(p: string): Promise<boolean> {

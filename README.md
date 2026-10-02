@@ -131,6 +131,92 @@ merely prompting an agent to explore is worth only **+2.57** average pass@1
 also tracks *low* success rather than efficiency, so a tidy transcript with few
 distinct inputs is a warning sign, not a good one.
 
+## Who plays: persona profiles
+
+One `persona` string makes every seat the same player. A **profile** is a set of
+play styles chosen to answer one question about the game:
+
+| profile | the question | personas |
+|---|---|---|
+| `scientific` | Can these readings be trusted on this game? | replicate, novice, briefed, systematic |
+| `bughunter` | What is broken? | cartographer, closer, boundary-pusher, continuity-auditor |
+| `player` | Who gets what out of it? | runner, reader, completionist, grinder, quitter, tinkerer |
+| `gaming` | Does it meet the habits genre players bring? | genre-veteran, speedrunner, theorycrafter, returning-player |
+
+Run one with `--profile`, and narrow it with `--personas`:
+
+```bash
+node dist/cli.js run game.playtest.json --label ch1 --profile player --serial
+node dist/cli.js run game.playtest.json --label ch1-bugs --profile bughunter --personas cartographer,closer --serial
+```
+
+Each persona plays as its own run, `<label>--<persona>`, with its own REPORT.md.
+`<label>/PERSONAS.md` then says which styles actually played differently.
+
+The same rules hold for every profile:
+
+1. **A brief is a play style, never the mechanics under test.** It is appended to
+   your `persona`, which still says who the player is in this world.
+2. **Every profile run includes `control`**, your `persona` with no style added.
+   It is the baseline.
+3. **Each persona has one target signal, computed from the turn log.** No two
+   personas in a profile share one. The signals:
+   - the share of inputs by kind (`share:talk,examine`)
+   - places seen (`novelStates`)
+   - repeats (`repeatRate`)
+   - turns before the run ended (`turnsPlayed`)
+   - turns to finish (`turnsToFinish`): the same, except a run the player quit has
+     none, so a quitter never beats a runner on speed
+   - inputs the game refused or ignored (`rejectedRate`); a bare `look` that
+     reprints the screen is not ignored
+   - inputs control never used (`offPath`)
+4. **A persona counts only if it separates.** Its target must beat control by the
+   noise floor, *and* no other persona in the profile may go further on it. A tie
+   is not going further: two styles that both make no mistakes both count. A
+   persona that does not separate is reported as playing like control, because
+   its findings are control's findings under another name.
+
+Why the fourth rule: an evolved Completionist once lost its own metric to another
+persona ([Holmgård et al. 2018](https://arxiv.org/abs/1802.06881)). Naming one
+trait also shifts the others ([arXiv:2609.35036](https://arxiv.org/abs/2609.35036)).
+Prompts that sound different can play the same.
+
+The noise floor defaults to 10 points on a share, and 20% of control's value on a
+count. The `scientific` profile measures a real one: `replicate` plays control's
+exact brief, and the gap between the two raises the floor. One replicate pair can
+raise the default but never lower it.
+
+PERSONAS.md also tallies what the game refused or ignored, **by kind of input**.
+If genre veterans type `save` and get nothing, that is a missing verb, not a
+player mistake.
+
+**Check that a game can separate the styles before paying for a run.** A small
+game gives every style the same few turns, and the profile will report that, at
+the cost of the run. The full Harrow Gate town is a cabinet in
+[mcp-arcade-cabinets](https://github.com/mcp-tool-shop-org/mcp-arcade-cabinets) built
+for this. It has 15 places, people with topics, a side quest, tokens, fights, a
+shortcut and system verbs. A scripted bot for every persona plays it, and its build
+fails unless each style comes out distinct by these rules.
+
+```json
+"personas": {
+  "profile": "scientific",
+  "briefing": "Find the warden's seal in the archive and leave through the gate before dusk.",
+  "only": ["replicate", "novice", "briefed"],
+  "add": [{ "id": "pacifist", "brief": "You avoid every fight you can.", "target": { "signal": "share:fight", "direction": "low" } }],
+  "actionTags": { "talk": "^(hail|parley)\\b" }
+}
+```
+
+- `briefed` plays only when you give a `briefing`: the goal and controls, in your
+  words.
+- `"profile": "custom"` with `add` builds a profile from scratch.
+- `actionTags` teaches the input kinds your game's own verbs. The defaults cover
+  common text-game commands, and closed-set ids such as `talk:mira` match on
+  their verb.
+- `report --label ch1` rebuilds PERSONAS.md from disk.
+- A profile cannot be combined with `--runs` yet.
+
 ## How to read a verdict
 
 **Rank builds; do not trust absolute scores.** This is the most important caveat
@@ -291,6 +377,7 @@ node dist/cli.js run path/to/game.playtest.json --label rpc --serial       # one
 node dist/cli.js report path/to/game.playtest.json --label phase9   # rebuild REPORT.md + REPORT.json from disk
 node dist/cli.js score path/to/game.playtest.json --label phase9    # re-run config.scorers over the saved transcripts
 node dist/cli.js diff path/to/game.playtest.json --base v1 --head v2 # what got worse between two runs; exits 5 if anything is open
+node dist/cli.js run path/to/game.playtest.json --label ch1 --profile player --serial   # control + six play styles; PERSONAS.md
 ```
 
 `--serial` runs seats one after another. On the RPC driver it reuses one TCP
@@ -354,7 +441,8 @@ answer. `OLLAMA_HOST` points at another daemon.
 | `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`; empty = do not guess). Occupancy: `absorbingMinTurns` (default 4), `noProgressWindow` (default 5), `noOpVerbs` |
 | `setup[]` | `{ match, answer }` scripted answers for setup prompts |
 | `turns` | play inputs per seat (setup answers and quit inputs do not count; default 40) |
-| `persona` | the player brief |
+| `persona` | the player brief: who the player is in this world. A profile appends each play style to it |
+| `personas` | a persona profile: `{ "profile": "scientific" \| "bughunter" \| "player" \| "gaming" \| "custom", "only"?, "add"?, "briefing"?, "actionTags"?, "noiseFloor"? }`. See "Who plays" above |
 | `criteria[]` | `{ id, check }` the game's own alive criteria |
 | `screenChars` | characters of screen kept per turn (default 6000) |
 | `playerMemoryTurns` | recent turns the player sees (default 8) |
@@ -384,8 +472,9 @@ See [SECURITY.md](SECURITY.md) for the full write-up.
 bridge prints, chat completions from OpenRouter or a local Ollama daemon
 (player + jury), and files the
 runner writes under `runsDir` (`transcript.txt`, `critique.json`,
-`meta.json`, `REPORT.md`, `REPORT.json`, and `DIFF-<base>.md` / `.json` from
-`diff`). `diff` also reads the acceptance file you pass it.
+`meta.json`, `REPORT.md`, `REPORT.json`, `DIFF-<base>.md` / `.json` from
+`diff`, and `profile.json`, `PERSONAS.md` / `.json` from a persona profile).
+`diff` also reads the acceptance file you pass it.
 
 **Data not touched:** the runner sends no telemetry and collects no
 analytics. The game process does not receive `OPENROUTER_API_KEY` unless
@@ -438,7 +527,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-301 tests. `tsconfig.test.json` exists because the build config excludes test
+340 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 
