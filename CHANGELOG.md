@@ -19,7 +19,20 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   (default 32,768) fails before any request, and a reply whose prompt filled the
   window fails as truncated, rather than a judge silently reading the tail of a
   transcript. `done_reason: "length"` is a truncation error, like OpenRouter's
-  `finish_reason: "length"`. `think` is off.
+  `finish_reason: "length"`. `think` starts off.
+- **Reasoning models that will not stop reasoning.** Measured on the pod:
+  `qwen3-next:80b` ignores `think:false` and reasons inside the reply, and
+  `gpt-oss:120b` reasons in the thinking channel, so a 60-token player reply came
+  back cut off or empty on every turn. A short reply that hits its budget is now
+  retried once with the reasoning moved to its own channel (`think:true`, or
+  `"low"` for gpt-oss, which can only be lowered) and 2,048 extra tokens, and the
+  model is remembered for the rest of the run. A model that cannot think at all
+  reports the original truncation.
+- **The context estimate counts UTF-8 bytes, not characters.** A box-drawn TUI
+  screen (│ ─ █, three bytes each) tokenises far worse than prose: an Escape the
+  Valley camp screen measured about 4,600 tokens against a 4,096 window sized
+  from characters. Should a prompt still fill the window, the call is retried
+  once at twice the size before it fails.
 - Cloud-routed Ollama tags (`:cloud`, `-cloud`) are refused at config time and
   again at call time; they bill an ollama.com account.
 - `examples/local-smoke.playtest.json`: three local families against the

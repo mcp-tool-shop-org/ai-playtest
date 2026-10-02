@@ -75,7 +75,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "01e2fe0268eca65da7765094dada373b118d53d9528cf1480066eb0910f66b17",
+          "hash": "3d01e6a92e214122db535179693ba6f21c3ee7a96d2f91699fe3ff753c784e9e",
           "path": "CHANGELOG.md"
         },
         {
@@ -103,7 +103,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "0dd428f279f069c4d234725804df1cab26f328e30a7c8e69a286fe11856bdb9b",
+          "hash": "1cb5a6abc9c46c8606b34e344e89744cb3e1d96ddf6070f4d5c82ee72b470d28",
           "path": "README.md"
         },
         {
@@ -1373,7 +1373,7 @@
           "reexportsOnly": true
         },
         {
-          "hash": "d14acc786979612dfe75bc9e61dd85bac67fdfc76b094df08d945cb51987bd55",
+          "hash": "58e4653b1a0e0b56f78cb21df20e2e3c849c44dac25cceceec3733e400b55094",
           "importOrder": [
             "src/ollama.ts",
             "src/providers.ts",
@@ -1394,18 +1394,14 @@
             "contextFor",
             "createOllamaClient",
             "isCloudTag",
-            "resolveOllamaHost"
+            "resolveOllamaHost",
+            "thinkValueFor"
           ],
           "failurePaths": [
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 74
-            },
-            {
-              "in": "createOllamaClient",
-              "kind": "throw",
-              "line": 81
+              "line": 100
             },
             {
               "in": "createOllamaClient",
@@ -1414,28 +1410,18 @@
             },
             {
               "in": "createOllamaClient",
-              "kind": "throw",
-              "line": 114
-            },
-            {
-              "in": "createOllamaClient",
               "kind": "catch",
-              "line": 117
+              "line": 119
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 118
-            },
-            {
-              "in": "createOllamaClient",
-              "kind": "catch",
-              "line": 133
+              "line": 120
             },
             {
               "in": "createOllamaClient",
               "kind": "throw",
-              "line": 137
+              "line": 134
             },
             {
               "in": "createOllamaClient",
@@ -1443,17 +1429,52 @@
               "line": 139
             },
             {
-              "in": "createOllamaClient",
+              "in": "send",
               "kind": "throw",
-              "line": 150
+              "line": 170
             },
             {
-              "in": "createOllamaClient",
+              "in": "send",
               "kind": "throw",
-              "line": 164
+              "line": 173
+            },
+            {
+              "in": "send",
+              "kind": "catch",
+              "line": 176
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 177
+            },
+            {
+              "in": "send",
+              "kind": "catch",
+              "line": 192
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 196
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 198
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 210
+            },
+            {
+              "in": "send",
+              "kind": "throw",
+              "line": 225
             }
           ],
-          "hash": "87a456082f9e6247e0fa756b90f61eabf9554b1f342bfd2cc25cf0b1df3383b2",
+          "hash": "63db3108cf6d105ae9abca75bdd8ab646e268d9a361593f6454505142784f737",
           "importsFiles": [
             "src/openrouter.ts"
           ],
@@ -2858,14 +2879,14 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 10,
+          "reads": 11,
           "where": [
             "caller"
           ],
           "writes": 11
         }
       ],
-      "outsideReads": 10,
+      "outsideReads": 11,
       "outsideWrites": 11,
       "role": "code",
       "testRunners": [
@@ -3665,7 +3686,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "493e65e3852376ad80532605c0bdabd2df5edcd7",
+    "commit": "7270e21e0dcbddcb6cc73b5fd7d69d7cd3f1f249",
     "tracked": 82
   },
   "landings": [

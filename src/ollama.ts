@@ -10,7 +10,14 @@ import type { ChatClient, ChatRequest } from './openrouter.js';
 
 export class OllamaError extends Error {
   readonly code = 'E_OLLAMA';
-  constructor(message: string, readonly hint: string, readonly status?: number, readonly attempt?: number) {
+  constructor(
+    message: string,
+    readonly hint: string,
+    readonly status?: number,
+    readonly attempt?: number,
+    /** What went wrong, for the provider's own recovery: a reply cut at its budget, or a prompt that filled the window. */
+    readonly kind?: 'length' | 'window',
+  ) {
     super(message);
     this.name = 'OllamaError';
   }
@@ -36,8 +43,23 @@ const DEFAULT_MAX_CONTEXT = 32_768;
 const DEFAULT_ATTEMPT_TIMEOUT_MS = 600_000;
 const MIN_CONTEXT = 4_096;
 const CONTEXT_STEP = 2_048;
-/** Deliberately pessimistic (English runs nearer 4 characters a token), so the estimate errs large. */
-const CHARS_PER_TOKEN = 3;
+/**
+ * Measured in UTF-8 BYTES, not characters, and deliberately pessimistic. English
+ * runs near 4 bytes a token, but a TUI screen drawn in box characters (│ ─ █, 3
+ * bytes each) tokenises far worse: an Escape the Valley camp screen measured
+ * about 4,600 tokens against a characters/3 estimate that sized it at 4,096.
+ */
+const BYTES_PER_TOKEN = 2.5;
+/** Room for a reasoning model's thinking, on top of the reply budget, once one is detected. */
+const REASONING_BUDGET = 2_048;
+
+/** `think` as Ollama takes it: off, on, or a level (gpt-oss cannot be switched off, only lowered). */
+export type Think = false | true | 'low';
+
+/** The setting that moves a model's reasoning off the reply: gpt-oss takes a level, others a boolean. */
+export function thinkValueFor(model: string): Think {
+  return /^gpt-oss/i.test(model) ? 'low' : true;
+}
 
 /** Cloud-routed tags run on ollama.com and bill an account; this provider exists for local, free seats. */
 export function isCloudTag(model: string): boolean {
@@ -53,10 +75,10 @@ export function resolveOllamaHost(host?: string): string {
 }
 
 /** num_ctx for one request: prompt estimate plus the reply budget, rounded up, or undefined if it cannot fit. */
-export function contextFor(req: ChatRequest, maxContext: number): { numCtx: number; promptTokens: number } | undefined {
-  const chars = req.messages.reduce((n, m) => n + m.content.length, 0);
-  const promptTokens = Math.ceil(chars / CHARS_PER_TOKEN) + 16 * req.messages.length;
-  const need = promptTokens + req.maxTokens + 256;
+export function contextFor(req: ChatRequest, maxContext: number, extraReply = 0): { numCtx: number; promptTokens: number } | undefined {
+  const bytes = req.messages.reduce((n, m) => n + Buffer.byteLength(m.content, 'utf8'), 0);
+  const promptTokens = Math.ceil(bytes / BYTES_PER_TOKEN) + 16 * req.messages.length;
+  const need = promptTokens + req.maxTokens + extraReply + 256;
   const numCtx = Math.max(MIN_CONTEXT, Math.ceil(need / CONTEXT_STEP) * CONTEXT_STEP);
   return numCtx > maxContext ? undefined : { numCtx, promptTokens };
 }
@@ -69,6 +91,10 @@ export function createOllamaClient(opts: OllamaOptions = {}): ChatClient {
   const retries = opts.retries ?? 2;
   const attemptTimeoutMs = opts.attemptTimeoutMs ?? DEFAULT_ATTEMPT_TIMEOUT_MS;
 
+  // Models seen to reason whether or not they are asked to, and the `think` value
+  // that moves the reasoning off the reply. Learned per client, once per model.
+  const reasoners = new Map<string, Think>();
+
   return async (req) => {
     if (isCloudTag(req.model)) {
       throw new OllamaError(
@@ -76,22 +102,55 @@ export function createOllamaClient(opts: OllamaOptions = {}): ChatClient {
         'the ollama provider runs local models only; pull a local tag, or seat this model through OpenRouter',
       );
     }
-    const ctx = contextFor(req, maxContext);
-    if (!ctx) {
-      throw new OllamaError(
-        `prompt for ${req.model} needs more than ${maxContext} tokens of context`,
-        'Ollama would silently drop the start of the prompt; shorten the transcript (screenChars) or raise maxContextTokens',
-      );
+    let think: Think = reasoners.get(req.model) ?? false;
+    let grown = false;
+    for (;;) {
+      const extra = think === false ? 0 : REASONING_BUDGET;
+      const ctx = contextFor(req, maxContext, extra);
+      if (!ctx) {
+        throw new OllamaError(
+          `prompt for ${req.model} needs more than ${maxContext} tokens of context`,
+          'Ollama would silently drop the start of the prompt; shorten the transcript (screenChars) or raise maxContextTokens',
+        );
+      }
+      const numCtx = grown ? Math.min(maxContext, ctx.numCtx * 2) : ctx.numCtx;
+      try {
+        return await send(req, { think, numPredict: req.maxTokens + extra, numCtx });
+      } catch (err) {
+        if (!(err instanceof OllamaError)) throw err;
+        // The prompt tokenised larger than estimated (box-drawing art does). Once, with twice the window.
+        if (err.kind === 'window' && !grown && ctx.numCtx * 2 <= maxContext) { grown = true; continue; }
+        // A short reply cut off at its budget: some models reason even with think:false, inline
+        // (qwen3-next) or in the thinking channel (gpt-oss). Once, with the reasoning moved to its
+        // own channel and room for it; remembered for the rest of the run.
+        if (err.kind === 'length' && think === false) {
+          think = thinkValueFor(req.model);
+          reasoners.set(req.model, think);
+          continue;
+        }
+        // A model that cannot think at all refuses the retry. Report the original truncation.
+        if (think !== false && err.status === 400 && /think/i.test(err.message)) {
+          reasoners.delete(req.model);
+          throw new OllamaError(
+            `response from ${req.model} was truncated at max_tokens=${req.maxTokens}`,
+            `raise maxTokens for this call; the cut-off text is not valid ${req.json ? 'JSON' : 'output'}`,
+          );
+        }
+        throw err;
+      }
     }
+  };
+
+  async function send(req: ChatRequest, o: { think: Think; numPredict: number; numCtx: number }): Promise<string> {
     const body = JSON.stringify({
       model: req.model,
       messages: req.messages,
       stream: false,
-      // Reasoning models would otherwise spend the reply budget thinking and return an empty answer.
-      think: false,
+      think: o.think,
       ...(req.json ? { format: 'json' } : {}),
-      options: { temperature: req.temperature, num_predict: req.maxTokens, num_ctx: ctx.numCtx },
+      options: { temperature: req.temperature, num_predict: o.numPredict, num_ctx: o.numCtx },
     });
+    const ctx = { numCtx: o.numCtx };
     let lastErr: OllamaError | undefined;
     for (let attempt = 0; attempt <= retries; attempt++) {
       const n = attempt + 1;
@@ -141,17 +200,19 @@ export function createOllamaClient(opts: OllamaOptions = {}): ChatClient {
           `raise maxTokens for this call; the cut-off text is not valid ${req.json ? 'JSON' : 'output'}`,
           status,
           n,
+          'length',
         );
       }
       // The estimate errs large, so a prompt that used up the window means
       // Ollama cut it to fit. Judging a truncated transcript is worse than failing.
       const seen = (parsed.prompt_eval_count ?? 0) + (parsed.prompt_eval_cached_count ?? 0);
-      if (seen > 0 && seen >= ctx.numCtx - req.maxTokens) {
+      if (seen > 0 && seen >= ctx.numCtx - o.numPredict) {
         throw new OllamaError(
           `prompt for ${req.model} filled the ${ctx.numCtx}-token window (${seen} tokens seen); Ollama truncated it`,
           'shorten the transcript (screenChars) or raise maxContextTokens',
           status,
           n,
+          'window',
         );
       }
       const content = parsed.message?.content;
@@ -162,5 +223,5 @@ export function createOllamaClient(opts: OllamaOptions = {}): ChatClient {
       return content;
     }
     throw lastErr ?? new OllamaError('exhausted retries', 'see the previous errors');
-  };
+  }
 }

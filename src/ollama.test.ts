@@ -68,12 +68,67 @@ describe('ollama request shape', () => {
   });
 });
 
+describe('reasoning models and dense screens', () => {
+  it('moves reasoning off the reply once a short reply is cut off, and remembers it for the model', async () => {
+    // qwen3-next ignores think:false and reasons in the reply; 60 tokens never reached an answer.
+    const sent: any[] = [];
+    const c = client(async (_u: string, init: { body: string }) => {
+      const b = JSON.parse(init.body); sent.push(b);
+      return b.think === false
+        ? reply({ message: { content: "Okay, let's see. The user is at camp" }, done_reason: 'length', prompt_eval_count: 30 })
+        : reply({ message: { content: 'Rest', thinking: 'long reasoning' }, done_reason: 'stop', prompt_eval_count: 30 });
+    });
+    const short = { ...req, model: 'qwen3-next:80b', maxTokens: 60 };
+    expect(await c(short)).toBe('Rest');
+    expect(sent.map((b) => b.think)).toEqual([false, true]);
+    expect(sent[1].options.num_predict).toBeGreaterThan(2000);
+    expect(await c(short)).toBe('Rest');
+    expect(sent.length).toBe(3); // learned: the second call goes straight to think:true
+    expect(sent[2].think).toBe(true);
+  });
+
+  it('asks gpt-oss for a low reasoning level, since it cannot be switched off', async () => {
+    const thinks: unknown[] = [];
+    const c = client(async (_u: string, init: { body: string }) => {
+      const b = JSON.parse(init.body); thinks.push(b.think);
+      return b.think === false
+        ? reply({ message: { content: '', thinking: 'reasoning' }, done_reason: 'length', prompt_eval_count: 30 })
+        : reply({ message: { content: 'Rest' }, done_reason: 'stop', prompt_eval_count: 30 });
+    });
+    expect(await c({ ...req, model: 'gpt-oss:120b', maxTokens: 60 })).toBe('Rest');
+    expect(thinks).toEqual([false, 'low']);
+  });
+
+  it('reports the original truncation when the model cannot think at all', async () => {
+    const c = client(async (_u: string, init: { body: string }) => JSON.parse(init.body).think === false
+      ? reply({ message: { content: 'rambling' }, done_reason: 'length' })
+      : reply({ error: '"llama3.3:70b" does not support thinking' }, 400));
+    await expect(c({ ...req, model: 'llama3.3:70b' })).rejects.toThrow(/truncated at max_tokens/);
+  });
+
+  it('sizes the window from UTF-8 bytes, so a box-drawn screen is not undersized', () => {
+    const box = { ...req, messages: [{ role: 'user' as const, content: '│─█'.repeat(1600) }] };
+    const prose = { ...req, messages: [{ role: 'user' as const, content: 'abc'.repeat(1600) }] };
+    expect(contextFor(box, 32_768)!.promptTokens).toBeGreaterThan(contextFor(prose, 32_768)!.promptTokens * 2);
+  });
+
+  it('retries once with twice the window when the prompt still filled it', async () => {
+    const ctxs: number[] = [];
+    const c = client(async (_u: string, init: { body: string }) => {
+      const n = JSON.parse(init.body).options.num_ctx; ctxs.push(n);
+      return reply({ message: { content: 'north' }, done_reason: 'stop', prompt_eval_count: ctxs.length === 1 ? n : 100 });
+    });
+    expect(await c(req)).toBe('north');
+    expect(ctxs[1]).toBe(ctxs[0] * 2);
+  });
+});
+
 describe('ollama failure modes', () => {
-  it('treats done_reason length as truncation and does not retry', async () => {
+  it('treats done_reason length as truncation: one retry with reasoning moved aside, then reported', async () => {
     let calls = 0;
     const c = client(async () => { calls++; return reply({ message: { content: '{"alive": tr' }, done_reason: 'length' }); });
     await expect(c(req)).rejects.toThrow(/truncated at max_tokens=100/);
-    expect(calls).toBe(1);
+    expect(calls).toBe(2);
   });
 
   it('names `ollama pull` when the model is missing', async () => {
