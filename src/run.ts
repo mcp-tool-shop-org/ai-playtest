@@ -189,6 +189,9 @@ export async function createDriver(cfg: PlaytestConfig, env: Record<string, stri
         promptQuietMs: cfg.game.promptQuietMs,
         idleQuietMs: cfg.game.idleQuietMs,
         screenTimeoutMs: cfg.game.screenTimeoutMs,
+        ...(cfg.driver.keys
+          ? { actions: { kind: 'keys' as const, keys: Object.keys(cfg.driver.keys) }, keyBytes: cfg.driver.keys }
+          : {}),
       });
     }
     case 'rpc': {

@@ -33,6 +33,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   RunPod pod while the sim and stage ran headless on the rig. `hello`, typed
   `choose` actions, `reset` and `quit` all held. What the first wiring found is
   in the doc's new "Learned from the first real wiring" section.
+- **Named keys for keyboard-driven TUIs (`driver.keys`, pty only).** A map of
+  `{ name: bytes }`, e.g. `{ "enter": "\r", "down": "j", "esc": "\u001b" }`. The
+  player is offered the names as a `keys` action space and answers with one; the
+  game receives the bytes as a raw keypress with no trailing Enter. Without it a
+  pty reply is typed as a line plus Enter, which a cursor-and-Enter game reads
+  as keystrokes nobody meant: `look` is l, o, o, k, then Enter. Built for
+  Saint's Mile (ratatui), which it now drives cleanly from the title screen into
+  the prologue's choices; the first probe also found Saint's Mile cutting off
+  every prose line at 100 columns (mcp-tool-shop-org/saints-mile#9). 203 → 206 tests.
 
 ### Fixed
 

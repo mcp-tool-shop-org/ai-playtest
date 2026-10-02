@@ -158,6 +158,21 @@ describe('seat provider config', () => {
   });
 });
 
+describe('pty named keys config', () => {
+  const pty = (keys: unknown) => validateConfig({ ...base, driver: { kind: 'pty', keys }, seats: [{ id: 'a', family: 'alpha', model: 'm' }] }, '.');
+
+  it('keeps a name-to-bytes map', () => {
+    expect(pty({ enter: '\r', down: 'j' }).driver).toMatchObject({ kind: 'pty', keys: { enter: '\r', down: 'j' } });
+  });
+
+  it('refuses names a player could not answer with, and empty bytes', () => {
+    expect(() => pty({ Enter: '\r' })).toThrow(ConfigError);
+    expect(() => pty({ enter: '' })).toThrow(/non-empty string of bytes/);
+    expect(() => pty({})).toThrow(/non-empty object/);
+    expect(() => pty(['enter'])).toThrow(/non-empty object/);
+  });
+});
+
 describe('routing', () => {
   const seats: Seat[] = [
     { id: 'm', family: 'mistral', model: 'mistral-small:24b', provider: 'ollama' },

@@ -1,21 +1,14 @@
 # ai-playtest: how it works
 
-Mapped at 2026-10-02 from commit cf40e6f by Atlas 1.24.0.
+Mapped at 2026-10-02 from commit 493e65e by Atlas 1.24.0.
 
 ## What this is
 
 6 parts, mostly TypeScript (37 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-10-02 (b0f5ede)
+## What changed since 2026-10-02 (cf40e6f)
 
-- CI now also runs src/ollama.test.ts.
-- CI now also builds src/ollama.ts and src/providers.ts.
-- In src/cli.ts, `main` gained a step, `providersInUse`, before `createOpenRouterClient`.
-- In src/cli.ts, `main` gained a step, `createOllamaClient`, before `createRoutedClient`.
-- In src/cli.ts, `main` gained a step, `createRoutedClient`, before `summarizeRuns`.
-- And 4 more changes to the order of work.
-- examples/local-smoke.playtest.json is new and belongs to no part, so atlas check fails on it against the previous map.
-- 4 files added and 7 changed content, across 4 parts.
+Nothing structural changed since 2026-10-02; 7 files changed content.
 
 ## What comes in
 

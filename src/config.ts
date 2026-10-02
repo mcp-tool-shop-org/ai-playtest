@@ -87,7 +87,17 @@ export type GameConfig = {
  */
 export type DriverConfig =
   | { kind: 'stdio' }
-  | { kind: 'pty'; cols?: number; rows?: number; readySentinel?: string }
+  | {
+      kind: 'pty'; cols?: number; rows?: number; readySentinel?: string;
+      /**
+       * Named keys for a keyboard-driven TUI: `{ "enter": "\r", "down": "j" }`.
+       * The player answers with a NAME and the game receives the BYTES, as a raw
+       * keypress with no trailing Enter. Without this map a reply is typed as a
+       * line plus Enter, which a cursor-and-Enter TUI reads as keystrokes it
+       * never meant (a reply of "look" is l, o, o, k, Enter).
+       */
+      keys?: Record<string, string>;
+    }
   | { kind: 'rpc'; host?: string; port: number; connectTimeoutMs?: number; requestTimeoutMs?: number };
 
 export type Criterion = { id: string; check: string };
@@ -232,7 +242,7 @@ export function resolveEnv(env: Record<string, string> | undefined, source: Node
 }
 
 const DRIVER_STDIO_KEYS = ['kind'] as const;
-const DRIVER_PTY_KEYS = ['kind', 'cols', 'rows', 'readySentinel'] as const;
+const DRIVER_PTY_KEYS = ['kind', 'cols', 'rows', 'readySentinel', 'keys'] as const;
 const DRIVER_RPC_KEYS = ['kind', 'host', 'port', 'connectTimeoutMs', 'requestTimeoutMs'] as const;
 
 export function validateDriver(raw: unknown): DriverConfig {
@@ -263,11 +273,28 @@ export function validateDriver(raw: unknown): DriverConfig {
     if (d.readySentinel !== undefined && typeof d.readySentinel !== 'string') {
       throw new ConfigError('driver.readySentinel must be a string', `got ${JSON.stringify(d.readySentinel)}`);
     }
+    let keys: Record<string, string> | undefined;
+    if (d.keys !== undefined) {
+      if (!d.keys || typeof d.keys !== 'object' || Array.isArray(d.keys) || Object.keys(d.keys).length === 0) {
+        throw new ConfigError('driver.keys must be a non-empty object of { name: bytes }', 'e.g. { "enter": "\\r", "down": "j", "up": "k" }');
+      }
+      keys = {};
+      for (const [name, bytes] of Object.entries(d.keys as Record<string, unknown>)) {
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
+          throw new ConfigError(`driver.keys name "${name}" is not a usable key name`, 'lowercase letters, digits and dashes — the player answers with this name');
+        }
+        if (typeof bytes !== 'string' || bytes.length === 0) {
+          throw new ConfigError(`driver.keys.${name} must be a non-empty string of bytes to send`, 'e.g. "\\r" for Enter, "\\u001b" for Esc, "\\t" for Tab');
+        }
+        keys[name] = bytes;
+      }
+    }
     return {
       kind: 'pty',
       cols,
       rows,
       readySentinel: typeof d.readySentinel === 'string' ? d.readySentinel : undefined,
+      ...(keys ? { keys } : {}),
     };
   }
   if (kind === 'rpc') {

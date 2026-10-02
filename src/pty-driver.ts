@@ -56,6 +56,8 @@ export type PtyDriverOptions = {
    */
   readySentinel?: string;
   actions?: ActionSpace;
+  /** Bytes to send for each named key in a `keys` action space (driver.keys). */
+  keyBytes?: Record<string, string>;
 };
 
 type PtyModule = typeof import('node-pty');
@@ -282,7 +284,9 @@ export async function createPtyDriver(opts: PtyDriverOptions): Promise<Driver> {
       if (!exited) {
         const payload = actionToLine(action);
         // kind:key is a TUI keypress (ratatui/ncurses); a trailing CR is Enter.
-        child.write(action.kind === 'key' ? payload : `${payload}\r`);
+        // A named key (driver.keys) sends its configured bytes instead of its name.
+        const bytes = action.kind === 'key' ? (opts.keyBytes?.[action.key] ?? payload) : `${payload}\r`;
+        child.write(bytes);
       }
       return waitForTurn();
     },
