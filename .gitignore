@@ -9,3 +9,6 @@ site/dist/
 site/node_modules/
 .polyglot-cache.json
 
+calibration/configs/
+calibration/runs/
+coverage/

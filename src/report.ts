@@ -11,6 +11,7 @@ import { renderCoverageLine, type Coverage } from './coverage.js';
 import type { PanelVerdict } from './panel.js';
 import { renderAbsorbingLine, type VerifierReport } from './verifiers.js';
 import { summarizeRuns, type CriterionPosterior, type RunStats } from './stats.js';
+import { disagreement, readProbability, type ScorerResult } from './scorers.js';
 
 /** Report artefact format. Bump when honesty rules (jury splits, unanswered met, stamps) change. */
 export const REPORT_FORMAT = 1;
@@ -31,6 +32,8 @@ export type SeatSummary = {
   coverage?: Coverage;
   panel?: PanelVerdict | null;
   verifiers?: VerifierReport;
+  /** Probability judges (scorers.ts). Absent on runs from before they existed. */
+  scores?: ScorerResult[];
 };
 
 export class ReportError extends Error {
@@ -91,6 +94,7 @@ export async function readRun(runDir: string): Promise<RunContents> {
       coverage?: Coverage;
       panel?: PanelVerdict | null;
       verifiers?: VerifierReport;
+      scores?: ScorerResult[];
       reportFormat?: number;
       schemaVersion?: number;
       generator?: { reportFormat?: number; schemaVersion?: number };
@@ -113,7 +117,11 @@ export async function readRun(runDir: string): Promise<RunContents> {
     } catch {
       crit = null;
     }
-    out.push({ seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit, critiqueError: meta.critiqueError ?? null, coverage: meta.coverage, panel: meta.panel ?? null, verifiers: meta.verifiers });
+    out.push({
+      seat, turnsPlayed: meta.turnsPlayed, endedBy: meta.endedBy, error: meta.error ?? null, critique: crit,
+      critiqueError: meta.critiqueError ?? null, coverage: meta.coverage, panel: meta.panel ?? null, verifiers: meta.verifiers,
+      ...(Array.isArray(meta.scores) ? { scores: meta.scores } : {}),
+    });
   }
   return Object.assign(out, { skipped });
 }
@@ -176,6 +184,60 @@ function assertReadableFormat(where: string, stamp: { reportFormat?: number }): 
       'upgrade @mcptoolshop/ai-playtest to rebuild this run, or leave the existing report in place',
     );
   }
+}
+
+/**
+ * P(met) from each probability judge, per criterion and seat, beside the jury's
+ * verdict. A confident probability on the other side of the jury is flagged: that
+ * is where a person should read the transcript.
+ */
+function renderScoresSection(
+  seats: SeatSummary[],
+  criteriaIds: string[],
+  columnNames: string[],
+  juryMet: (s: SeatSummary, id: string) => boolean | undefined,
+): string[] {
+  const scorerIds = [...new Set(seats.flatMap((s) => (s.scores ?? []).map((r) => r.scorer)))];
+  if (scorerIds.length === 0) return [];
+  const out: string[] = [];
+  out.push('## Probability judges');
+  out.push('');
+  out.push('P(met) per criterion from a decision model, beside the jury, never instead of it. `?` = inside the uncertain band; `⚠` = confidently on the other side of the jury\'s verdict, so read that transcript.');
+  out.push('');
+  for (const scorerId of scorerIds) {
+    const of = (s: SeatSummary) => s.scores?.find((r) => r.scorer === scorerId);
+    const any = seats.map(of).find(Boolean)!;
+    out.push(`**${cell(scorerId)}** (${cell(any.model)}, uncertain band ${any.band[0]}–${any.band[1]})`);
+    out.push('');
+    out.push(`| criterion | ${columnNames.slice(0, seats.length).join(' | ')} |`);
+    out.push(`|---|${seats.map(() => '---').join('|')}|`);
+    let flagged = 0;
+    for (const id of criteriaIds) {
+      const cells = seats.map((s) => {
+        const r = of(s);
+        const p = r?.scores.find((x) => x.id === id)?.p ?? null;
+        if (!r || p === null) return '—';
+        const read = readProbability(p, r.band);
+        const flag = disagreement(p, r.band, juryMet(s, id));
+        if (flag) flagged++;
+        return `${p.toFixed(2)}${read === 'uncertain' ? ' ?' : ''}${flag ? ' ⚠' : ''}`;
+      });
+      out.push(`| ${cell(id)} | ${cells.join(' | ')} |`);
+    }
+    out.push('');
+    const notes: string[] = [];
+    if (flagged > 0) notes.push(`${flagged} cell(s) where this judge and the jury disagree`);
+    const errs = seats.filter((s) => of(s)?.error).map((s) => `\`${s.seat.family}\`: ${mdSafe(of(s)!.error)}`);
+    if (errs.length > 0) notes.push(`unscored: ${errs.join('; ')}`);
+    if (seats.some((s) => of(s)?.clipped)) notes.push('some transcripts were trimmed in the middle to fit the model\'s window');
+    const cost = seats.reduce((a, s) => a + (of(s)?.cost ?? 0), 0);
+    if (cost > 0) notes.push(`cost $${cost.toFixed(4)}`);
+    if (notes.length > 0) {
+      out.push(`> ${notes.join('. ')}.`);
+      out.push('');
+    }
+  }
+  return out;
 }
 
 function jurorAnswered(p: PanelVerdict): number {
@@ -352,6 +414,8 @@ export function renderReport(name: string, label: string, seats: SeatSummary[], 
     lines.push('> Some criteria were unanswered by some seats (met is yes/no/unanswered). An em-dash is unanswered, not a fail.');
   }
   lines.push('');
+  lines.push(...renderScoresSection(seats, criteriaIds, columnNames, (s, id) =>
+    (scoringPanel(s)?.criteria.find((c) => c.id === id) ?? s.critique?.criteria.find((c) => c.id === id))?.met));
   if (seats.some((s) => s.coverage)) {
     lines.push('## How much each seat actually saw');
     lines.push('');

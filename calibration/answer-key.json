@@ -1,0 +1,17 @@
+{
+  "$comment": "Truth for each criterion in criteria.json, computed from Harrow Gate's stderr truth log. anyEvent: true if the event happened in this session. noEvent: true if it never did. knob: true if the build's switch has that value. minEvents: true if the event happened at least that many times.",
+  "rules": {
+    "world-moves": { "anyEvent": "tick" },
+    "character-refuses": { "anyEvent": "refusal:character" },
+    "input-listed": { "knob": "prompt", "equals": "clear" },
+    "responds-to-input": { "knob": "reacts", "equals": true },
+    "spends-resource": { "anyEvent": "cost" },
+    "goal-stated": { "knob": "goal", "equals": "stated" },
+    "place-changes": { "anyEvent": "changed-on-return" },
+    "never-stuck": { "noEvent": "dead-end" }
+  },
+  "verifiers": {
+    "absorbing": { "minEvents": { "event": "stuck", "count": 4 } },
+    "ignoredInputs": { "minEvents": { "event": "ignored", "count": 2 } }
+  }
+}

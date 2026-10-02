@@ -1,0 +1,13 @@
+{
+  "$comment": "One observable claim per criterion (docs/research-4.md). calibrate.mjs holds the answer key for each id; the ids must match.",
+  "criteria": [
+    { "id": "world-moves", "check": "Something in the world changes without the player causing it, such as a bell tolling or a market closing." },
+    { "id": "character-refuses", "check": "At least one refusal is spoken by a character in their own words rather than shown as a system message." },
+    { "id": "input-listed", "check": "Every prompt tells the player what kinds of input the game accepts." },
+    { "id": "responds-to-input", "check": "The game's response changes depending on what the player types." },
+    { "id": "spends-resource", "check": "At least one action spends a limited resource whose remaining amount the player can see." },
+    { "id": "goal-stated", "check": "The game states a goal for the player to work toward." },
+    { "id": "place-changes", "check": "Returning to a place shows something different from what it showed on the earlier visit." },
+    { "id": "never-stuck", "check": "The player is never trapped in a place with no way out." }
+  ]
+}

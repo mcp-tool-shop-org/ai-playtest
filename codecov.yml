@@ -1,8 +1,8 @@
-# Coverage is reported here, never enforced. Both statuses are informational,
-# so no coverage number can block a merge, and neither names a fixed target.
 # The signal read on a pull request is patch coverage: how much of the lines
-# it changed the tests actually ran. The comment carries that and the test
-# results; the repository-wide percentage stays out of it.
+# it changed the tests actually ran. Its bar is 90%, set by the Director on
+# 2026-10-02, and the patch status fails below it. Codecov counts a line whose
+# branches did not all run as partial, and a partial line is not covered.
+# The repository-wide percentage stays informational and out of the comment.
 coverage:
   status:
     project:
@@ -10,7 +10,9 @@ coverage:
         informational: true
     patch:
       default:
-        informational: true
+        target: 90%
+        threshold: 0%
+        informational: false
 
 comment:
   layout: "condensed_header, condensed_files, condensed_footer"

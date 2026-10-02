@@ -84,11 +84,16 @@ export function resolveOllamaHost(host?: string): string {
 }
 
 /** num_ctx for one request: prompt estimate plus the reply budget, rounded up, or undefined if it cannot fit. */
-export function contextFor(req: ChatRequest, maxContext: number, extraReply = 0): { numCtx: number; promptTokens: number } | undefined {
+/** Pessimistic token estimate for text (see ASCII_PER_TOKEN). Shared by every provider with a hard window. */
+export function estimateTokens(text: string): number {
   let ascii = 0;
   let other = 0;
-  for (const m of req.messages) for (const ch of m.content) (ch.charCodeAt(0) < 128 ? ascii++ : other++);
-  const promptTokens = Math.ceil(ascii / ASCII_PER_TOKEN + other * TOKENS_PER_OTHER) + 16 * req.messages.length;
+  for (const ch of text) (ch.charCodeAt(0) < 128 ? ascii++ : other++);
+  return Math.ceil(ascii / ASCII_PER_TOKEN + other * TOKENS_PER_OTHER);
+}
+
+export function contextFor(req: ChatRequest, maxContext: number, extraReply = 0): { numCtx: number; promptTokens: number } | undefined {
+  const promptTokens = req.messages.reduce((n, m) => n + estimateTokens(m.content), 0) + 16 * req.messages.length;
   const need = promptTokens + req.maxTokens + extraReply + 256;
   const numCtx = Math.max(MIN_CONTEXT, Math.ceil(need / CONTEXT_STEP) * CONTEXT_STEP);
   return numCtx > maxContext ? undefined : { numCtx, promptTokens };

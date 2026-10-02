@@ -9,6 +9,67 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`diff`, a regression gate between two runs.**
+  `ai-playtest diff <config> --base <label> --head <label>` compares the two and
+  lists what got worse:
+  - a criterion the jury stopped passing (by majority of seats)
+  - a world no longer alive
+  - a new soft-lock lead
+  - ignored input up by 25 points or more
+  - more seats ending in error
+
+  Each finding has a stable id, both vote counts, and the turn and inputs in the
+  head transcripts that show it. A probability judge's P(met) on the head run is
+  attached as a second opinion. `diff` writes `DIFF-<base>.md` / `.json` into the
+  head run and exits **5** while any finding is open. `--accept <file>` takes
+  `{"accepted":[{"id","note","head"?}]}`. A note is required, accepted findings stay
+  in the report, and stale acceptances are listed.
+
+  On the Harrow Gate builds, the lamp-less build produced exactly one finding,
+  `criterion-lost:spends-resource`.
+- **Probability judges (`scorers`).** A second opinion beside the jury: each
+  criterion scored as P(met), shown per criterion and seat in a new report section
+  with an uncertain band (`?`, default 0.35–0.65) and a `⚠` where the probability
+  is confidently on the other side of the jury's verdict. Scores land in each
+  seat's `meta.json` and REPORT.json, so `report` rebuilds keep them. A scorer
+  failure is recorded on the seat and never fails it.
+- **`{ "kind": "jev" }`**, the first scorer: TypeSafe's decision model
+  (`typesafe/jev-1.13`) on OpenRouter's Decisions API. Every criterion goes in one
+  request, so the transcript is sent once (about $0.0001 per seat). The transcript
+  is fitted to a 26,000-token state by trimming the middle and keeping both ends.
+  On 14 transcripts with a known answer it scored an observable criterion 8 of 8
+  with wide margins, where the run's own LLM judges scored 6 of 8
+  (`docs/research-4.md`).
+- **`decisions.ts`**, a general client for the Decisions API: noul, choice and
+  score questions, answers validated against the question (the API is alpha), and
+  cost reported. Future decision-model features build on it.
+- **`ai-playtest score <config> --label <run>`** re-runs the configured scorers
+  over a finished run's saved transcripts, against the config's current criteria,
+  without replaying the game. It rewrites each seat's scores and the report.
+- **Compound-criterion lint.** `check`, `run` and `score` warn about criteria that
+  probably bundle two claims ("so", "because", "therefore", "but", a semicolon, more
+  than one sentence). Every judge tested passed such a criterion on its easier half.
+- **`docs/research-4.md`**: the judge check with its answer key, research on
+  criteria and calibration, and the search for a test bed with known answers
+  (none exists for the variables ai-playtest judges).
+- **Harrow Gate, the calibration game (`calibration/`).** A deterministic text
+  adventure with eight playtest variables as switches: the world moves on its
+  own, who refuses at the gate (character, system, nobody), whether the prompt
+  lists what you can type, whether the game reacts, whether a choice spends a
+  visible resource, whether a goal is stated, whether places change on a return
+  visit, and whether a trapdoor soft-locks the player. Eleven builds: healthy, one
+  mutant per switch (two for refusal), and `bleak`, with every switch flipped
+  except `reacts`, which would hide the rest. The game writes a per-turn truth log on
+  stderr, which the stdio driver keeps from every model, so the answer key is
+  exact per transcript.
+- **`src/calibration.ts`**: game-agnostic grading against any `{"cal":1}` truth log
+  and a JSON answer key (event happened, never happened, switch set, at least N
+  times). Jury accuracy and confusion per criterion, each probability judge's
+  accuracy when confident, uncertain count, Brier score and expected calibration
+  error, and precision/recall for the soft-lock and ignored-input checks.
+  `calibration/calibrate.mjs make | run | grade` drives it. 228 → 242 tests,
+  including a real playtest run over the game graded from its saved stderr.
+
 - **Local seats through Ollama.** A seat with `"provider": "ollama"` runs on a
   local Ollama daemon (`OLLAMA_HOST`, default `http://127.0.0.1:11434`). An
   all-local run needs no `OPENROUTER_API_KEY`: the key is demanded only when a

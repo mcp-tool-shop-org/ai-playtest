@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 // cli.ts — `ai-playtest run <config.json> [--label x] [--seats a,b] [--turns n] [--runs n] [--serial]`
 //          `ai-playtest report <config.json> --label x`
+//          `ai-playtest score <config.json> --label x`
 //          `ai-playtest check <config.json>`
+//          `ai-playtest diff <config.json> --base <label> --head <label> [--accept <file>]`
 //          `ai-playtest --help | --version`
-// Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.
+// Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error, 5 diff found open regressions.
 
 import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { loadConfig, ConfigError, VERSION } from './config.js';
+import { loadConfig, lintCriteria, ConfigError, VERSION } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
 import { createOllamaClient, OllamaError } from './ollama.js';
 import { createRoutedClient, providersInUse } from './providers.js';
+import { createDecisionsClient, DecisionsError } from './decisions.js';
+import { rescoreRun } from './rescore.js';
+import { diffRuns, parseAcceptances, openFindings, renderDiff } from './diff.js';
 import { runAll, type SeatResult } from './run.js';
 import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats, isEmptyDegradedPanel } from './report.js';
 import { summarizeRuns } from './stats.js';
@@ -25,9 +30,18 @@ export function usage(): string {
     'Usage:',
     '  ai-playtest run <config.json> [--label <name>] [--seats <id,id>] [--turns <n>] [--runs <n>] [--serial]',
     '  ai-playtest report <config.json> --label <name>',
+    '  ai-playtest score <config.json> --label <name>',
     '  ai-playtest check <config.json>',
+    '  ai-playtest diff <config.json> --base <label> --head <label> [--accept <file>]',
     '  ai-playtest --help | --version',
     '',
+    'score re-runs config.scorers over a finished run\'s saved transcripts, against the config\'s current',
+    'criteria, without replaying the game; it rewrites each seat\'s scores and the report.',
+    'diff compares two finished runs of the config and lists what got worse: a criterion the jury stopped',
+    'passing, the world no longer alive, a new soft-lock lead, more ignored input, more seats ending in error.',
+    'Each finding has an id and the transcript turns that show it. It writes DIFF-<base>.md and .json in the',
+    'head run and exits 5 while any finding is open. --accept names a JSON file of {"accepted":[{"id","note"}]}',
+    'entries; an accepted finding is still reported but no longer fails.',
     '--seats lists config seat ids (not model families). Example: --seats mistral-small,llama',
     '--help / -h prints this text from any position. --version prints the package version.',
     'check validates the JSON (no OPENROUTER_API_KEY required) and exits 2 on ConfigError.',
@@ -35,7 +49,7 @@ export function usage(): string {
     '(default http://127.0.0.1:11434, local tags only). The game\'s own env comes from config.game.env.',
     'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md and REPORT.json at the label root.',
     '',
-    'Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.',
+    'Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error, 5 diff found open regressions.',
   ].join('\n');
 }
 
@@ -56,7 +70,7 @@ function hinted(err: unknown): string | undefined {
 function failFrom(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
   const hint = hinted(err);
-  if (err instanceof OpenRouterError || err instanceof OllamaError) fail(3, message, hint);
+  if (err instanceof OpenRouterError || err instanceof OllamaError || err instanceof DecisionsError) fail(3, message, hint);
   if (err instanceof ConfigError || err instanceof ReportError || err instanceof PtyUnavailableError) {
     fail(2, message, hint);
   }
@@ -66,9 +80,9 @@ function failFrom(err: unknown): never {
   fail(4, message, hint);
 }
 
-const FLAGS_WITH_VALUE = new Set(['--label', '--seats', '--turns', '--runs']);
-const KNOWN_FLAGS = new Set(['--label', '--seats', '--turns', '--runs', '--serial', '--help', '-h', '--version']);
-const KNOWN_VERBS = new Set(['run', 'report', 'check']);
+const FLAGS_WITH_VALUE = new Set(['--label', '--seats', '--turns', '--runs', '--base', '--head', '--accept']);
+const KNOWN_FLAGS = new Set(['--label', '--seats', '--turns', '--runs', '--serial', '--base', '--head', '--accept', '--help', '-h', '--version']);
+const KNOWN_VERBS = new Set(['run', 'report', 'check', 'score', 'diff']);
 
 function rejectUnknownFlags(args: string[]): void {
   for (let i = 0; i < args.length; i++) {
@@ -216,12 +230,78 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     throw err;
   }
 
+  const lint = lintCriteria(cfg.criteria);
+  const writeLint = () => {
+    for (const l of lint) {
+      process.stdout.write(`warn: criterion ${l.id} ${l.why}; it may bundle two claims, and judges answer the easier one. Split it into one observable claim per criterion.\n`);
+    }
+  };
+
   if (verb === 'check') {
     process.stdout.write(`ok: ${cfg.name} (schemaVersion ${cfg.schemaVersion}, ${cfg.seats.length} seat${cfg.seats.length === 1 ? '' : 's'})\n`);
+    writeLint();
+    return;
+  }
+  if (verb === 'run' || verb === 'score') writeLint();
+
+  if (verb === 'diff') {
+    const baseLabel = flag(argv, '--base');
+    const headLabel = flag(argv, '--head');
+    if (!baseLabel || !headLabel) fail(1, 'diff needs --base and --head', 'name two finished runs, e.g. --base v1 --head v2');
+    const baseDir = join(cfg.runsDir, baseLabel!);
+    const headDir = join(cfg.runsDir, headLabel!);
+    for (const d of [baseDir, headDir]) if (!existsSync(d)) fail(2, `no run at ${d}`, 'check --base and --head against runs under runsDir');
+    try {
+      const acceptPath = flag(argv, '--accept');
+      let accepted: ReturnType<typeof parseAcceptances> = [];
+      if (acceptPath) {
+        if (!existsSync(acceptPath)) fail(2, `no acceptance file at ${acceptPath}`, 'create it, or drop --accept');
+        accepted = parseAcceptances(await readFile(acceptPath, 'utf8'), acceptPath);
+      }
+      const result = await diffRuns(baseDir, headDir, { base: baseLabel!, head: headLabel! }, cfg.criteria.map((c) => c.id), accepted);
+      const md = renderDiff(cfg.name, result);
+      const stem = join(headDir, `DIFF-${baseLabel}`);
+      await writeFile(`${stem}.md`, md + '\n', 'utf8');
+      await writeFile(`${stem}.json`, JSON.stringify({ kind: 'diff', name: cfg.name, ...result }, null, 2) + '\n', 'utf8');
+      for (const f of result.findings) {
+        process.stdout.write(`  ${f.accepted ? 'accepted' : 'OPEN    '} ${f.id}: ${f.base} -> ${f.head}${f.scorerNote ? ` (${f.scorerNote})` : ''}\n`);
+      }
+      for (const i of result.improvements) process.stdout.write(`  better   ${i.id}: ${i.base} -> ${i.head}\n`);
+      for (const a of result.unusedAcceptances) process.stdout.write(`warn: acceptance ${a.id} matched nothing in this diff\n`);
+      process.stdout.write(`wrote ${stem}.md\n`);
+      const open = openFindings(result);
+      if (open.length > 0) fail(5, `${open.length} open finding${open.length === 1 ? '' : 's'} between ${baseLabel} and ${headLabel}`, `read ${stem}.md; fix the build, or accept each id with a note in an --accept file`);
+    } catch (err) {
+      failFrom(err);
+    }
     return;
   }
 
   const label = flag(argv, '--label') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  if (verb === 'score') {
+    if (!flag(argv, '--label')) fail(1, 'score needs --label', 'name the finished run to score, e.g. --label phase9');
+    if (cfg.scorers.length === 0) fail(2, 'config has no scorers', 'add "scorers": [{ "kind": "jev" }] to the config');
+    const key = process.env.OPENROUTER_API_KEY;
+    if (!key) fail(3, 'OPENROUTER_API_KEY is not set', 'scorers run on OpenRouter\'s Decisions API');
+    const runDir = join(cfg.runsDir, label);
+    if (!existsSync(runDir)) fail(2, `no run at ${runDir}`, 'check --label');
+    try {
+      const seats = await rescoreRun(cfg, runDir, createDecisionsClient({ apiKey: key! }));
+      if (seats.length === 0) fail(2, `no seat transcripts under ${runDir}`, 'score reads <seat>/transcript.txt and meta.json from a finished run');
+      for (const s of seats) {
+        for (const r of s.results) {
+          const cells = r.scores.map((x) => `${x.id} ${x.p === null ? '—' : x.p.toFixed(2)}`).join(', ');
+          process.stdout.write(`  [${s.seat}] ${r.scorer}: ${r.error ? `unscored (${r.error})` : cells}${r.clipped ? ' (transcript trimmed)' : ''}\n`);
+        }
+      }
+      const path = await writeReport(cfg.name, runDir, label, cfg.criteria.map((c) => c.id));
+      process.stdout.write(`scored against the config's current criteria; wrote ${path}\n`);
+    } catch (err) {
+      failFrom(err);
+    }
+    return;
+  }
 
   if (verb === 'report') {
     // Without this the label defaulted to "now", and rebuilding a report read a
@@ -266,10 +346,14 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
   if (used.has('openrouter') && !apiKey) {
     fail(3, 'OPENROUTER_API_KEY is not set', 'export it, or seat local models with "provider": "ollama"');
   }
+  if (cfg.scorers.length > 0 && !apiKey) {
+    fail(3, 'OPENROUTER_API_KEY is not set, and config.scorers needs it', `the ${cfg.scorers.map((s) => s.kind).join(', ')} scorer runs on OpenRouter's Decisions API; set the key or remove "scorers"`);
+  }
   const client = createRoutedClient(cfg.seats, {
     ...(used.has('openrouter') && apiKey ? { openrouter: createOpenRouterClient({ apiKey }) } : {}),
     ...(used.has('ollama') ? { ollama: createOllamaClient() } : {}),
   });
+  const decisions = cfg.scorers.length > 0 && apiKey ? createDecisionsClient({ apiKey }) : undefined;
   if (used.has('ollama') && !argv.includes('--serial')) {
     process.stdout.write('note: local seats share one GPU; --serial keeps the daemon from swapping models between seats every turn\n');
   }
@@ -283,7 +367,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     const criterionIds = cfg.criteria.map((c) => c.id);
     if (runCount === 1) {
       const results = await runAll(cfg, {
-        label, client, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
+        label, client, decisions, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
       });
       if (results.length === 0) fail(4, 'no seats ran', 'check --seats against the config seat ids, not families');
       const path = await writeReport(cfg.name, join(cfg.runsDir, label), label, criterionIds);
@@ -301,7 +385,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
         const runLabel = `${label}-r${String(i).padStart(2, '0')}`;
         process.stdout.write(`-- run ${i}/${runCount} (${runLabel})\n`);
         const results = await runAll(cfg, {
-          label: runLabel, client, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
+          label: runLabel, client, decisions, seats, parallel: !argv.includes('--serial'), onTurn, onSeatDone,
         });
         await writeReport(cfg.name, join(cfg.runsDir, runLabel), runLabel, criterionIds);
         if (results.length === 0) continue;
