@@ -230,6 +230,16 @@ describe('runAll over the echo game', () => {
       expect(toAction('w', { kind: 'keys', keys: ['w'] })).toEqual({ kind: 'key', key: 'w' });
       expect(toAction('look', { kind: 'free-text' })).toEqual({ kind: 'line', line: 'look' });
     });
+
+    // The runner maps replies through toAction, not actionFromInput. Fixing only the
+    // library mapper changed nothing in a live run: llama3.2:1b still took zero moves.
+    it('gives the runner the same second chance as actionFromInput', () => {
+      const doors = { kind: 'choice' as const, options: [{ id: 'long-quay', label: 'Walk to The Long Quay' }, { id: 'wait', label: 'Wait a round' }] };
+      expect(toAction('long-quay)', doors)).toEqual({ kind: 'choose', id: 'long-quay' });
+      expect(toAction('long-quay) Walk to The Long Quay', doors)).toEqual({ kind: 'choose', id: 'long-quay' });
+      expect(toAction('2', doors)).toEqual({ kind: 'choose', id: 'wait' });
+      expect(() => toAction('waiting)', doors)).toThrow(ActionError);
+    });
   });
 
   function scriptedSpawn(screens: Screen[]): (cfg: GameConfig, env: Record<string, string>) => GameProcess {

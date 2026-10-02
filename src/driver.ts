@@ -155,12 +155,45 @@ export function describeActions(space: ActionSpace | undefined): string {
  */
 export function actionFromInput(input: string, space?: ActionSpace): Action {
   if (space?.kind === 'choice') {
-    const hit = space.options.find((o) => o.id === input || o.label === input);
+    const hit = space.options.find((o) => o.id === input || o.label === input) ?? looseChoice(input, space.options);
     if (hit) return { kind: 'choose', id: hit.id };
   } else if (space?.kind === 'keys' && space.keys.includes(input)) {
     return { kind: 'key', key: input };
   }
   return { kind: 'line', line: input };
+}
+
+/**
+ * The second chance for a closed-set answer, for the shapes models actually reply in.
+ *
+ * describeActions lists options as `  id) label`, and small models copy that marker:
+ * llama3.2:1b answered `weighing-floor)` on every one of fifteen turns against the
+ * Godot stage and took zero legal moves. That is the harness's own format coming back,
+ * so the list punctuation is stripped. Models also answer by position (llama3.1:8b and
+ * llama3.2:3b replied `1`, `2`); a bare number picks the listed option in that order,
+ * but only when no option id is itself a number, so it can never shadow a real id.
+ */
+export function looseChoice(input: string, options: Array<{ id: string; label: string }>): { id: string; label: string } | undefined {
+  // The whole listed line echoed back: `long-quay) Walk to The Long Quay`.
+  const echoed = /^\s*([^)\s]+)\)\s+\S/.exec(input);
+  if (echoed) {
+    const byId = options.find((o) => o.id.toLowerCase() === echoed[1].toLowerCase());
+    if (byId) return byId;
+  }
+  const clean = input.trim()
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .replace(/^(?:\d+[.)]|[-*])\s+/, '')
+    .replace(/[).:,;!]+$/, '')
+    .trim()
+    .toLowerCase();
+  if (!clean) return undefined;
+  const hit = options.find((o) => o.id.toLowerCase() === clean || o.label.toLowerCase() === clean);
+  if (hit) return hit;
+  if (/^\d+$/.test(clean) && !options.some((o) => /^\d+$/.test(o.id))) {
+    const n = Number(clean);
+    if (n >= 1 && n <= options.length) return options[n - 1];
+  }
+  return undefined;
 }
 
 /**

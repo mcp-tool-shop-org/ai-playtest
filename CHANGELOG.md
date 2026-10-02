@@ -27,6 +27,27 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   transcript judged by a different local family, no API key in the environment.
 - `OllamaError` (`E_OLLAMA`) exits 3 like other provider errors, with hints for
   a missing model (`ollama pull <tag>`) and a daemon that is down. 182 → 200 tests.
+- **The engine bridge has run against a real engine.** First execution of
+  `docs/engine-bridge.md`, 2026-10-02: the Godot 4.7 listing pasted into
+  `ai-rpg-stage` as an autoload, driven over `rpc` by six local models on a
+  RunPod pod while the sim and stage ran headless on the rig. `hello`, typed
+  `choose` actions, `reset` and `quit` all held. What the first wiring found is
+  in the doc's new "Learned from the first real wiring" section.
+
+### Fixed
+
+- **A closed-set answer in the harness's own list format was rejected.**
+  `describeActions` prints `  id) label`, and models copy it: llama3.2:1b replied
+  `weighing-floor)` on all fifteen turns against the Godot stage and took zero
+  legal moves; llama3.1:8b echoed whole lines (`long-quay) Walk to The Long Quay`)
+  and answered by position (`1`, `2`). A second-chance matcher (`looseChoice`)
+  now strips list punctuation and quotes, reads an echoed line by its id, matches
+  ids and labels case-insensitively, and takes a bare number as the listed
+  position unless some option id is itself numeric. It never fuzzy-matches: an
+  answer naming nothing listed stays an `illegal-action`. Same three seats after
+  the fix: 15 of 15 legal turns each. The runner maps replies through `toAction`,
+  not `actionFromInput`, so the fix had to land in both; fixing only the library
+  mapper changed nothing in a live run. 200 → 203 tests.
 
 ## [0.1.0] - 2026-09-15
 

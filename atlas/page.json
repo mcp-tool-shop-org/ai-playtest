@@ -19,33 +19,83 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 6,
+      "added": 4,
+      "changed": 7,
       "moved": 0,
-      "parts": 3,
+      "parts": 4,
       "removed": 0
     },
     "items": [
       {
+        "kind": "door",
+        "sentence": "CI now also runs src/ollama.test.ts.",
+        "subjects": [
+          ".github/workflows/ci.yml",
+          "src/ollama.test.ts"
+        ]
+      },
+      {
+        "kind": "door",
+        "sentence": "CI now also builds src/ollama.ts and src/providers.ts.",
+        "subjects": [
+          ".github/workflows/ci.yml",
+          "src/ollama.ts",
+          "src/providers.ts"
+        ]
+      },
+      {
+        "kind": "sequence",
+        "sentence": "In src/cli.ts, `main` gained a step, `providersInUse`, before `createOpenRouterClient`.",
+        "subjects": [
+          "src/cli.ts"
+        ]
+      },
+      {
+        "kind": "sequence",
+        "sentence": "In src/cli.ts, `main` gained a step, `createOllamaClient`, before `createRoutedClient`.",
+        "subjects": [
+          "src/cli.ts"
+        ]
+      },
+      {
+        "kind": "sequence",
+        "sentence": "In src/cli.ts, `main` gained a step, `createRoutedClient`, before `summarizeRuns`.",
+        "subjects": [
+          "src/cli.ts"
+        ]
+      },
+      {
+        "kind": "sequence",
+        "sentence": "And 4 more changes to the order of work.",
+        "subjects": []
+      },
+      {
+        "kind": "unassigned",
+        "sentence": "examples/local-smoke.playtest.json is new and belongs to no part, so atlas check fails on it against the previous map.",
+        "subjects": [
+          "examples/local-smoke.playtest.json"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-09-30; 6 files changed content.",
+        "sentence": "4 files added and 7 changed content, across 4 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "94e69fcb76b15b0d76c5d547224c06890b1f9912",
-      "generatedAt": "2026-09-30T20:06:42.779Z"
+      "commit": "b0f5edec2d01f66018cb11cc3610a58b4cb2347c",
+      "generatedAt": "2026-10-02T10:57:19.939Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "b0f5edec2d01f66018cb11cc3610a58b4cb2347c",
+  "commit": "cf40e6f09a56262414bdbfd9ba034f87d96ce11f",
   "defaultBranch": "main",
-  "derived": "6 parts, mostly TypeScript (34 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
+  "derived": "6 parts, mostly TypeScript (37 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
     {
       "builds": [
@@ -55,9 +105,11 @@
         "src/critic.ts",
         "src/driver.ts",
         "src/index.ts",
+        "src/ollama.ts",
         "src/openrouter.ts",
         "src/panel.ts",
         "src/player.ts",
+        "src/providers.ts",
         "src/pty-driver.ts",
         "src/report.ts",
         "src/rpc-driver.ts",
@@ -88,7 +140,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 27
+          "files": 30
         },
         {
           "boundary": "test",
@@ -101,6 +153,7 @@
         "src/coverage.test.ts",
         "src/critic.test.ts",
         "src/driver.test.ts",
+        "src/ollama.test.ts",
         "src/openrouter.test.ts",
         "src/panel.test.ts",
         "src/player.test.ts",
@@ -112,8 +165,8 @@
         "test/rpc-driver.test.ts",
         "test/run.test.ts"
       ],
-      "runsCount": 14,
-      "runsMore": 11,
+      "runsCount": 15,
+      "runsMore": 12,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -171,7 +224,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 16
+          "files": 18
         }
       ],
       "runs": [
@@ -191,12 +244,12 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-10-02T10:57:19.939Z",
+  "generatedAt": "2026-10-02T11:34:39.641Z",
   "limits": [
-    "6 imports could not be resolved: `src/cli.ts` imports `./ollama.js`, which is not in this repository; `src/cli.ts` imports `./providers.js`, which is not in this repository; `src/config.ts` imports `./ollama.js`, which is not in this repository; and 3 more.",
     "2 writes and 1 read use paths built at run time and are not named here.",
-    "11 writes and 8 reads go to a path their caller passes, not to this repository.",
+    "11 writes and 10 reads go to a path their caller passes, not to this repository.",
     "1 command is built at run time and not followed.",
+    "1 file belongs to no part: examples/local-smoke.playtest.json.",
     "Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions."
   ],
   "mainDoor": ".github/workflows/ci.yml",
@@ -217,16 +270,17 @@
     ".github/workflows/ci.yml",
     "src/cli.ts",
     "src/config.ts",
+    "src/providers.ts",
     "src/openrouter.ts",
+    "src/ollama.ts",
     "src/stats.ts",
-    "src/run.ts",
-    "src/report.ts"
+    "src/run.ts"
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 18,
+  "testFiles": 19,
   "testedBy": {
-    "src": 14
+    "src": 15
   },
   "unnamedWrites": 2,
   "unread": [],

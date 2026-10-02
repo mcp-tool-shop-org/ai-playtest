@@ -44,6 +44,24 @@ describe('actionFromInput', () => {
     expect(actionFromInput('nope', choice)).toEqual({ kind: 'line', line: 'nope' });
   });
 
+  it('accepts the list marker the harness itself printed (llama3.2:1b replied "weighing-floor)")', () => {
+    const doors: ActionSpace = { kind: 'choice', options: [{ id: 'weighing-floor', label: 'Walk to The Weighing Floor' }, { id: 'wait', label: 'Wait a round' }] };
+    expect(actionFromInput('weighing-floor)', doors)).toEqual({ kind: 'choose', id: 'weighing-floor' });
+    expect(actionFromInput('wait.', doors)).toEqual({ kind: 'choose', id: 'wait' });
+    expect(actionFromInput('"Wait a round"', doors)).toEqual({ kind: 'choose', id: 'wait' });
+    expect(actionFromInput('1) weighing-floor', doors)).toEqual({ kind: 'choose', id: 'weighing-floor' });
+    // Not a fuzzy matcher: an answer that names nothing listed stays illegal.
+    expect(actionFromInput('waiting', doors)).toEqual({ kind: 'line', line: 'waiting' });
+  });
+
+  it('takes a bare number as the listed position, unless an option id is a number', () => {
+    expect(actionFromInput('2', choice)).toEqual({ kind: 'choose', id: 'flee' });
+    expect(actionFromInput('3', choice)).toEqual({ kind: 'line', line: '3' });
+    const numbered: ActionSpace = { kind: 'choice', options: [{ id: '2', label: 'two' }, { id: 'x', label: 'ex' }] };
+    expect(actionFromInput('1', numbered)).toEqual({ kind: 'line', line: '1' });
+    expect(actionFromInput('2', numbered)).toEqual({ kind: 'choose', id: '2' });
+  });
+
   it('maps a listed key onto key, anything else onto line', () => {
     expect(actionFromInput('w', keys)).toEqual({ kind: 'key', key: 'w' });
     expect(actionFromInput('look', keys)).toEqual({ kind: 'line', line: 'look' });
