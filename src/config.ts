@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
+import { isCloudTag } from './ollama.js';
 
 /** Current playtest config schema. Unknown versions fail closed with a migration hint. */
 export const SCHEMA_VERSION = 1;
@@ -31,9 +32,17 @@ export type Seat = {
   id: string;
   /** Model family, for the report (e.g. "mistral"). Two seats never share one. */
   family: string;
-  /** OpenRouter model slug (e.g. "mistralai/mistral-small-3.2-24b-instruct"). */
+  /** Model id for the seat's provider: an OpenRouter slug, or a local Ollama tag (e.g. "mistral-small:24b"). */
   model: string;
+  /**
+   * Where the model runs. `openrouter` (the default) needs OPENROUTER_API_KEY.
+   * `ollama` runs on a local Ollama daemon at no cost; cloud-routed tags are refused.
+   */
+  provider?: SeatProvider;
 };
+
+export type SeatProvider = 'openrouter' | 'ollama';
+const PROVIDERS: readonly SeatProvider[] = ['openrouter', 'ollama'];
 
 export type GameConfig = {
   /** Executable (e.g. "node"). */
@@ -78,7 +87,17 @@ export type GameConfig = {
  */
 export type DriverConfig =
   | { kind: 'stdio' }
-  | { kind: 'pty'; cols?: number; rows?: number; readySentinel?: string }
+  | {
+      kind: 'pty'; cols?: number; rows?: number; readySentinel?: string;
+      /**
+       * Named keys for a keyboard-driven TUI: `{ "enter": "\r", "down": "j" }`.
+       * The player answers with a NAME and the game receives the BYTES, as a raw
+       * keypress with no trailing Enter. Without this map a reply is typed as a
+       * line plus Enter, which a cursor-and-Enter TUI reads as keystrokes it
+       * never meant (a reply of "look" is l, o, o, k, Enter).
+       */
+      keys?: Record<string, string>;
+    }
   | { kind: 'rpc'; host?: string; port: number; connectTimeoutMs?: number; requestTimeoutMs?: number };
 
 export type Criterion = { id: string; check: string };
@@ -223,7 +242,7 @@ export function resolveEnv(env: Record<string, string> | undefined, source: Node
 }
 
 const DRIVER_STDIO_KEYS = ['kind'] as const;
-const DRIVER_PTY_KEYS = ['kind', 'cols', 'rows', 'readySentinel'] as const;
+const DRIVER_PTY_KEYS = ['kind', 'cols', 'rows', 'readySentinel', 'keys'] as const;
 const DRIVER_RPC_KEYS = ['kind', 'host', 'port', 'connectTimeoutMs', 'requestTimeoutMs'] as const;
 
 export function validateDriver(raw: unknown): DriverConfig {
@@ -254,11 +273,28 @@ export function validateDriver(raw: unknown): DriverConfig {
     if (d.readySentinel !== undefined && typeof d.readySentinel !== 'string') {
       throw new ConfigError('driver.readySentinel must be a string', `got ${JSON.stringify(d.readySentinel)}`);
     }
+    let keys: Record<string, string> | undefined;
+    if (d.keys !== undefined) {
+      if (!d.keys || typeof d.keys !== 'object' || Array.isArray(d.keys) || Object.keys(d.keys).length === 0) {
+        throw new ConfigError('driver.keys must be a non-empty object of { name: bytes }', 'e.g. { "enter": "\\r", "down": "j", "up": "k" }');
+      }
+      keys = {};
+      for (const [name, bytes] of Object.entries(d.keys as Record<string, unknown>)) {
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
+          throw new ConfigError(`driver.keys name "${name}" is not a usable key name`, 'lowercase letters, digits and dashes — the player answers with this name');
+        }
+        if (typeof bytes !== 'string' || bytes.length === 0) {
+          throw new ConfigError(`driver.keys.${name} must be a non-empty string of bytes to send`, 'e.g. "\\r" for Enter, "\\u001b" for Esc, "\\t" for Tab');
+        }
+        keys[name] = bytes;
+      }
+    }
     return {
       kind: 'pty',
       cols,
       rows,
       readySentinel: typeof d.readySentinel === 'string' ? d.readySentinel : undefined,
+      ...(keys ? { keys } : {}),
     };
   }
   if (kind === 'rpc') {
@@ -355,9 +391,22 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     }
     if (seatIds.has(id)) throw new ConfigError(`seat id ${id} seated twice`, 'seat ids become folders under the run directory -- they must be unique');
     if (families.has(family)) throw new ConfigError(`family ${family} seated twice`, 'one seat per family -- diversity is the point');
+    const provider = rec.provider === undefined ? 'openrouter' : rec.provider;
+    if (typeof provider !== 'string' || !PROVIDERS.includes(provider as SeatProvider)) {
+      throw new ConfigError(`seat ${id} has unknown provider ${JSON.stringify(rec.provider)}`, `use one of: ${PROVIDERS.join(', ')}`);
+    }
+    if (provider === 'ollama' && isCloudTag(model)) {
+      throw new ConfigError(
+        `seat ${id} names a cloud-routed Ollama tag (${model})`,
+        'the ollama provider is for local, zero-cost seats; pull a local tag, or seat the model through OpenRouter',
+      );
+    }
+    if (seats.some((s) => s.model === model && (s.provider ?? 'openrouter') !== provider)) {
+      throw new ConfigError(`model ${model} is seated on two providers`, 'calls are routed by model id, so one id cannot mean two endpoints');
+    }
     seatIds.add(id);
     families.add(family);
-    seats.push({ id, family, model });
+    seats.push({ id, family, model, provider: provider as SeatProvider });
   }
   if (typeof c.persona !== 'string' || c.persona.length < 20) throw new ConfigError('persona missing', 'brief the player: goals and register, not mechanics');
   if (!Array.isArray(c.criteria) || c.criteria.length === 0) throw new ConfigError('criteria missing', 'list the game\'s own "alive" criteria as { id, check }');

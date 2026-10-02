@@ -131,7 +131,9 @@ multiplex.
 
 > **Read the four notes under the listing before you paste it.** Three of them
 > are the difference between a bridge that works and one that silently never
-> starts or deadlocks the moment you pause.
+> starts or deadlocks the moment you pause. Then read **Learned from the first
+> real wiring** below the listing: four things the listing does not show, found
+> by running it against a real Godot game.
 
 ```gdscript
 # playtest_bridge.gd — autoload. Enable with:
@@ -291,6 +293,48 @@ func _key_event(key: String) -> InputEventKey:
 `_observation()`, `_apply()`, `is_ready_for_input()` and `_reset()` are the
 parts that are yours. Everything above them is boilerplate you can paste
 unchanged. The sample is one client; see the warning above the listing.
+
+## Learned from the first real wiring
+
+This listing was first executed on 2026-10-02, pasted into `ai-rpg-stage` (Godot
+4.7) as an autoload and driven by six local models through the `rpc` driver. The
+boilerplate held: the handshake, typed `choose` actions, the byte-buffered line
+reader and the pause-safe process mode all worked on the first connection, and a
+turn round-tripped in about 20–30 ms. The four functions are where it needed
+care, in four ways the listing above does not show.
+
+**If your functions await, the handlers must await them.** A real game's
+observation and reset usually talk to something asynchronous — here, a sim over
+JSON-RPC, where `save` and `load` are network calls. Make `_observation()` and
+`_reset()` coroutines and change the three handlers to `_reply(id, await
+_observation())` and `await _reset()`. Without the `await`, GDScript hands
+`_reply` a function state instead of a dictionary, and reset replies before the
+world has been restored.
+
+**What a client has been shown is per connection.** Anything the bridge
+remembers about the conversation — a transcript cursor, "already described this
+room" — has to reset when a new peer connects. The first version kept it per
+process, so a second client (a hand probe, then a playtest) opened on a bare
+status line with no room description, because the first client had already been
+shown it.
+
+**A new connection should start from the starting world.** Snapshot the world
+the first time anyone observes it, and reload that snapshot when the next client
+connects, not only on `reset`. Otherwise a run inherits wherever the previous
+client walked the world to.
+
+**Reset restores the world, not the host's schedules.** Check what lives outside
+the save. `ai-rpg-engine`'s sidecar fires its scenario cue off a per-process
+round counter, so after the first seat passed round 2 a `load` restored the
+world but not the counter, and seats 2–4 played a harbour that never turned. The
+`world-moves` criterion split along exactly that line, which looked like a
+difference between model families and was a difference between worlds. Until
+the host keys its schedule off the world's own clock, start a fresh game process
+per seat when a scheduled event is part of what you are judging.
+
+Also worth knowing: `quit` ends the game process. A `--serial` run sends it
+once, after the last seat; a single-seat run ends the game every time, so a
+launcher that runs several labels has to restart it.
 
 **Under `--headless` there is no display server**, so `get_viewport().get_texture()`
 returns nothing and the `image` field is unavailable. Text and state are

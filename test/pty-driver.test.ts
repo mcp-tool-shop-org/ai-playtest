@@ -182,4 +182,29 @@ describe.skipIf(!available)('pty driver', () => {
       await d.stop();
     }
   }, 5000);
+
+  it('sends a named key\'s configured bytes, not its name (driver.keys)', async () => {
+    // Saint's Mile is cursor-and-Enter. A model answers "enter" or "down"; the game
+    // must receive CR or "j". Gate: drop the keyBytes lookup and the fixture gets
+    // the literal line "strike", looks instead of attacking, and HP stays 40.
+    const d = await createPtyDriver({
+      command: process.execPath,
+      args: [TUI],
+      promptPatterns: ['What do you do\\?\\s*$'],
+      promptQuietMs: 150,
+      idleQuietMs: 2500,
+      screenTimeoutMs: 15000,
+      actions: { kind: 'keys', keys: ['strike', 'flee'] },
+      keyBytes: { strike: '1\r', flee: '2\r' },
+    });
+    try {
+      const first = await d.start();
+      expect(first.actions).toEqual({ kind: 'keys', keys: ['strike', 'flee'] });
+      const after = await d.step({ kind: 'key', key: 'strike' });
+      expect(after.text).toContain('30/100');
+      expect(after.text).toContain('Last: attacked');
+    } finally {
+      await d.stop();
+    }
+  }, 20000);
 });

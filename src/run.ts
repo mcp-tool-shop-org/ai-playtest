@@ -8,7 +8,7 @@ import { resolveEnv, ConfigError, VERSION, SCHEMA_VERSION } from './config.js';
 import type { ChatClient } from './openrouter.js';
 import { spawnGame } from './stdio-game.js';
 import type { Action, ActionSpace, Driver, Observation } from './driver.js';
-import { ActionError, describeActions } from './driver.js';
+import { ActionError, describeActions, looseChoice } from './driver.js';
 import { createStdioDriver } from './stdio-driver.js';
 import { chooseInput, type TurnRecord } from './player.js';
 import { critique, CritiqueError, type Critique } from './critic.js';
@@ -91,6 +91,9 @@ export function toAction(input: string, space: ActionSpace | undefined): Action 
     if (ciId) return { kind: 'choose', id: ciId.id };
     const byLabel = space.options.find((o) => o.label === line || o.label.toLowerCase() === lower);
     if (byLabel) return { kind: 'choose', id: byLabel.id };
+    // Same second chance as actionFromInput: list markers, echoed lines, positions.
+    const loose = looseChoice(line, space.options);
+    if (loose) return { kind: 'choose', id: loose.id };
     throw new ActionError(
       `input ${JSON.stringify(line)} is not a legal choice`,
       `legal ids: ${space.options.map((o) => o.id).join(', ')}`,
@@ -186,6 +189,9 @@ export async function createDriver(cfg: PlaytestConfig, env: Record<string, stri
         promptQuietMs: cfg.game.promptQuietMs,
         idleQuietMs: cfg.game.idleQuietMs,
         screenTimeoutMs: cfg.game.screenTimeoutMs,
+        ...(cfg.driver.keys
+          ? { actions: { kind: 'keys' as const, keys: Object.keys(cfg.driver.keys) }, keyBytes: cfg.driver.keys }
+          : {}),
       });
     }
     case 'rpc': {

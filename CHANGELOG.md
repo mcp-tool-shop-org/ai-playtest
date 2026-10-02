@@ -7,6 +7,74 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **Local seats through Ollama.** A seat with `"provider": "ollama"` runs on a
+  local Ollama daemon (`OLLAMA_HOST`, default `http://127.0.0.1:11434`). An
+  all-local run needs no `OPENROUTER_API_KEY`: the key is demanded only when a
+  player, or a juror it will draw, is an OpenRouter seat. Providers mix in one
+  config; calls route by model id, so one id cannot be seated on two providers.
+- The provider uses Ollama's native `/api/chat`, not `/v1`, so each request sets
+  `num_ctx` from its own prompt. A prompt that cannot fit `maxContextTokens`
+  (default 32,768) fails before any request, and a reply whose prompt filled the
+  window fails as truncated, rather than a judge silently reading the tail of a
+  transcript. `done_reason: "length"` is a truncation error, like OpenRouter's
+  `finish_reason: "length"`. `think` starts off.
+- **Reasoning models that will not stop reasoning.** Measured on the pod:
+  `qwen3-next:80b` ignores `think:false` and reasons inside the reply, and
+  `gpt-oss:120b` reasons in the thinking channel, so a 60-token player reply came
+  back cut off or empty on every turn. A short reply that hits its budget is now
+  retried once with the reasoning moved to its own channel (`think:true`, or
+  `"low"` for gpt-oss, which can only be lowered) and 2,048 extra tokens, and the
+  model is remembered for the rest of the run. A model that cannot think at all
+  reports the original truncation.
+- **The context estimate counts non-ASCII glyphs at about a token each.** A
+  box-drawn TUI screen (│ ─ █) tokenises far worse than prose: an Escape the
+  Valley camp screen measured about 4,600 tokens against a 4,096 window sized at
+  three characters a token. ASCII stays at three characters a token. Should a
+  prompt still fill the window, the call is retried once at twice the size before
+  it fails. The ceiling is 65,536 tokens (it was 32,768, and every judge of a
+  30-turn Escape the Valley transcript was refused), overridable with
+  `AI_PLAYTEST_OLLAMA_MAX_CTX`. The reasoning allowance is 4,096 tokens; 2,048
+  was not enough for qwen3-next.
+- Cloud-routed Ollama tags (`:cloud`, `-cloud`) are refused at config time and
+  again at call time; they bill an ollama.com account.
+- `examples/local-smoke.playtest.json`: three local families against the
+  fixture echo game. First live run, `local-01`: 3 seats × 6 turns, each
+  transcript judged by a different local family, no API key in the environment.
+- `OllamaError` (`E_OLLAMA`) exits 3 like other provider errors, with hints for
+  a missing model (`ollama pull <tag>`) and a daemon that is down. 182 → 200 tests.
+- **The engine bridge has run against a real engine.** First execution of
+  `docs/engine-bridge.md`, 2026-10-02: the Godot 4.7 listing pasted into
+  `ai-rpg-stage` as an autoload, driven over `rpc` by six local models on a
+  RunPod pod while the sim and stage ran headless on the rig. `hello`, typed
+  `choose` actions, `reset` and `quit` all held. What the first wiring found is
+  in the doc's new "Learned from the first real wiring" section.
+- **Named keys for keyboard-driven TUIs (`driver.keys`, pty only).** A map of
+  `{ name: bytes }`, e.g. `{ "enter": "\r", "down": "j", "esc": "\u001b" }`. The
+  player is offered the names as a `keys` action space and answers with one; the
+  game receives the bytes as a raw keypress with no trailing Enter. Without it a
+  pty reply is typed as a line plus Enter, which a cursor-and-Enter game reads
+  as keystrokes nobody meant: `look` is l, o, o, k, then Enter. Built for
+  Saint's Mile (ratatui), which it now drives cleanly from the title screen into
+  the prologue's choices; the first probe also found Saint's Mile cutting off
+  every prose line at 100 columns (mcp-tool-shop-org/saints-mile#9). 203 → 206 tests.
+
+### Fixed
+
+- **A closed-set answer in the harness's own list format was rejected.**
+  `describeActions` prints `  id) label`, and models copy it: llama3.2:1b replied
+  `weighing-floor)` on all fifteen turns against the Godot stage and took zero
+  legal moves; llama3.1:8b echoed whole lines (`long-quay) Walk to The Long Quay`)
+  and answered by position (`1`, `2`). A second-chance matcher (`looseChoice`)
+  now strips list punctuation and quotes, reads an echoed line by its id, matches
+  ids and labels case-insensitively, and takes a bare number as the listed
+  position unless some option id is itself numeric. It never fuzzy-matches: an
+  answer naming nothing listed stays an `illegal-action`. Same three seats after
+  the fix: 15 of 15 legal turns each. The runner maps replies through `toAction`,
+  not `actionFromInput`, so the fix had to land in both; fixing only the library
+  mapper changed nothing in a live run. 200 → 203 tests.
+
 ## [0.1.0] - 2026-09-15
 
 First public GitHub release. Dogfood swarm #2, 2026-09-14. 84 -> 182 tests,
