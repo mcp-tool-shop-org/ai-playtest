@@ -75,7 +75,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "f51f8adb4cac8f182ccae9d55c02659eb86077ffbf8268300976a42d07221bc8",
+          "hash": "3708d89daf92d3a2f1399c9c55847f0b48b20dbe80a1288908c0e72c61c50742",
           "path": "CHANGELOG.md"
         },
         {
@@ -103,7 +103,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "da4e1697b7e9e8a627a5583f45b7455ebd9039db894554d9c5984560439c9fdc",
+          "hash": "8bfd7392617cb6beea8db01ad11622c65a96fede74e4e1235d6191ad29a612f6",
           "path": "README.md"
         },
         {
@@ -180,7 +180,7 @@
           "path": "site/astro.config.mjs"
         },
         {
-          "hash": "579d47b92833532c3ab547fac53fa21d246549cfdb48a814fa20235515fd96b8",
+          "hash": "a6a38546664af8b617e6a69bb12555e69874dc5944767e81d7ed4be6bbd0593f",
           "path": "site/package-lock.json"
         },
         {
@@ -300,30 +300,30 @@
             {
               "in": "main",
               "kind": "catch",
-              "line": 211
+              "line": 214
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 213
+              "line": 216
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 250
+              "line": 253
             },
             {
               "in": "main",
               "kind": "catch",
-              "line": 315
+              "line": 327
             },
             {
               "in": "runningAsCli",
               "kind": "catch",
-              "line": 325
+              "line": 337
             }
           ],
-          "hash": "37a75d01f077320c9e75e22633731bbe9a46e5bf3ca783cddd71cfe465b18d79",
+          "hash": "9a2ae6cff70bd918db5d43032548fa6f8ddb207d32e9e5d1e31213c377b88747",
           "importsFiles": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -337,7 +337,7 @@
             {
               "calls": [
                 {
-                  "line": 140,
+                  "line": 143,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -352,7 +352,7 @@
             {
               "calls": [
                 {
-                  "line": 172,
+                  "line": 175,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -360,14 +360,14 @@
                 },
                 {
                   "branch": "r.critique",
-                  "line": 182,
+                  "line": 185,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 185,
+                  "line": 188,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -382,7 +382,7 @@
             {
               "calls": [
                 {
-                  "line": 210,
+                  "line": 213,
                   "name": "loadConfig",
                   "target": {
                     "file": "src/config.ts"
@@ -390,7 +390,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 231,
+                  "line": 234,
                   "name": "listRunSiblings",
                   "target": {
                     "file": "src/report.ts"
@@ -398,7 +398,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 232,
+                  "line": 235,
                   "name": "isAggregateDir",
                   "target": {
                     "file": "src/report.ts"
@@ -406,7 +406,7 @@
                 },
                 {
                   "branch": "verb === 'report'",
-                  "line": 238,
+                  "line": 241,
                   "name": "readRun",
                   "target": {
                     "file": "src/report.ts"
@@ -424,7 +424,7 @@
                       "via": "renderAggregateReport"
                     }
                   ],
-                  "line": 242,
+                  "line": 245,
                   "name": "writeAggregateFromRuns",
                   "target": {
                     "file": "src/report.ts"
@@ -450,21 +450,21 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 248,
+                  "line": 251,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 263,
+                  "line": 270,
                   "name": "createOpenRouterClient",
                   "target": {
                     "file": "src/openrouter.ts"
                   }
                 },
                 {
-                  "line": 266,
+                  "line": 278,
                   "name": "summarizeRuns",
                   "target": {
                     "file": "src/stats.ts"
@@ -574,7 +574,7 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 273,
+                  "line": 285,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
@@ -599,14 +599,14 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 277,
+                  "line": 289,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 140,
+                  "line": 143,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -717,7 +717,7 @@
                     }
                   ],
                   "innerTruncated": true,
-                  "line": 291,
+                  "line": 303,
                   "name": "runAll",
                   "target": {
                     "file": "src/run.ts"
@@ -742,21 +742,21 @@
                       "via": "renderReport"
                     }
                   ],
-                  "line": 294,
+                  "line": 306,
                   "name": "writeReport",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 299,
+                  "line": 311,
                   "name": "criterionMetBySeats",
                   "target": {
                     "file": "src/report.ts"
                   }
                 },
                 {
-                  "line": 301,
+                  "line": 313,
                   "name": "isEmptyDegradedPanel",
                   "target": {
                     "file": "src/report.ts"
@@ -773,7 +773,7 @@
                       "via": "renderAggregateReport"
                     }
                   ],
-                  "line": 306,
+                  "line": 318,
                   "name": "writeAggregateReport",
                   "target": {
                     "file": "src/report.ts"
@@ -802,87 +802,77 @@
             {
               "in": "readOwnVersion",
               "kind": "catch",
-              "line": 20
+              "line": 21
             },
             {
               "in": "rejectUnknown",
               "kind": "throw",
-              "line": 165
+              "line": 174
             },
             {
               "in": "asPositiveInt",
               "kind": "throw",
-              "line": 174
+              "line": 183
             },
             {
               "in": "asNonNegInt",
               "kind": "throw",
-              "line": 182
+              "line": 191
             },
             {
               "in": "asFiniteNumber",
               "kind": "throw",
-              "line": 190
+              "line": 199
             },
             {
               "in": "asStringArray",
               "kind": "throw",
-              "line": 198
+              "line": 207
             },
             {
               "in": "asRecord",
               "kind": "throw",
-              "line": 205
+              "line": 214
             },
             {
               "in": "resolveEnv",
               "kind": "throw",
-              "line": 216
+              "line": 225
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 232
+              "line": 241
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 238
+              "line": 247
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 255
+              "line": 264
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 267
+              "line": 276
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 270
+              "line": 279
             },
             {
               "in": "validateDriver",
               "kind": "throw",
-              "line": 280
+              "line": 289
             },
             {
               "in": "readSchemaVersion",
               "kind": "throw",
-              "line": 296
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 303
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 308
+              "line": 305
             },
             {
               "in": "validateConfig",
@@ -892,22 +882,22 @@
             {
               "in": "validateConfig",
               "kind": "throw",
+              "line": 317
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
               "line": 321
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 323
+              "line": 330
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 328
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 331
+              "line": 332
             },
             {
               "in": "validateConfig",
@@ -917,82 +907,62 @@
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 343
+              "line": 340
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 345
+              "line": 346
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 351
+              "line": 352
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 356
+              "line": 354
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 357
+              "line": 360
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 362
+              "line": 365
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 363
+              "line": 366
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 368
+              "line": 369
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 373
+              "line": 372
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 374
-            },
-            {
-              "in": "validateConfig",
-              "kind": "catch",
-              "line": 379
+              "line": 378
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 379
+              "line": 384
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 382
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 386
-            },
-            {
-              "in": "validateConfig",
-              "kind": "catch",
-              "line": 387
-            },
-            {
-              "in": "validateConfig",
-              "kind": "throw",
-              "line": 387
+              "line": 385
             },
             {
               "in": "validateConfig",
@@ -1002,12 +972,22 @@
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 393
+              "line": 395
             },
             {
               "in": "validateConfig",
               "kind": "throw",
-              "line": 399
+              "line": 396
+            },
+            {
+              "in": "validateConfig",
+              "kind": "catch",
+              "line": 401
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 401
             },
             {
               "in": "validateConfig",
@@ -1015,42 +995,77 @@
               "line": 404
             },
             {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 408
+            },
+            {
+              "in": "validateConfig",
+              "kind": "catch",
+              "line": 409
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 409
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 412
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 415
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 421
+            },
+            {
+              "in": "validateConfig",
+              "kind": "throw",
+              "line": 426
+            },
+            {
               "in": "validateVerifiers",
               "kind": "throw",
-              "line": 454
+              "line": 476
             },
             {
               "in": "validateVerifiers",
               "kind": "catch",
-              "line": 460
+              "line": 482
             },
             {
               "in": "validateVerifiers",
-              "kind": "throw",
-              "line": 460
-            },
-            {
-              "in": "loadConfig",
-              "kind": "catch",
-              "line": 481
-            },
-            {
-              "in": "loadConfig",
               "kind": "throw",
               "line": 482
             },
             {
               "in": "loadConfig",
               "kind": "catch",
-              "line": 487
+              "line": 503
             },
             {
               "in": "loadConfig",
               "kind": "throw",
-              "line": 488
+              "line": 504
+            },
+            {
+              "in": "loadConfig",
+              "kind": "catch",
+              "line": 509
+            },
+            {
+              "in": "loadConfig",
+              "kind": "throw",
+              "line": 510
             }
           ],
-          "hash": "654d6d2afe93fc270451ee7ec212e60593ab8b5b56a903657347f0a64e4d76c7",
+          "hash": "0c65385395bb975516de06edf46a227f36763d485f5beea77d75edd683662d65",
           "importsFiles": [
             "src/verifiers.ts"
           ],
@@ -1220,7 +1235,7 @@
           "path": "src/driver.ts"
         },
         {
-          "hash": "c0340aac8742933d060a51724e2016a9ac4b25acb92cb2c96c08286a30870070",
+          "hash": "168170e2e2738c7e4907b7fccce6fe69c96541c78dad519214c7b5d25ffcbcbe",
           "importOrder": [
             "src/config.ts",
             "src/openrouter.ts",
@@ -2614,7 +2629,24 @@
         "vitest"
       ],
       "testedBy": 14,
-      "unresolvedSites": 0
+      "unresolvedNamed": [
+        {
+          "path": "src/cli.ts",
+          "specifier": "./ollama.js",
+          "why": "missing"
+        },
+        {
+          "path": "src/cli.ts",
+          "specifier": "./providers.js",
+          "why": "missing"
+        },
+        {
+          "path": "src/config.ts",
+          "specifier": "./ollama.js",
+          "why": "missing"
+        }
+      ],
+      "unresolvedSites": 6
     },
     {
       "dynamicReads": 0,
@@ -3384,7 +3416,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "94e69fcb76b15b0d76c5d547224c06890b1f9912",
+    "commit": "b0f5edec2d01f66018cb11cc3610a58b4cb2347c",
     "tracked": 78
   },
   "landings": [

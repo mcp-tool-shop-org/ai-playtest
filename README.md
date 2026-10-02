@@ -22,6 +22,9 @@ verdicts alongside how much of the game each session actually saw.
 One playthrough by one person tells you what one person saw. Five families
 playing the same forty turns tell you what the world does.
 
+Seats run on OpenRouter or on your own GPU through Ollama, and the two mix in
+one config. An all-local panel costs nothing per run and needs no API key.
+
 Public on GitHub. Not on npm yet — clone it, or consume by path from a sibling repo.
 
 ## Who judges
@@ -206,8 +209,41 @@ client and calls `reset()` between seats. Without `--serial`, each RPC seat
 is its own process — they will contend if they share one listening game.
 
 Exit codes: 0 ok · 1 usage · 2 config · 3 provider (key missing, model has no
-endpoints) · 4 run error (every seat ended in error, or no seat produced a
-verdict). Errors print `error:` and `hint:`.
+endpoints, local daemon down) · 4 run error (every seat ended in error, or no
+seat produced a verdict). Errors print `error:` and `hint:`.
+
+### Local seats, no API key
+
+Any seat can run on a local [Ollama](https://ollama.com) daemon instead of
+OpenRouter. Add `"provider": "ollama"` and name a local tag:
+
+```json
+"seats": [
+  { "id": "mistral", "family": "mistral", "model": "mistral-small:24b", "provider": "ollama" },
+  { "id": "qwen",    "family": "qwen",    "model": "qwen3:14b",         "provider": "ollama" },
+  { "id": "llama",   "family": "llama",   "model": "llama3.1:8b",       "provider": "ollama" }
+]
+```
+
+```bash
+node dist/cli.js run examples/local-smoke.playtest.json --label local --serial
+```
+
+An all-local run needs no `OPENROUTER_API_KEY`; the key is only demanded when
+a player, or a juror it will draw, is an OpenRouter seat. The two providers mix
+freely in one config. Use `--serial` locally: parallel seats on one GPU make
+the daemon swap models every turn.
+
+Three things are deliberate. The provider talks to Ollama's native chat API,
+not its OpenAI-compatible one, because only the native API lets a request set
+its own context size. Ollama's default window is small, and a critic reading a
+forty-turn transcript through it would have the start cut off with no error and
+judge whatever survived. Each call sizes the window from its own prompt, and a
+prompt that cannot fit fails with a hint instead of being truncated. Second,
+cloud-routed tags (`:cloud`, `-cloud`) are refused at config time: they bill an
+ollama.com account, and this provider exists for local seats that cost nothing.
+Third, `think` is off, so a reasoning model spends its reply budget on the
+answer. `OLLAMA_HOST` points at another daemon.
 
 ## Config reference
 
@@ -221,7 +257,7 @@ verdict). Errors print `error:` and `hint:`.
 | `game.promptPatterns` | regexes meaning "waiting for a line", tested against the stripped tail (`stdio`) or the rendered cursor line (`pty`) |
 | `game.promptQuietMs` / `idleQuietMs` / `screenTimeoutMs` | the waiting rule (defaults 800 / 6000 / 180000 ms) |
 | `game.quitInputs` | lines sent after the last turn (default `["quit"]`) |
-| `seats[]` | `{ id, family, model }` — OpenRouter slugs; one seat per family |
+| `seats[]` | `{ id, family, model, provider? }` — one seat per family. `provider` is `openrouter` (default; `model` is an OpenRouter slug) or `ollama` (`model` is a local tag) |
 | `panelSize` | author-off jurors per transcript (default **1**; raise to flag disagreement, not to average a stronger score) |
 | `verifiers` | optional regex lists (`unparsed`, `refused`, `victory`, `death`; empty = do not guess). Occupancy: `absorbingMinTurns` (default 4), `noProgressWindow` (default 5), `noOpVerbs` |
 | `setup[]` | `{ match, answer }` scripted answers for setup prompts |
@@ -253,7 +289,8 @@ See [SECURITY.md](SECURITY.md) for the full write-up.
 ## Trust model
 
 **Data touched:** the playtest JSON, whatever `game.command` / the RPC
-bridge prints, OpenRouter chat completions (player + jury), and files the
+bridge prints, chat completions from OpenRouter or a local Ollama daemon
+(player + jury), and files the
 runner writes under `runsDir` (`transcript.txt`, `critique.json`,
 `meta.json`, `REPORT.md`, `REPORT.json`).
 
@@ -263,8 +300,9 @@ you set `game.inheritEnv: true`. Nothing is written outside `runsDir`.
 
 **Permissions:** `game.command` is `child_process.spawn` — a playtest
 config is executable-equivalent. Review it as you would a shell script.
-Outbound HTTPS is only the configured OpenRouter base URL. There is no
-sandbox.
+Network calls go only to the OpenRouter base URL (HTTPS) and, for local
+seats, the Ollama daemon at `OLLAMA_HOST` (default `127.0.0.1:11434`). There is
+no sandbox.
 
 ## Telemetry
 
@@ -285,8 +323,9 @@ call is the one you configured for the models.
   outside the runner's control — which is exactly why a playtest config is
   treated as executable-equivalent.
 - **DECOMPOSE_BY_SECRETS — 3.** `driver.ts` is the observation seam,
-  `openrouter.ts` the only network seam, `panel.ts` the judging seam; each has
-  its own tests and a fake on the other side.
+  `openrouter.ts` and `ollama.ts` the only network seams (one per provider,
+  behind `providers.ts`), `panel.ts` the judging seam; each has its own tests
+  and a fake on the other side.
 - **UNCERTAINTY_GATED_HUMANS — 3.** The report aggregates but never rules, and it
   states its own uncertainty: split verdicts, thin coverage, a sample-of-one
   warning, and criteria no judge answered are all surfaced rather than smoothed.
@@ -305,7 +344,7 @@ npm run verify      # typecheck (src AND tests) + vitest
 npm run coverage    # vitest --coverage
 ```
 
-182 tests. `tsconfig.test.json` exists because the build config excludes test
+200 tests. `tsconfig.test.json` exists because the build config excludes test
 files, which meant no test file was type-checked by anything — it caught real
 type errors on its first run.
 

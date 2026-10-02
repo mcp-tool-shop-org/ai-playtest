@@ -1,0 +1,25 @@
+{
+  "name": "local smoke (fixture echo game, all-local seats)",
+  "game": {
+    "command": "node",
+    "args": ["../test/fixtures/echo-game.mjs"],
+    "promptPatterns": ["What do you do\\?\\s*$", "Character name:\\s*$"],
+    "promptQuietMs": 300,
+    "idleQuietMs": 3000,
+    "screenTimeoutMs": 30000,
+    "quitInputs": ["quit"]
+  },
+  "seats": [
+    { "id": "mistral", "family": "mistral", "model": "mistral-small:24b", "provider": "ollama" },
+    { "id": "qwen", "family": "qwen", "model": "qwen3:14b", "provider": "ollama" },
+    { "id": "llama", "family": "llama", "model": "llama3.1:8b", "provider": "ollama" }
+  ],
+  "setup": [{ "match": "Character name:\\s*$", "answer": "Wanderer" }],
+  "turns": 6,
+  "persona": "You are a patient adventurer exploring a small ruined chapel. Try different things and notice whether anything changes.",
+  "criteria": [
+    { "id": "reacts", "check": "The game responds to the player's specific input rather than repeating the same text." },
+    { "id": "changes", "check": "Something in the world state visibly changes over the session (a number, a description, an event)." }
+  ],
+  "runsDir": "../runs"
+}

@@ -7,6 +7,27 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **Local seats through Ollama.** A seat with `"provider": "ollama"` runs on a
+  local Ollama daemon (`OLLAMA_HOST`, default `http://127.0.0.1:11434`). An
+  all-local run needs no `OPENROUTER_API_KEY`: the key is demanded only when a
+  player, or a juror it will draw, is an OpenRouter seat. Providers mix in one
+  config; calls route by model id, so one id cannot be seated on two providers.
+- The provider uses Ollama's native `/api/chat`, not `/v1`, so each request sets
+  `num_ctx` from its own prompt. A prompt that cannot fit `maxContextTokens`
+  (default 32,768) fails before any request, and a reply whose prompt filled the
+  window fails as truncated, rather than a judge silently reading the tail of a
+  transcript. `done_reason: "length"` is a truncation error, like OpenRouter's
+  `finish_reason: "length"`. `think` is off.
+- Cloud-routed Ollama tags (`:cloud`, `-cloud`) are refused at config time and
+  again at call time; they bill an ollama.com account.
+- `examples/local-smoke.playtest.json`: three local families against the
+  fixture echo game. First live run, `local-01`: 3 seats × 6 turns, each
+  transcript judged by a different local family, no API key in the environment.
+- `OllamaError` (`E_OLLAMA`) exits 3 like other provider errors, with hints for
+  a missing model (`ollama pull <tag>`) and a daemon that is down. 182 → 200 tests.
+
 ## [0.1.0] - 2026-09-15
 
 First public GitHub release. Dogfood swarm #2, 2026-09-14. 84 -> 182 tests,

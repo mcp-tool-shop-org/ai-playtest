@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
+import { isCloudTag } from './ollama.js';
 
 /** Current playtest config schema. Unknown versions fail closed with a migration hint. */
 export const SCHEMA_VERSION = 1;
@@ -31,9 +32,17 @@ export type Seat = {
   id: string;
   /** Model family, for the report (e.g. "mistral"). Two seats never share one. */
   family: string;
-  /** OpenRouter model slug (e.g. "mistralai/mistral-small-3.2-24b-instruct"). */
+  /** Model id for the seat's provider: an OpenRouter slug, or a local Ollama tag (e.g. "mistral-small:24b"). */
   model: string;
+  /**
+   * Where the model runs. `openrouter` (the default) needs OPENROUTER_API_KEY.
+   * `ollama` runs on a local Ollama daemon at no cost; cloud-routed tags are refused.
+   */
+  provider?: SeatProvider;
 };
+
+export type SeatProvider = 'openrouter' | 'ollama';
+const PROVIDERS: readonly SeatProvider[] = ['openrouter', 'ollama'];
 
 export type GameConfig = {
   /** Executable (e.g. "node"). */
@@ -355,9 +364,22 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     }
     if (seatIds.has(id)) throw new ConfigError(`seat id ${id} seated twice`, 'seat ids become folders under the run directory -- they must be unique');
     if (families.has(family)) throw new ConfigError(`family ${family} seated twice`, 'one seat per family -- diversity is the point');
+    const provider = rec.provider === undefined ? 'openrouter' : rec.provider;
+    if (typeof provider !== 'string' || !PROVIDERS.includes(provider as SeatProvider)) {
+      throw new ConfigError(`seat ${id} has unknown provider ${JSON.stringify(rec.provider)}`, `use one of: ${PROVIDERS.join(', ')}`);
+    }
+    if (provider === 'ollama' && isCloudTag(model)) {
+      throw new ConfigError(
+        `seat ${id} names a cloud-routed Ollama tag (${model})`,
+        'the ollama provider is for local, zero-cost seats; pull a local tag, or seat the model through OpenRouter',
+      );
+    }
+    if (seats.some((s) => s.model === model && (s.provider ?? 'openrouter') !== provider)) {
+      throw new ConfigError(`model ${model} is seated on two providers`, 'calls are routed by model id, so one id cannot mean two endpoints');
+    }
     seatIds.add(id);
     families.add(family);
-    seats.push({ id, family, model });
+    seats.push({ id, family, model, provider: provider as SeatProvider });
   }
   if (typeof c.persona !== 'string' || c.persona.length < 20) throw new ConfigError('persona missing', 'brief the player: goals and register, not mechanics');
   if (!Array.isArray(c.criteria) || c.criteria.length === 0) throw new ConfigError('criteria missing', 'list the game\'s own "alive" criteria as { id, check }');

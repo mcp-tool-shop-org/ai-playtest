@@ -2,6 +2,10 @@ export { loadConfig, validateConfig, resolveEnv, ConfigError, isSafeSegment, VER
 export type { PlaytestConfig, GameConfig, Seat, Criterion } from './config.js';
 export { validateVerifiers } from './config.js';
 export { createOpenRouterClient, OpenRouterError } from './openrouter.js';
+export { createOllamaClient, OllamaError, isCloudTag, contextFor, resolveOllamaHost } from './ollama.js';
+export type { OllamaOptions } from './ollama.js';
+export { createRoutedClient, providersInUse } from './providers.js';
+export type { SeatProvider } from './config.js';
 export type { ChatClient, ChatMessage, ChatRequest } from './openrouter.js';
 export { spawnGame, stripAnsi } from './stdio-game.js';
 export type { GameProcess, Screen } from './stdio-game.js';

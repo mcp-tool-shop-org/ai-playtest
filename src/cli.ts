@@ -11,6 +11,8 @@ import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { loadConfig, ConfigError, VERSION } from './config.js';
 import { createOpenRouterClient, OpenRouterError } from './openrouter.js';
+import { createOllamaClient, OllamaError } from './ollama.js';
+import { createRoutedClient, providersInUse } from './providers.js';
 import { runAll, type SeatResult } from './run.js';
 import { writeReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, readRun, ReportError, criterionMetBySeats, isEmptyDegradedPanel } from './report.js';
 import { summarizeRuns } from './stats.js';
@@ -29,7 +31,8 @@ export function usage(): string {
     '--seats lists config seat ids (not model families). Example: --seats mistral-small,llama',
     '--help / -h prints this text from any position. --version prints the package version.',
     'check validates the JSON (no OPENROUTER_API_KEY required) and exits 2 on ConfigError.',
-    'Env: OPENROUTER_API_KEY (players and critics). The game\'s own env comes from config.game.env.',
+    'Env: OPENROUTER_API_KEY for openrouter seats (the default provider); OLLAMA_HOST for "provider": "ollama" seats',
+    '(default http://127.0.0.1:11434, local tags only). The game\'s own env comes from config.game.env.',
     'Runs land under <config.runsDir>/<label>/<seat>/ with transcript.txt, critique.json, meta.json; REPORT.md and REPORT.json at the label root.',
     '',
     'Exit codes: 0 ok, 1 usage, 2 config/report, 3 provider, 4 run error.',
@@ -53,7 +56,7 @@ function hinted(err: unknown): string | undefined {
 function failFrom(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
   const hint = hinted(err);
-  if (err instanceof OpenRouterError) fail(3, message, hint);
+  if (err instanceof OpenRouterError || err instanceof OllamaError) fail(3, message, hint);
   if (err instanceof ConfigError || err instanceof ReportError || err instanceof PtyUnavailableError) {
     fail(2, message, hint);
   }
@@ -253,14 +256,23 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     return;
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) fail(3, 'OPENROUTER_API_KEY is not set', 'export it; players and critics are OpenRouter seats');
   const turns = flag(argv, '--turns');
   if (turns) cfg.turns = parseTurns(turns);
   const runsFlag = flag(argv, '--runs');
   const runCount = runsFlag ? parseRuns(runsFlag) : 1;
   const seats = resolveSeatIds(cfg.seats.map((s) => s.id), flag(argv, '--seats'));
-  const client = createOpenRouterClient({ apiKey });
+  const used = providersInUse(cfg.seats, seats, cfg.panelSize);
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (used.has('openrouter') && !apiKey) {
+    fail(3, 'OPENROUTER_API_KEY is not set', 'export it, or seat local models with "provider": "ollama"');
+  }
+  const client = createRoutedClient(cfg.seats, {
+    ...(used.has('openrouter') && apiKey ? { openrouter: createOpenRouterClient({ apiKey }) } : {}),
+    ...(used.has('ollama') ? { ollama: createOllamaClient() } : {}),
+  });
+  if (used.has('ollama') && !argv.includes('--serial')) {
+    process.stdout.write('note: local seats share one GPU; --serial keeps the daemon from swapping models between seats every turn\n');
+  }
 
   process.stdout.write(`${cfg.name}: ${(seats ?? cfg.seats.map((s) => s.id)).join(', ')} × ${cfg.turns} turns × ${runCount} run${runCount === 1 ? '' : 's'} → ${join(cfg.runsDir, label)}\n`);
   if (runCount !== 1) process.stdout.write(`${summarizeRuns([], runCount).warning}\n`);
