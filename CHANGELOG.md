@@ -9,6 +9,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **rpc can launch `game.command`.** When the command is set, `run` starts
+  that process, reads `PLAYTEST_BRIDGE_PORT=<n>` from its output, and connects
+  there. The announced port wins over `driver.port`. `--serial` resets between
+  seats on that one process. More than one seat without `--serial` is a config
+  error. An empty command still attaches to a game that is already listening.
+
 - **Persona profiles.** `run --profile <name> [--personas a,b]`, or config
   `personas`, plays a set of play styles chosen to answer one question:
   - `scientific`: can these readings be trusted? (replicate, novice, briefed,

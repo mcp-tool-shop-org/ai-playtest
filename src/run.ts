@@ -205,12 +205,26 @@ export async function createDriver(cfg: PlaytestConfig, env: Record<string, stri
     }
     case 'rpc': {
       const { createRpcDriver } = await import('./rpc-driver.js');
-      return createRpcDriver({
+      const attached = {
         host: cfg.driver.host,
         port: cfg.driver.port,
         connectTimeoutMs: cfg.driver.connectTimeoutMs,
         requestTimeoutMs: cfg.driver.requestTimeoutMs,
-      });
+      };
+      // An empty command still attaches to a game that is already listening.
+      // A command means this run owns the process and reads its announced port.
+      if (cfg.game.command.trim() !== '') {
+        const { launchRpcGame } = await import('./rpc-launch.js');
+        return launchRpcGame({
+          command: cfg.game.command,
+          args: cfg.game.args,
+          cwd: cfg.game.cwd,
+          env,
+          inheritEnv: cfg.game.inheritEnv === true,
+          ...attached,
+        });
+      }
+      return createRpcDriver(attached);
     }
     case 'stdio':
       return createStdioDriver({ game: cfg.game, env });
@@ -678,6 +692,14 @@ export async function runAll(cfg: PlaytestConfig, opts: RunOptions & { seats?: s
     const out: SeatResult[] = [];
     for (const s of seats) out.push(await runSeat(cfg, s, opts));
     return out;
+  }
+  // One launched process has one bridge client. Parallel seats would each
+  // spawn that same command and then fight over it, or all attach to one port.
+  if (cfg.driver.kind === 'rpc' && cfg.game.command.trim() !== '' && seats.length > 1) {
+    throw new ConfigError(
+      `rpc with game.command launches one process; ${seats.length} seats in parallel would share it`,
+      'pass --serial so one process resets between seats, or leave game.command empty and start one game per seat',
+    );
   }
   // allSettled, not all: a single seat's rejection used to discard every
   // sibling's result even though their artifacts were already on disk, turning

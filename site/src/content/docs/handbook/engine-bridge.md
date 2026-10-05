@@ -21,7 +21,7 @@ Required:
 
 `done: true` maps to observation `reason: "exit"` so the seat loop stops. Protocol `win` / `lose` / `stuck` land on `endCause`, not `ReadyReason`.
 
-Serial `--serial`: `reset()` between seats. Missing or throwing reset is `E_RESET` — not a silent second TCP client.
+Serial `--serial`: `reset()` between seats. Missing or throwing reset is `E_RESET` — not a silent second TCP client. If `game.command` is set, `run` starts that process and connects to the port it prints as `PLAYTEST_BRIDGE_PORT=<n>` (that port wins over `driver.port`). More than one seat without `--serial` is a config error in that case. An empty command still attaches to a game that is already listening.
 
 ## What the runner consumes
 

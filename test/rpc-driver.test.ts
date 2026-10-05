@@ -134,3 +134,50 @@ describe('a full playtest through the rpc driver', () => {
     }
   }, 30000);
 });
+
+describe('rpc launch from game.command', () => {
+  it('uses the announced port instead of driver.port', async () => {
+    const { validateConfig } = await import('../src/config.js');
+    const { createDriver } = await import('../src/run.js');
+    const cfg = validateConfig({
+      name: 'rpc launch',
+      // Port 9 is closed. The fixture prints the real port; that one must win.
+      driver: { kind: 'rpc', port: 9, connectTimeoutMs: 5000, requestTimeoutMs: 5000 },
+      game: { command: process.execPath, args: [FIXTURE, '0'] },
+      seats: [{ id: 'a', family: 'alpha', model: 'fake/alpha' }],
+      persona: 'You are a cautious scout who wants to find out what is in the dark.',
+      criteria: [{ id: 'reacts', check: 'the world changed in response to an action' }],
+    }, process.cwd());
+    const driver = await createDriver(cfg, {});
+    try {
+      const obs = await driver.start();
+      expect(obs.text).toContain('Chapel Nave');
+    } finally {
+      await driver.stop();
+    }
+  }, 20000);
+
+  it('refuses two parallel seats when the run launches the game', async () => {
+    const { validateConfig } = await import('../src/config.js');
+    const { runAll } = await import('../src/run.js');
+    const cfg = validateConfig({
+      name: 'rpc launch parallel',
+      driver: { kind: 'rpc', port: 9 },
+      game: { command: process.execPath, args: [FIXTURE, '0'] },
+      seats: [
+        { id: 'a', family: 'alpha', model: 'fake/alpha' },
+        { id: 'b', family: 'beta', model: 'fake/beta' },
+      ],
+      persona: 'You are a cautious scout who wants to find out what is in the dark.',
+      criteria: [{ id: 'reacts', check: 'the world changed in response to an action' }],
+    }, process.cwd());
+    await expect(runAll(cfg, {
+      label: 'parallel',
+      client: async () => 'look',
+      parallel: true,
+    })).rejects.toMatchObject({
+      message: expect.stringMatching(/one process/),
+      hint: expect.stringMatching(/--serial/),
+    });
+  }, 20000);
+});
