@@ -8,6 +8,7 @@ import { resolve, dirname } from 'node:path';
 import { DEFAULT_VERIFIERS, type VerifierConfig } from './verifiers.js';
 import { isCloudTag } from './ollama.js';
 import { SCORER_DEFAULTS, type ScorerConfig, type ScorerKind } from './scorers.js';
+import { resolveProfile, PersonaError, type PersonasConfig, type PersonaSpec } from './personas.js';
 
 /** Current playtest config schema. Unknown versions fail closed with a migration hint. */
 export const SCHEMA_VERSION = 1;
@@ -150,6 +151,12 @@ export type PlaytestConfig = {
    * model through OpenRouter; it needs OPENROUTER_API_KEY.
    */
   scorers: ScorerConfig[];
+  /**
+   * A persona profile: several play styles, each run as its own label beside a
+   * control, with a test of whether each style actually played differently
+   * (personas.ts). Absent means every seat plays `persona` alone.
+   */
+  personas?: PersonasConfig;
 };
 
 export class ConfigError extends Error {
@@ -326,7 +333,7 @@ export function validateDriver(raw: unknown): DriverConfig {
 const CONFIG_KEYS = [
   'name', 'schemaVersion', '$schema', 'game', 'driver', 'seats', 'turns', 'setup',
   'persona', 'criteria', 'screenChars', 'playerMemoryTurns', 'runsDir',
-  'playerTemperature', 'panelSize', 'verifiers', 'scorers',
+  'playerTemperature', 'panelSize', 'verifiers', 'scorers', 'personas',
 ] as const;
 
 const SCORER_KINDS = Object.keys(SCORER_DEFAULTS) as ScorerKind[];
@@ -412,9 +419,11 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   if (game) rejectUnknown(game, GAME_KEYS, 'game');
   if (!c.name || typeof c.name !== 'string') throw new ConfigError('name missing', 'give the playtest a name');
   const driver = validateDriver(c.driver);
-  // The rpc driver attaches to an already-running game, so it needs no command
-  // to spawn and no prompt pattern to watch for -- the game says when it is
-  // ready. Every other driver needs both.
+  // rpc needs no prompt pattern: the game says when it is ready. `game.command`
+  // is optional. Set it and `run` spawns that process and reads
+  // PLAYTEST_BRIDGE_PORT= from its output (that port wins over driver.port).
+  // Leave it empty to attach to a game that is already listening. Every other
+  // driver needs a command and a prompt pattern.
   const spawnsGame = driver.kind !== 'rpc';
   if (spawnsGame) {
     const command = asNonEmptyString(game?.command);
@@ -548,7 +557,65 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
     panelSize: asNonNegInt(c.panelSize, 'panelSize') ?? DEFAULTS.panelSize,
     verifiers: validateVerifiers(c.verifiers),
     scorers: validateScorers(c.scorers),
+    ...(c.personas !== undefined ? { personas: validatePersonas(c.personas) } : {}),
   };
+}
+
+const PERSONA_KEYS = ['profile', 'only', 'add', 'briefing', 'actionTags', 'noiseFloor'] as const;
+
+/** `personas`: a profile name plus optional narrowing, extra personas and tags. Resolved here so a bad one fails `check`. */
+export function validatePersonas(raw: unknown): PersonasConfig {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new ConfigError('personas must be an object', 'e.g. "personas": { "profile": "player" }');
+  }
+  const r = raw as Record<string, unknown>;
+  rejectUnknown(r, PERSONA_KEYS, 'personas');
+  const profile = asNonEmptyString(r.profile);
+  if (!profile) throw new ConfigError('personas.profile missing', 'one of: scientific, bughunter, player, gaming, custom');
+  const out: PersonasConfig = { profile };
+  if (r.only !== undefined) out.only = asStringArray(r.only, 'personas.only') ?? [];
+  if (r.add !== undefined) {
+    if (!Array.isArray(r.add)) throw new ConfigError('personas.add must be an array', 'e.g. [{ "id": "pacifist", "brief": "...", "target": { "signal": "share:fight", "direction": "low" } }]');
+    out.add = r.add.map((a, i) => {
+      const e = (a ?? {}) as Record<string, unknown>;
+      rejectUnknown(e, ['id', 'brief', 'target', 'needsBriefing'] as const, `personas.add[${i}]`);
+      const id = asNonEmptyString(e.id);
+      const brief = asNonEmptyString(e.brief);
+      if (!id || !brief) throw new ConfigError(`personas.add[${i}] needs an id and a brief`, 'a brief is a play style, never the mechanics under test');
+      const t = e.target as { signal?: unknown; direction?: unknown } | undefined;
+      if (!t || typeof t.signal !== 'string' || (t.direction !== 'high' && t.direction !== 'low')) {
+        throw new ConfigError(`personas.add[${i}] needs a target: { signal, direction: "high" | "low" }`, 'without a target there is no way to tell whether the style changed anything');
+      }
+      const spec: PersonaSpec = { id, brief, target: { signal: t.signal, direction: t.direction } };
+      if (e.needsBriefing === true) spec.needsBriefing = true;
+      return spec;
+    });
+  }
+  if (r.briefing !== undefined) {
+    const b = asNonEmptyString(r.briefing);
+    if (!b) throw new ConfigError('personas.briefing must be a non-empty string', 'the goal and controls, in your words, for the briefed persona');
+    out.briefing = b;
+  }
+  if (r.actionTags !== undefined) {
+    const t = r.actionTags;
+    if (!t || typeof t !== 'object' || Array.isArray(t) || !Object.values(t).every((v) => typeof v === 'string')) {
+      throw new ConfigError('personas.actionTags must map tag names to regex strings', 'e.g. { "talk": "^(talk|hail)\\b" }');
+    }
+    out.actionTags = t as Record<string, string>;
+  }
+  if (r.noiseFloor !== undefined) {
+    const n = r.noiseFloor as { share?: unknown; count?: unknown };
+    const ok = (x: unknown) => typeof x === 'number' && x >= 0 && x <= 1;
+    if (!n || !ok(n.share) || !ok(n.count)) throw new ConfigError('personas.noiseFloor must be { share, count } between 0 and 1', 'defaults: share 0.1 (absolute), count 0.2 (relative to control)');
+    out.noiseFloor = { share: n.share as number, count: n.count as number };
+  }
+  try {
+    resolveProfile(out);
+  } catch (err) {
+    if (err instanceof PersonaError) throw new ConfigError(`personas: ${err.message}`, err.hint);
+    throw err;
+  }
+  return out;
 }
 
 function strList(x: unknown, name: string): string[] {

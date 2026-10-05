@@ -70,8 +70,19 @@ export type AbsorbingHit = {
 export type IgnoredInput = {
   turn: number;
   input: string;
-  kind: 'no-output' | 'identical-screen' | 'changed';
+  /**
+   * `redisplay`: a bare `look` whose reply is the same screen. Reprinting the
+   * screen is what `look` is for, so it is not an ignored input.
+   */
+  kind: 'no-output' | 'identical-screen' | 'redisplay' | 'changed';
 };
+
+/** An input the game ignored: no output, or the same screen back for anything but a bare look. */
+export function isIgnored(row: IgnoredInput): boolean {
+  return row.kind === 'no-output' || row.kind === 'identical-screen';
+}
+
+const REDISPLAY = /^(l|look|look around|redraw|refresh)$/i;
 
 export type ParserClass = 'unparsed' | 'refused' | 'accepted' | 'unknown';
 
@@ -238,15 +249,23 @@ export function detectAbsorbing(
   return null;
 }
 
+/**
+ * A turn record holds the screen the player saw and the input they typed in
+ * answer to it, so the game's reply to turn i's input is turn i+1's screen
+ * (analysisTurns keeps the final reply). Judging turn i's own screen pinned
+ * every verdict on the next input instead of the one the game answered.
+ */
+function replies(turns: TurnRecord[]): Array<{ t: TurnRecord; reply: TurnRecord | undefined }> {
+  return turns.flatMap((t, i) => (t.input === '' ? [] : [{ t, reply: turns[i + 1] }]));
+}
+
 export function classifyIgnored(turns: TurnRecord[]): IgnoredInput[] {
-  return turns.map((t, i) => {
-    if (i === 0) {
-      return { turn: t.turn, input: t.input, kind: 'changed' as const };
-    }
-    const prev = turns[i - 1];
-    const same = hashTurn(t) === hashTurn(prev);
-    const empty = t.screen.trim().length === 0;
-    const kind: IgnoredInput['kind'] = empty ? 'no-output' : same ? 'identical-screen' : 'changed';
+  return replies(turns).map(({ t, reply }) => {
+    // No reply was observed, so there is nothing to call ignored.
+    if (!reply) return { turn: t.turn, input: t.input, kind: 'changed' as const };
+    const empty = reply.screen.trim().length === 0;
+    const same = hashTurn(reply) === hashTurn(t);
+    const kind: IgnoredInput['kind'] = empty ? 'no-output' : !same ? 'changed' : REDISPLAY.test(t.input.trim()) ? 'redisplay' : 'identical-screen';
     return { turn: t.turn, input: t.input, kind };
   });
 }
@@ -255,11 +274,11 @@ export function classifyParser(turns: TurnRecord[], cfg: VerifierConfig): Verifi
   const unparsed = compile(cfg.unparsed);
   const refused = compile(cfg.refused);
   const listsEmpty = cfg.unparsed.length === 0 && cfg.refused.length === 0;
-  const rows: ParserTurn[] = turns.map((t) => {
+  const rows: ParserTurn[] = replies(turns).map(({ t, reply }) => {
     let classification: ParserClass = 'unknown';
-    if (!listsEmpty) {
-      if (anyMatch(unparsed, t.screen)) classification = 'unparsed';
-      else if (anyMatch(refused, t.screen)) classification = 'refused';
+    if (!listsEmpty && reply) {
+      if (anyMatch(unparsed, reply.screen)) classification = 'unparsed';
+      else if (anyMatch(refused, reply.screen)) classification = 'refused';
       else classification = 'accepted';
     }
     return { turn: t.turn, input: t.input, classification };

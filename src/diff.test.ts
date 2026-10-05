@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { diffRuns, parseAcceptances, openFindings, renderDiff, transcriptInputs, IGNORED_RISE } from './diff.js';
+import { diffRuns, parseAcceptances, openFindings, renderDiff, transcriptInputs, transcriptTurns, IGNORED_RISE } from './diff.js';
 import { ReportError } from './report.js';
 
 type SeatOpts = {
@@ -66,13 +66,28 @@ const diff = (accepted = [] as Parameters<typeof diffRuns>[4]) =>
   diffRuns(join(root, 'v1'), join(root, 'v2'), { base: 'v1', head: 'v2' }, ['moves', 'cost'], accepted);
 
 describe('transcriptInputs', () => {
-  it('reads one input per turn and leaves the final screen empty', () => {
-    expect(transcriptInputs(transcriptOf(['go north', 'take seal']))).toEqual(['go north', 'take seal', '']);
+  it('reads the player inputs in order, without the final screen', () => {
+    expect(transcriptInputs(transcriptOf(['go north', 'take seal']))).toEqual(['go north', 'take seal']);
   });
 
   it('takes the last "> " line of a turn, not a quoted line in the screen', () => {
-    const t = '═══ turn 1 ── screen\n> a quoted line in the game\n>\n> look\n';
+    const t = '═══ turn 1 ── screen (prompt, 3ms)\n> a quoted line in the game\n>\n> look\n';
     expect(transcriptInputs(t)).toEqual(['look']);
+  });
+
+  it('leaves out setup answers and the runner\'s quit sequence, which the player did not choose', () => {
+    const t = [
+      '═══ setup ── screen (4ms)', 'Character name:', '> Wren', '',
+      '═══ turn 1 ── screen (prompt, 3ms)', 'A room.', '> look', '',
+      '═══ turn 2 ── screen (prompt, 3ms)', 'A room.', '> quit', '',
+      '═══ turn 2 ── screen (quit, 3ms)', 'Save first?', '> quit', '',
+      '═══ turn 2 ── screen (exit, 3ms)', 'Goodbye.', '',
+    ].join('\n');
+    expect(transcriptTurns(t).map((x) => [x.turn, x.reason, x.input])).toEqual([
+      [null, 'setup', 'Wren'], [1, 'prompt', 'look'], [2, 'prompt', 'quit'], [2, 'quit', 'quit'], [2, 'exit', ''],
+    ]);
+    // The player's own "quit" counts; the runner's does not.
+    expect(transcriptInputs(t)).toEqual(['look', 'quit']);
   });
 });
 
@@ -98,6 +113,20 @@ describe('diffRuns', () => {
     expect(f.base).toBe('2/2 met');
     expect(f.head).toBe('0/2 met');
     expect(f.repro[0]).toMatchObject({ seat: 'a', turn: 3, inputs: ['north', 'east', 'light lamp'], evidence: 'cost evidence' });
+  });
+
+  it('keeps setup answers in a repro, because the game needs them, and cuts at the verdict turn', async () => {
+    await seat('v1', 'a', { met: { cost: true } });
+    await seat('v2', 'a', { met: { cost: false } });
+    await writeFile(join(root, 'v2', 'a', 'transcript.txt'), [
+      '═══ setup ── screen (4ms)', 'Character name:', '> Wren', '',
+      '═══ turn 1 ── screen (prompt, 3ms)', 'A room.', '> north', '',
+      '═══ turn 2 ── screen (prompt, 3ms)', 'A hall.', '> light lamp', '',
+      '═══ turn 3 ── screen (prompt, 3ms)', 'Lit.', '> west', '',
+      '═══ turn 3 ── screen (quit, 3ms)', 'Bye.', '> quit', '',
+    ].join('\n'));
+    const d = await diff();
+    expect(d.findings[0].repro[0].inputs).toEqual(['Wren', 'north', 'light lamp', 'west']);
   });
 
   it('lists a criterion that started passing as an improvement, not a finding', async () => {

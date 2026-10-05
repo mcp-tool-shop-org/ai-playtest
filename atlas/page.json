@@ -19,75 +19,45 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 6,
-      "changed": 9,
+      "added": 1,
+      "changed": 11,
       "moved": 0,
-      "parts": 4,
+      "parts": 2,
       "removed": 0
     },
     "items": [
       {
         "kind": "door",
-        "sentence": "CI now also runs src/cli-verbs.test.ts, src/diff.test.ts, src/rescore.test.ts and 1 more.",
+        "sentence": "CI now also runs src/profile-report.test.ts.",
         "subjects": [
           ".github/workflows/ci.yml",
-          "src/cli-verbs.test.ts",
-          "src/diff.test.ts",
-          "src/rescore.test.ts",
-          "test/calibration-edges.test.ts"
-        ]
-      },
-      {
-        "kind": "door",
-        "sentence": "CI now also builds src/diff.ts.",
-        "subjects": [
-          ".github/workflows/ci.yml",
-          "src/diff.ts"
+          "src/profile-report.test.ts"
         ]
       },
       {
         "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `parseAcceptances`, before `diffRuns`.",
+        "sentence": "src/personas.ts now starts at `signalValue`; it started at `renderProfile`.",
         "subjects": [
-          "src/cli.ts"
+          "src/personas.ts"
         ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `diffRuns`, before `renderDiff`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "In src/cli.ts, `main` gained a step, `renderDiff`, before `openFindings`.",
-        "subjects": [
-          "src/cli.ts"
-        ]
-      },
-      {
-        "kind": "sequence",
-        "sentence": "And 5 more changes to the order of work.",
-        "subjects": []
       },
       {
         "kind": "counts",
-        "sentence": "6 files added and 9 changed content, across 4 parts.",
+        "sentence": "1 file added and 11 changed content, across 2 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "5e6bf567a28bf743f39ba45c3f8598cfb4bccd0c",
-      "generatedAt": "2026-10-02T15:15:11.455Z"
+      "commit": "e27228d2a93d0b7872368fba4fdb99a93d1176fe",
+      "generatedAt": "2026-10-02T15:51:11.436Z"
     },
     "unchanged": false
   },
   "changesTogether": [
     {
-      "a": "src/index.ts",
-      "b": "src/report.ts",
-      "either": 8,
+      "a": "src/cli.ts",
+      "b": "src/index.ts",
+      "either": 11,
       "partLabels": [
         "src",
         "src"
@@ -97,7 +67,7 @@
         "src"
       ],
       "relation": "inside",
-      "shared": 6
+      "shared": 8
     },
     {
       "a": "src/report.ts",
@@ -115,9 +85,24 @@
       "shared": 5
     },
     {
+      "a": "src/report.ts",
+      "b": "src/run.ts",
+      "either": 8,
+      "partLabels": [
+        "src",
+        "src"
+      ],
+      "parts": [
+        "src",
+        "src"
+      ],
+      "relation": "inside",
+      "shared": 5
+    },
+    {
       "a": "src/cli.ts",
-      "b": "src/index.ts",
-      "either": 9,
+      "b": "src/config.ts",
+      "either": 10,
       "partLabels": [
         "src",
         "src"
@@ -130,24 +115,9 @@
       "shared": 6
     },
     {
-      "a": "src/cli.ts",
-      "b": "src/config.ts",
-      "either": 8,
-      "partLabels": [
-        "src",
-        "src"
-      ],
-      "parts": [
-        "src",
-        "src"
-      ],
-      "relation": "inside",
-      "shared": 5
-    },
-    {
-      "a": "src/cli.ts",
+      "a": "src/index.ts",
       "b": "src/report.ts",
-      "either": 8,
+      "either": 10,
       "partLabels": [
         "src",
         "src"
@@ -157,18 +127,18 @@
         "src"
       ],
       "relation": "inside",
-      "shared": 5
+      "shared": 6
     }
   ],
   "changesTogetherNote": [
     "1 file changed together with its own test, as expected.",
-    "Confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.",
-    "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
+    "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
+    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf",
+  "commit": "33fb11630fbb0b71f4bbb27f611bd8fdf265086d",
   "defaultBranch": "main",
-  "derived": "6 parts, mostly TypeScript (49 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
+  "derived": "6 parts, mostly TypeScript (53 files), JavaScript (6), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).",
   "doors": [
     {
       "builds": [
@@ -184,7 +154,9 @@
         "src/ollama.ts",
         "src/openrouter.ts",
         "src/panel.ts",
+        "src/personas.ts",
         "src/player.ts",
+        "src/profile-report.ts",
         "src/providers.ts",
         "src/pty-driver.ts",
         "src/report.ts",
@@ -218,7 +190,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 40
+          "files": 44
         },
         {
           "boundary": "test",
@@ -237,7 +209,9 @@
         "src/ollama.test.ts",
         "src/openrouter.test.ts",
         "src/panel.test.ts",
+        "src/personas.test.ts",
         "src/player.test.ts",
+        "src/profile-report.test.ts",
         "src/rescore.test.ts",
         "src/scorers.test.ts",
         "src/stats.test.ts",
@@ -250,8 +224,8 @@
         "test/rpc-driver.test.ts",
         "test/run.test.ts"
       ],
-      "runsCount": 22,
-      "runsMore": 19,
+      "runsCount": 24,
+      "runsMore": 21,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -309,7 +283,7 @@
         {
           "boundary": "src",
           "depth": 0,
-          "files": 22
+          "files": 24
         }
       ],
       "runs": [
@@ -329,14 +303,14 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-10-02T15:29:26.349Z",
+  "generatedAt": "2026-10-02T18:16:21.898Z",
   "limits": [
     "4 writes and 3 reads use paths built at run time and are not named here.",
     "2 writes go to places this repository does not track, so they are not listed as generated.",
-    "12 writes and 22 reads go to a path their caller passes, not to this repository.",
+    "17 writes and 26 reads go to a path their caller passes, not to this repository.",
     "1 command is built at run time and not followed.",
     "8 files belong to no part: calibration/README.md, calibration/answer-key.json, calibration/calibrate.mjs and 5 more.",
-    "Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions."
+    "Statistics confidence is low: fewer than 25 source files reach 10 revisions in the window."
   ],
   "mainDoor": ".github/workflows/ci.yml",
   "partLabels": {
@@ -356,17 +330,17 @@
     ".github/workflows/ci.yml",
     "src/cli.ts",
     "src/config.ts",
+    "src/personas.ts",
     "src/providers.ts",
     "src/openrouter.ts",
     "src/ollama.ts",
-    "src/decisions.ts",
-    "src/stats.ts"
+    "src/decisions.ts"
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 26,
+  "testFiles": 28,
   "testedBy": {
-    "src": 22
+    "src": 24
   },
   "unnamedWrites": 4,
   "unread": [],

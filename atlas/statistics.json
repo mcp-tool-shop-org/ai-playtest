@@ -78,12 +78,12 @@
         ],
         "importsOnly": []
       },
-      "cohesion": 0.675649,
+      "cohesion": 0.725501,
       "cohesionDropped": false,
       "confidence": "low",
       "highWater": null,
       "name": "src",
-      "qualifyingSourceCommits": 16,
+      "qualifyingSourceCommits": 19,
       "rebaseline": null
     },
     {
@@ -101,7 +101,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "test",
-      "qualifyingSourceCommits": 8,
+      "qualifyingSourceCommits": 10,
       "rebaseline": null
     }
   ],
@@ -119,13 +119,13 @@
         "path": ".github/workflows/pages.yml"
       },
       {
-        "commits": 4,
-        "lines": 13,
+        "commits": 5,
+        "lines": 14,
         "path": ".gitignore"
       },
       {
-        "commits": 25,
-        "lines": 519,
+        "commits": 28,
+        "lines": 583,
         "path": "CHANGELOG.md"
       },
       {
@@ -159,8 +159,8 @@
         "path": "README.ja.md"
       },
       {
-        "commits": 22,
-        "lines": 814,
+        "commits": 24,
+        "lines": 944,
         "path": "README.md"
       },
       {
@@ -189,8 +189,8 @@
         "path": "SHIP_GATE.md"
       },
       {
-        "commits": 12,
-        "lines": 296,
+        "commits": 15,
+        "lines": 378,
         "path": "atlas/README.md"
       },
       {
@@ -199,18 +199,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 12,
-        "lines": 1009,
+        "commits": 15,
+        "lines": 1306,
         "path": "atlas/page.json"
       },
       {
-        "commits": 12,
-        "lines": 1555,
+        "commits": 15,
+        "lines": 1870,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 12,
-        "lines": 7413,
+        "commits": 15,
+        "lines": 10081,
         "path": "atlas/structure.json"
       },
       {
@@ -249,8 +249,8 @@
         "path": "calibration/variants.json"
       },
       {
-        "commits": 2,
-        "lines": 36,
+        "commits": 3,
+        "lines": 48,
         "path": "codecov.yml"
       },
       {
@@ -272,6 +272,11 @@
         "commits": 1,
         "lines": 157,
         "path": "docs/research-4.md"
+      },
+      {
+        "commits": 1,
+        "lines": 198,
+        "path": "docs/research-5.md"
       },
       {
         "commits": 4,
@@ -384,23 +389,28 @@
         "path": "site/tsconfig.json"
       },
       {
-        "commits": 1,
-        "lines": 264,
+        "commits": 3,
+        "lines": 285,
         "path": "src/calibration.ts"
       },
       {
         "commits": 2,
-        "lines": 26,
+        "lines": 262,
+        "path": "src/cli-verbs.test.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 32,
         "path": "src/cli.test.ts"
       },
       {
-        "commits": 12,
-        "lines": 873,
+        "commits": 14,
+        "lines": 991,
         "path": "src/cli.ts"
       },
       {
-        "commits": 10,
-        "lines": 1091,
+        "commits": 11,
+        "lines": 1158,
         "path": "src/config.ts"
       },
       {
@@ -434,6 +444,16 @@
         "path": "src/decisions.ts"
       },
       {
+        "commits": 2,
+        "lines": 349,
+        "path": "src/diff.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 383,
+        "path": "src/diff.ts"
+      },
+      {
         "commits": 5,
         "lines": 168,
         "path": "src/driver.test.ts"
@@ -444,8 +464,8 @@
         "path": "src/driver.ts"
       },
       {
-        "commits": 14,
-        "lines": 103,
+        "commits": 16,
+        "lines": 110,
         "path": "src/index.ts"
       },
       {
@@ -479,6 +499,16 @@
         "path": "src/panel.ts"
       },
       {
+        "commits": 1,
+        "lines": 281,
+        "path": "src/personas.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 485,
+        "path": "src/personas.ts"
+      },
+      {
         "commits": 7,
         "lines": 176,
         "path": "src/player.test.ts"
@@ -487,6 +517,16 @@
         "commits": 7,
         "lines": 187,
         "path": "src/player.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 38,
+        "path": "src/profile-report.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 61,
+        "path": "src/profile-report.ts"
       },
       {
         "commits": 1,
@@ -505,6 +545,11 @@
       },
       {
         "commits": 1,
+        "lines": 80,
+        "path": "src/rescore.test.ts"
+      },
+      {
+        "commits": 1,
         "lines": 45,
         "path": "src/rescore.ts"
       },
@@ -519,8 +564,8 @@
         "path": "src/run.ts"
       },
       {
-        "commits": 1,
-        "lines": 112,
+        "commits": 2,
+        "lines": 130,
         "path": "src/scorers.test.ts"
       },
       {
@@ -554,14 +599,19 @@
         "path": "src/stdio-game.ts"
       },
       {
-        "commits": 5,
-        "lines": 434,
+        "commits": 6,
+        "lines": 473,
         "path": "src/verifiers.test.ts"
       },
       {
-        "commits": 6,
-        "lines": 1010,
+        "commits": 7,
+        "lines": 1040,
         "path": "src/verifiers.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 162,
+        "path": "test/calibration-edges.test.ts"
       },
       {
         "commits": 1,
@@ -622,131 +672,103 @@
   },
   "confidence": {
     "level": "low",
-    "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
+    "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-10-02T15:29:26.349Z",
+  "generatedAt": "2026-10-02T18:16:21.898Z",
   "generatedFrom": {
-    "commit": "de93770118018abdce24a771b21fcbbd2cf94dbf"
+    "commit": "33fb11630fbb0b71f4bbb27f611bd8fdf265086d"
   },
   "pairs": [
     {
       "a": "CHANGELOG.md",
       "b": "README.md",
-      "either": 21,
-      "shared": 12,
-      "strength": 0.571429
+      "either": 24,
+      "shared": 14,
+      "strength": 0.583333
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 10,
-      "shared": 10,
+      "either": 13,
+      "shared": 13,
       "strength": 1
     },
     {
       "a": "src/cli.ts",
       "b": "src/config.ts",
-      "either": 8,
-      "shared": 5,
-      "strength": 0.625
+      "either": 10,
+      "shared": 6,
+      "strength": 0.6
     },
     {
       "a": "src/cli.ts",
       "b": "src/index.ts",
-      "either": 9,
-      "shared": 6,
-      "strength": 0.666667
+      "either": 11,
+      "shared": 8,
+      "strength": 0.727273
     },
     {
       "a": "src/cli.ts",
       "b": "src/report.ts",
-      "either": 8,
-      "shared": 5,
-      "strength": 0.625
-    },
-    {
-      "a": "src/config.ts",
-      "b": "src/index.ts",
-      "either": 9,
-      "shared": 5,
-      "strength": 0.555556
-    },
-    {
-      "a": "src/config.ts",
-      "b": "src/report.ts",
-      "either": 8,
-      "shared": 4,
-      "strength": 0.5
-    },
-    {
-      "a": "src/config.ts",
-      "b": "src/run.ts",
-      "either": 8,
-      "shared": 5,
-      "strength": 0.625
-    },
-    {
-      "a": "src/config.ts",
-      "b": "test/run.test.ts",
-      "either": 8,
-      "shared": 4,
-      "strength": 0.5
-    },
-    {
-      "a": "src/index.ts",
-      "b": "src/report.ts",
-      "either": 8,
-      "shared": 6,
-      "strength": 0.75
-    },
-    {
-      "a": "src/index.ts",
-      "b": "src/run.ts",
       "either": 10,
       "shared": 5,
       "strength": 0.5
     },
     {
-      "a": "src/index.ts",
-      "b": "test/run.test.ts",
+      "a": "src/config.ts",
+      "b": "src/index.ts",
+      "either": 11,
+      "shared": 6,
+      "strength": 0.545455
+    },
+    {
+      "a": "src/config.ts",
+      "b": "src/run.ts",
       "either": 9,
       "shared": 5,
       "strength": 0.555556
+    },
+    {
+      "a": "src/index.ts",
+      "b": "src/report.ts",
+      "either": 10,
+      "shared": 6,
+      "strength": 0.6
     },
     {
       "a": "src/report.ts",
@@ -771,7 +793,7 @@
     }
   ],
   "parameters": {
-    "appliedChangesetLimit": 27,
+    "appliedChangesetLimit": 28,
     "changeset": 50,
     "changesetFraction": 0.25,
     "cohesionDrop": 0.2,
@@ -779,17 +801,17 @@
     "fallenShared": 3,
     "floor": "fallen",
     "floorHeld": false,
-    "floorTrigger": "both",
-    "headDate": "2026-10-02T11:15:24-04:00",
-    "inScopeFiles": 108,
+    "floorTrigger": "revision-depth",
+    "headDate": "2026-10-02T11:51:38-04:00",
+    "inScopeFiles": 112,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 28,
+    "qualifyingCommits": 31,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-04-05T15:15:24.000Z",
+    "since": "2026-04-05T15:51:38.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
@@ -805,7 +827,7 @@
     ],
     "sourceFileReach": 20,
     "sourceFileRise": 25,
-    "sourceFilesReachingStrongFloor": 0,
+    "sourceFilesReachingStrongFloor": 1,
     "strength": 0.5,
     "windowDays": 180
   },

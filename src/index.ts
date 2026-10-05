@@ -15,6 +15,9 @@ export type { Scorer, ScorerConfig, ScorerKind, ScorerResult, CriterionScore, Sc
 export { rescoreRun } from './rescore.js';
 export { diffRuns, parseAcceptances, openFindings, renderDiff, transcriptInputs, IGNORED_RISE } from './diff.js';
 export type { DiffResult, Finding, FindingKind, Improvement, Acceptance, Repro } from './diff.js';
+export { PROFILES, CONTROL, DEFAULT_ACTION_TAGS, NOISE_DEFAULTS, resolveProfile, composePersona, tagInput, signalValue, rejectedTurns, judgeProfile, renderProfile, PersonaError } from './personas.js';
+export type { PersonaSpec, ProfileSpec, PersonasConfig, ResolvedProfile, Target, Signal, Direction, SeatTrace, PersonaResult, PersonaVerdict, ProfileResult } from './personas.js';
+export { writeProfileReport, personaLabel, saveProfile, loadProfile } from './profile-report.js';
 export { parseTruthLog, truthFor, gradeRuns, summarize, renderCalibration } from './calibration.js';
 export type { AnswerKey, TruthRule, TruthLog, Graded, GradedCell, GradedVerifier, CalibrationSummary, CriterionSummary, Confusion } from './calibration.js';
 export { validateScorers, lintCriteria } from './config.js';
@@ -31,7 +34,7 @@ export { runSeat, runAll, toAction } from './run.js';
 export type { SeatResult, RunOptions } from './run.js';
 export { readRun, renderReport, renderReportJson, writeReport, renderAggregateReport, writeAggregateReport, writeAggregateFromRuns, isAggregateDir, listRunSiblings, criterionMetBySeats, isEmptyDegradedPanel, REPORT_FORMAT } from './report.js';
 export type { SeatSummary, SkippedSeatDir, RunContents, AggregatePayload, SingleRunReport } from './report.js';
-export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, DEFAULT_VERIFIERS } from './verifiers.js';
+export { runVerifiers, detectAbsorbing, tarjanScc, renderAbsorbingLine, isIgnored, DEFAULT_VERIFIERS } from './verifiers.js';
 export type { VerifierReport, VerifierConfig, AbsorbingHit } from './verifiers.js';
 export { summarizeRuns, minSignFlipP, betaMean, juryNEff, FIRST_INFERENTIAL_N } from './stats.js';
 export type { RunStats, CriterionPosterior } from './stats.js';
