@@ -215,7 +215,7 @@ verdict). Errors print `error:` and `hint:`.
 |---|---|
 | `name` | playtest name (report title) |
 | `driver` | `{"kind":"stdio"}` (default), `{"kind":"pty","cols":100,"rows":30,"readySentinel":"..."}`, or `{"kind":"rpc","port":7777,"host":"127.0.0.1"}` |
-| `game.command`, `game.args`, `game.cwd` | how to spawn the game; `cwd` resolves against the config file. Not needed for the `rpc` driver, which attaches to a running game |
+| `game.command`, `game.args`, `game.cwd` | how to spawn the game; `cwd` resolves against the config file. For `rpc`, set `command` and `run` reads `PLAYTEST_BRIDGE_PORT=` from the process (that port wins over `driver.port`). Leave `command` empty to attach to a game that is already listening. Two or more seats with a command need `--serial` |
 | `game.env` | extra env for the game; a value `$NAME` reads the runner's env |
 | `game.inheritEnv` | pass the runner's whole environment to the game. **Off by default** — see below |
 | `game.promptPatterns` | regexes meaning "waiting for a line", tested against the stripped tail (`stdio`) or the rendered cursor line (`pty`) |

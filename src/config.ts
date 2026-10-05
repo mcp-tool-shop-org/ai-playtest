@@ -311,9 +311,11 @@ export function validateConfig(raw: unknown, baseDir: string): PlaytestConfig {
   if (game) rejectUnknown(game, GAME_KEYS, 'game');
   if (!c.name || typeof c.name !== 'string') throw new ConfigError('name missing', 'give the playtest a name');
   const driver = validateDriver(c.driver);
-  // The rpc driver attaches to an already-running game, so it needs no command
-  // to spawn and no prompt pattern to watch for -- the game says when it is
-  // ready. Every other driver needs both.
+  // rpc needs no prompt pattern: the game says when it is ready. `game.command`
+  // is optional. Set it and `run` spawns that process and reads
+  // PLAYTEST_BRIDGE_PORT= from its output (that port wins over driver.port).
+  // Leave it empty to attach to a game that is already listening. Every other
+  // driver needs a command and a prompt pattern.
   const spawnsGame = driver.kind !== 'rpc';
   if (spawnsGame) {
     const command = asNonEmptyString(game?.command);

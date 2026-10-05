@@ -123,11 +123,13 @@ Add this as an autoload, then fill in the four stubs marked yours
 (`_observation`, `_apply`, `is_ready_for_input`, `_reset`). Guard it behind a
 flag so it never ships to players.
 
-The sample keeps **one** `_peer`. It is a single-client paste. The rpc driver
-*implements* `reset()`, but `runAll` does not send it between seats, and it
-defaults to **parallel seats** — N RPC seats against one TCP game will
-contend. Use `--serial`, or launch one game process per seat, until you
-multiplex.
+The sample keeps **one** `_peer`. It is a single-client paste. `--serial`
+calls `reset()` between seats on that one connection. Parallel seats each
+need their own process. If `game.command` is set, `run` starts that process,
+reads `PLAYTEST_BRIDGE_PORT=<n>` from its output, and connects there — the
+announced port wins over `driver.port`. More than one seat without `--serial`
+is an error in that case, because one process cannot host them. Leave
+`game.command` empty to attach to a game that is already listening.
 
 > **Read the four notes under the listing before you paste it.** Three of them
 > are the difference between a bridge that works and one that silently never
