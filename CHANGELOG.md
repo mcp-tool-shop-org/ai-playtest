@@ -7,6 +7,14 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **rpc can launch `game.command`.** When the command is set, `run` starts
+  that process, reads `PLAYTEST_BRIDGE_PORT=<n>` from its output, and connects
+  there. The announced port wins over `driver.port`. `--serial` resets between
+  seats on that one process. More than one seat without `--serial` is a config
+  error. An empty command still attaches to a game that is already listening.
+
 ## [0.1.0] - 2026-09-15
 
 First public GitHub release. Dogfood swarm #2, 2026-09-14. 84 -> 182 tests,

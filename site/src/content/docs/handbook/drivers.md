@@ -29,7 +29,7 @@ Windows: `node-pty` may print `AttachConsole failed` to the console. That is Con
 
 ## rpc
 
-Newline-delimited JSON over TCP. No `game.command` required — the driver attaches to a running engine. See [Engine bridge](../engine-bridge/).
+Newline-delimited JSON over TCP. Leave `game.command` empty to attach to an engine that is already listening. Set it and `run` starts that process, reads `PLAYTEST_BRIDGE_PORT=<n>` from its output, and connects there — the announced port wins over `driver.port`. Two or more seats with a command need `--serial`, because one process has one client. See [Engine bridge](../engine-bridge/).
 
 `--serial` on rpc: one client, `start()` once, `reset()` between seats, `stop()` once. If `reset` is missing or throws, that next seat fails with `E_RESET`. Parallel rpc stays one process per seat (the paste-and-go bridge is single-client).
 
