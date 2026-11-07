@@ -5,7 +5,7 @@
 
 **Tags:** `[all]` every repo · `[npm]` `[pypi]` `[vsix]` `[desktop]` `[container]` published artifacts · `[mcp]` MCP servers · `[cli]` CLI tools
 
-**Repo:** mcp-tool-shop-org/ai-playtest · `@mcptoolshop/ai-playtest` · private 0.1.0 · 2026-09-15
+**Repo:** mcp-tool-shop-org/ai-playtest · `@mcptoolshop/ai-playtest` · private 1.0.0 · 2026-11-07
 
 ---
 
@@ -46,7 +46,7 @@
 ## D. Shipping Hygiene
 
 - [x] `[all]` `verify` script exists (typecheck + tests; emit/pack in CI and `prepublishOnly`) (2026-09-15)
-- [x] `[all]` Version in package.json (`0.1.0`) matches git tag `v0.1.0` (2026-09-15)
+- [x] `[all]` Version in package.json (`1.0.0`) matches git tag `v1.0.0` (2026-11-07)
 - [x] `[all]` Dependency scanning runs in CI — blocking `npm audit --omit=dev --audit-level=high` (2026-09-15)
 - [x] `[all]` Consumer-surface audit is clean (`--omit=dev`). Dev-surface vitest/esbuild HIGH is advisory in CI (`continue-on-error`) and does not ship. Dependabot *alerts* vs auto-PR: org rule forbids the auto-PR bot (CI minutes); alerts are a separate GitHub switch, not a workflow file. (2026-09-15)
 - [ ] `[all]` SKIP: automated dependency-update bot (Dependabot PRs) is org-forbidden unless requested — CI-minute bound. Outcome scanning is the D3/deps line above.

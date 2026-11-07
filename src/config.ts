@@ -20,7 +20,7 @@ function readOwnVersion(): string {
   } catch {
     // dist/ vs src/, or a test running without the package.json sibling.
   }
-  return '0.1.0';
+  return '1.0.0';
 }
 
 /** Package version, stamped on reports and printed by --version. */

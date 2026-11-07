@@ -7,6 +7,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-07
+
+First 1.0 release. The package stays `"private": true` and is not on npm; this
+is a GitHub release.
+
 ### Added
 
 - **rpc can launch `game.command`.** When the command is set, `run` starts
@@ -14,6 +19,17 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   there. The announced port wins over `driver.port`. `--serial` resets between
   seats on that one process. More than one seat without `--serial` is a config
   error. An empty command still attaches to a game that is already listening.
+
+### Fixed
+
+- Updated `devalue` to 5.9.3 or later, closing two published security
+  advisories (GHSA-j22f-vq7h-c4qm, GHSA-mcm9-63f2-9j32).
+
+### Changed
+
+- Repository map (Atlas 1.24.0) is kept in `atlas/` and checked in CI.
+- Test coverage and test results are reported to Codecov.
+- Coverage floor raised to the measured level (lines 75, functions 82, branches 75; was 70/70/60).
 
 ## [0.1.0] - 2026-09-15
 

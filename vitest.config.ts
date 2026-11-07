@@ -25,7 +25,7 @@ try {
     ...(coverageLeg ? { reporter: ['text', 'html', 'clover', 'json', 'lcovonly'] } : {}),
     include: ['src/**/*.ts'],
     exclude: ['src/**/*.test.ts'],
-    thresholds: { lines: 70, functions: 70, branches: 60 },
+    thresholds: { lines: 75, functions: 82, branches: 75 },
   };
 } catch {
   coverage = undefined;

@@ -22,7 +22,7 @@ verdicts alongside how much of the game each session actually saw.
 One playthrough by one person tells you what one person saw. Five families
 playing the same forty turns tell you what the world does.
 
-Public on GitHub. Not on npm yet — clone it, or consume by path from a sibling repo.
+Version 1.0.0. Public on GitHub. Not on npm yet — clone it, or consume by path from a sibling repo.
 
 ## Who judges
 
