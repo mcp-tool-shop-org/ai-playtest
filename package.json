@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/ai-playtest",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Family-diverse AI playtesting for turn-based text games: model players over stdio, structured critiques, an aggregated verdict report.",
   "type": "module",
   "private": true,

@@ -15,7 +15,7 @@ Usage:
   ai-playtest --help | --version
 ```
 
-`--help` / `-h` works from any position. `--version` prints the package version (`0.1.0`).
+`--help` / `-h` works from any position. `--version` prints the package version (`1.0.0`).
 
 | flag | meaning |
 |---|---|
