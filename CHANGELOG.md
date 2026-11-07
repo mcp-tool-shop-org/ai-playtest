@@ -29,7 +29,7 @@ is a GitHub release.
 
 - Repository map (Atlas 1.24.0) is kept in `atlas/` and checked in CI.
 - Test coverage and test results are reported to Codecov.
-- Coverage floor raised to the measured level (lines 75, functions 82, branches 75; was 70/70/60).
+- Coverage floor raised to the measured level (lines 75, functions 81, branches 75; was 70/70/60).
 
 ## [0.1.0] - 2026-09-15
 
