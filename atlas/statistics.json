@@ -49,7 +49,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "root",
-      "qualifyingSourceCommits": 2,
+      "qualifyingSourceCommits": 3,
       "rebaseline": null
     },
     {
@@ -65,7 +65,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "site",
-      "qualifyingSourceCommits": 1,
+      "qualifyingSourceCommits": 2,
       "rebaseline": null
     },
     {
@@ -83,7 +83,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "src",
-      "qualifyingSourceCommits": 7,
+      "qualifyingSourceCommits": 9,
       "rebaseline": null
     },
     {
@@ -99,7 +99,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "test",
-      "qualifyingSourceCommits": 3,
+      "qualifyingSourceCommits": 4,
       "rebaseline": null
     }
   ],
@@ -107,8 +107,8 @@
     "definition": "commits is how many commits in the window touch the file, including merges and commits dropped from coupling. lines is added plus deleted in those commits.",
     "files": [
       {
-        "commits": 6,
-        "lines": 457,
+        "commits": 8,
+        "lines": 461,
         "path": ".github/workflows/ci.yml"
       },
       {
@@ -122,8 +122,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 17,
-        "lines": 394,
+        "commits": 20,
+        "lines": 426,
         "path": "CHANGELOG.md"
       },
       {
@@ -132,43 +132,43 @@
         "path": "LICENSE"
       },
       {
-        "commits": 1,
-        "lines": 225,
+        "commits": 2,
+        "lines": 444,
         "path": "README.es.md"
       },
       {
-        "commits": 1,
-        "lines": 261,
+        "commits": 2,
+        "lines": 508,
         "path": "README.fr.md"
       },
       {
-        "commits": 1,
-        "lines": 167,
+        "commits": 2,
+        "lines": 281,
         "path": "README.hi.md"
       },
       {
-        "commits": 1,
-        "lines": 237,
+        "commits": 2,
+        "lines": 473,
         "path": "README.it.md"
       },
       {
-        "commits": 1,
-        "lines": 166,
+        "commits": 2,
+        "lines": 322,
         "path": "README.ja.md"
       },
       {
-        "commits": 16,
-        "lines": 680,
+        "commits": 19,
+        "lines": 686,
         "path": "README.md"
       },
       {
-        "commits": 1,
-        "lines": 296,
+        "commits": 2,
+        "lines": 570,
         "path": "README.pt-BR.md"
       },
       {
-        "commits": 1,
-        "lines": 169,
+        "commits": 2,
+        "lines": 300,
         "path": "README.zh.md"
       },
       {
@@ -182,13 +182,13 @@
         "path": "SECURITY.md"
       },
       {
-        "commits": 3,
-        "lines": 78,
+        "commits": 4,
+        "lines": 82,
         "path": "SHIP_GATE.md"
       },
       {
-        "commits": 3,
-        "lines": 103,
+        "commits": 5,
+        "lines": 151,
         "path": "atlas/README.md"
       },
       {
@@ -197,18 +197,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 3,
-        "lines": 280,
+        "commits": 5,
+        "lines": 456,
         "path": "atlas/page.json"
       },
       {
-        "commits": 3,
-        "lines": 667,
+        "commits": 5,
+        "lines": 761,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 3,
-        "lines": 2441,
+        "commits": 5,
+        "lines": 4755,
         "path": "atlas/structure.json"
       },
       {
@@ -217,8 +217,8 @@
         "path": "codecov.yml"
       },
       {
-        "commits": 10,
-        "lines": 592,
+        "commits": 12,
+        "lines": 616,
         "path": "docs/engine-bridge.md"
       },
       {
@@ -237,13 +237,13 @@
         "path": "docs/research.md"
       },
       {
-        "commits": 4,
-        "lines": 3417,
+        "commits": 5,
+        "lines": 3427,
         "path": "package-lock.json"
       },
       {
-        "commits": 6,
-        "lines": 57,
+        "commits": 7,
+        "lines": 59,
         "path": "package.json"
       },
       {
@@ -252,8 +252,8 @@
         "path": "site/astro.config.mjs"
       },
       {
-        "commits": 1,
-        "lines": 6056,
+        "commits": 3,
+        "lines": 6068,
         "path": "site/package-lock.json"
       },
       {
@@ -282,13 +282,13 @@
         "path": "site/src/content/docs/handbook/configuration.md"
       },
       {
-        "commits": 1,
-        "lines": 38,
+        "commits": 3,
+        "lines": 42,
         "path": "site/src/content/docs/handbook/drivers.md"
       },
       {
-        "commits": 1,
-        "lines": 44,
+        "commits": 3,
+        "lines": 48,
         "path": "site/src/content/docs/handbook/engine-bridge.md"
       },
       {
@@ -297,8 +297,8 @@
         "path": "site/src/content/docs/handbook/getting-started.md"
       },
       {
-        "commits": 2,
-        "lines": 31,
+        "commits": 3,
+        "lines": 33,
         "path": "site/src/content/docs/handbook/index.md"
       },
       {
@@ -307,8 +307,8 @@
         "path": "site/src/content/docs/handbook/reading-a-report.md"
       },
       {
-        "commits": 1,
-        "lines": 42,
+        "commits": 2,
+        "lines": 44,
         "path": "site/src/content/docs/handbook/reference.md"
       },
       {
@@ -317,8 +317,8 @@
         "path": "site/src/pages/index.astro"
       },
       {
-        "commits": 2,
-        "lines": 122,
+        "commits": 3,
+        "lines": 124,
         "path": "site/src/site-config.ts"
       },
       {
@@ -347,8 +347,8 @@
         "path": "src/cli.ts"
       },
       {
-        "commits": 7,
-        "lines": 966,
+        "commits": 10,
+        "lines": 984,
         "path": "src/config.ts"
       },
       {
@@ -432,8 +432,13 @@
         "path": "src/rpc-driver.ts"
       },
       {
-        "commits": 9,
-        "lines": 1801,
+        "commits": 2,
+        "lines": 272,
+        "path": "src/rpc-launch.ts"
+      },
+      {
+        "commits": 11,
+        "lines": 1853,
         "path": "src/run.ts"
       },
       {
@@ -497,8 +502,8 @@
         "path": "test/pty-unavailable.test.ts"
       },
       {
-        "commits": 1,
-        "lines": 136,
+        "commits": 3,
+        "lines": 230,
         "path": "test/rpc-driver.test.ts"
       },
       {
@@ -517,8 +522,8 @@
         "path": "tsconfig.test.json"
       },
       {
-        "commits": 5,
-        "lines": 94,
+        "commits": 6,
+        "lines": 96,
         "path": "vitest.config.ts"
       }
     ]
@@ -527,13 +532,13 @@
     "level": "low",
     "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
   },
-  "generatedAt": "2026-09-30T20:06:42.779Z",
+  "generatedAt": "2026-11-11T22:03:39.220Z",
   "generatedFrom": {
-    "commit": "94e69fcb76b15b0d76c5d547224c06890b1f9912"
+    "commit": "9b7e505dcf7ae722ba982dcbdaf7901e92f9fffb"
   },
   "pairs": [],
   "parameters": {
-    "appliedChangesetLimit": 20.75,
+    "appliedChangesetLimit": 21,
     "changeset": 50,
     "changesetFraction": 0.25,
     "cohesionDrop": 0.2,
@@ -542,16 +547,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "both",
-    "headDate": "2026-09-29T15:25:03-07:00",
-    "inScopeFiles": 83,
+    "headDate": "2026-11-07T17:13:54-05:00",
+    "inScopeFiles": 84,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 16,
+    "qualifyingCommits": 20,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-04-02T22:25:03.000Z",
+    "since": "2026-05-11T22:13:54.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

@@ -1,25 +1,25 @@
 # ai-playtest: how it works
 
-Mapped at 2026-09-30 from commit 94e69fc by Atlas 1.24.0.
+Mapped at 2026-11-11 from commit 9b7e505 by Atlas 1.26.0.
 
 ## What this is
 
-6 parts, mostly TypeScript (34 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
+6 parts, mostly TypeScript (35 files), JavaScript (4), CSS (2) and Astro (1). Work enters through 3 doors; the busiest is CI, which reaches 3 parts. It deploys a site to GitHub Pages. ai-playtest is a command of a private package (nothing ships it).
 
-## What changed since 2026-09-29 (47f5e7a)
+## What changed since 2026-09-30 (94e69fc)
 
-- CI now also builds src/cli.ts, src/config.ts, src/coverage.ts and 14 more.
-- 1 file changed content, across 1 part.
+- CI now also builds src/rpc-launch.ts.
+- 1 file added and 24 changed content, across 6 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 11 more; builds src/cli.ts, src/config.ts, src/coverage.ts and 14 more; checks CHANGELOG.md, LICENSE and src/.
+1. **CI.** On a pull request touching 9 paths; on a push to main touching 9 paths; or by hand. Runs src/cli.test.ts, src/coverage.test.ts, src/critic.test.ts and 11 more; builds src/cli.ts, src/config.ts, src/coverage.ts and 15 more; checks CHANGELOG.md, LICENSE and src/.
 2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 3. **ai-playtest** (a command of a private package, which nothing ships). Runs src/cli.ts.
 
 ## What happens through CI
 
-1. The workflow runs 10 files in src and 4 files in test; it builds 17 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
+1. The workflow runs 10 files in src and 4 files in test; it builds 18 files in src; it checks CHANGELOG.md and LICENSE in the repository root and src/ in src.
 2. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -64,15 +64,17 @@ People write .github/, docs/, the repository root and site/; 2 writes with paths
 
 ## Where to start
 
-.github/workflows/ci.yml → src/cli.ts → src/config.ts → src/openrouter.ts → src/stats.ts → src/run.ts → src/report.ts
+.github/workflows/ci.yml → src/cli.ts → src/config.ts → src/verifiers.ts → src/coverage.ts → src/player.ts → src/openrouter.ts
 
 Read those in order to follow one pull request end to end.
+
+Beside the path, src/cli.ts also calls src/stats.ts, src/run.ts and src/report.ts.
 
 ## What this map cannot see
 
 - 2 writes and 1 read use paths built at run time and are not named here.
 - 11 writes and 8 reads go to a path their caller passes, not to this repository.
-- 1 command is built at run time and not followed.
+- 2 commands are built at run time and not followed.
 - Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.
 
 Regenerate with `npx --yes @dogfood-lab/atlas map`.
